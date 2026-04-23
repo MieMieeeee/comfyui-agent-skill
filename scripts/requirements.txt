@@ -1,0 +1,1 @@
+comfy_api_simplified @ git+https://github.com/MieMieeeee/run_comfyui_workflow.git
