@@ -1,0 +1,34 @@
+{
+  "workflow_id": "klein_edit",
+  "workflow_file": "klein_edit.json",
+  "output_node_title": "Save Image",
+  "capability": "image_to_image",
+  "description": "Flux2-Klein image editing: upload an image, edit via prompt while preserving pose, structure and composition",
+  "size_strategy": "workflow_managed",
+  "node_mapping": {
+    "input_image": {
+      "node_title": "Load Image",
+      "param": "image",
+      "value_type": "image",
+      "input_strategy": "upload",
+      "required": true
+    },
+    "prompt": {
+      "node_title": "CLIP Text Encode (Positive Prompt)",
+      "param": "text",
+      "value_type": "string",
+      "required": true
+    },
+    "negative_prompt": {
+      "node_title": "CLIP Text Encode (Negative Prompt)",
+      "param": "text",
+      "value_type": "string"
+    },
+    "seed": {
+      "node_title": "KSampler",
+      "param": "seed",
+      "value_type": "integer",
+      "auto_random": true
+    }
+  }
+}

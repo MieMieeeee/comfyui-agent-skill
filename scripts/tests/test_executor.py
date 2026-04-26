@@ -48,11 +48,13 @@ class TestExecuteWorkflowValidation:
             workflow_id="nonexistent",
             workflow_file="does_not_exist.json",
             output_node_title="Save Image",
-            positive_prompt_node="Prompt",
+            node_mapping={
+                "prompt": {"node_title": "Prompt", "param": "text", "required": True},
+            },
         )
         result = execute_workflow(config=bad_config, prompt="a test prompt", skill_root=tmp_path)
         assert result.success is False
-        assert result.error["code"] == "WORKFLOW_NOT_FOUND"
+        assert result.error["code"] == "WORKFLOW_FILE_NOT_FOUND"
 
 
 class TestExecuteWorkflowSuccess:
@@ -131,3 +133,181 @@ class TestExecuteWorkflowFailure:
         result = execute_workflow(config=Z_IMAGE_TURBO, prompt="test prompt", skill_root=skill_root)
         assert result.success is False
         assert result.error["code"] == "NO_OUTPUT"
+
+
+class TestExecuteWorkflowSeed:
+    @patch("comfyui.services.executor.ComfyApiWrapper")
+    @patch("comfyui.services.executor.ComfyWorkflowWrapper")
+    def test_explicit_seed_set_on_sampler(self, MockWF, MockAPI, skill_root):
+        mock_wf_instance = MagicMock()
+        mock_wf_instance.get_node_id.return_value = "9"
+        MockWF.return_value = mock_wf_instance
+        MockAPI.return_value = _make_mock_api()
+
+        result = execute_workflow(
+            config=Z_IMAGE_TURBO,
+            prompt="test prompt",
+            skill_root=skill_root,
+            results_dir=skill_root / "results" / "test",
+            seed=42,
+        )
+
+        assert result.success is True
+        assert result.metadata["seed"] == 42
+        mock_wf_instance.set_node_param.assert_any_call("KSampler", "seed", 42)
+
+    @patch("comfyui.services.executor.ComfyApiWrapper")
+    @patch("comfyui.services.executor.ComfyWorkflowWrapper")
+    def test_random_seed_when_not_specified(self, MockWF, MockAPI, skill_root):
+        mock_wf_instance = MagicMock()
+        mock_wf_instance.get_node_id.return_value = "9"
+        MockWF.return_value = mock_wf_instance
+        MockAPI.return_value = _make_mock_api()
+
+        result = execute_workflow(
+            config=Z_IMAGE_TURBO,
+            prompt="test prompt",
+            skill_root=skill_root,
+            results_dir=skill_root / "results" / "test",
+        )
+
+        assert result.success is True
+        assert isinstance(result.metadata["seed"], int)
+        # Seed should be a reasonable positive int
+        assert result.metadata["seed"] >= 0
+
+
+class TestExecuteWorkflowImageUpload:
+    def _make_img_config(self, tmp_path):
+        return WorkflowConfig(
+            workflow_id="test_img",
+            workflow_file="test.json",
+            output_node_title="Save Image",
+            node_mapping={
+                "input_image": {
+                    "node_title": "Load Image",
+                    "param": "image",
+                    "value_type": "image",
+                    "input_strategy": "upload",
+                    "required": True,
+                },
+                "prompt": {"node_title": "Prompt Node", "param": "text", "required": True},
+                "seed": {"node_title": "KSampler", "param": "seed", "value_type": "integer", "auto_random": True},
+            },
+            size_strategy="workflow_managed",
+        )
+
+    @patch("comfyui.services.executor.ComfyApiWrapper")
+    @patch("comfyui.services.executor.ComfyWorkflowWrapper")
+    def test_upload_and_bind_image(self, MockWF, MockAPI, tmp_path):
+        mock_wf_instance = MagicMock()
+        mock_wf_instance.get_node_id.return_value = "9"
+        MockWF.return_value = mock_wf_instance
+        mock_api = _make_mock_api()
+        mock_api.upload_image.return_value = {"name": "photo.png", "subfolder": "default_upload_folder", "type": "input"}
+        MockAPI.return_value = mock_api
+
+        # Create a dummy image file
+        img_path = tmp_path / "photo.png"
+        img_path.write_bytes(b"fake image data")
+        # Create a dummy workflow JSON
+        wf_path = tmp_path / "assets" / "workflows" / "test.json"
+        wf_path.parent.mkdir(parents=True, exist_ok=True)
+        wf_path.write_text('{"1": {"class_type": "Test"}}')
+
+        config = self._make_img_config(tmp_path)
+        result = execute_workflow(
+            config=config,
+            prompt="change hair to pink",
+            skill_root=tmp_path,
+            input_images={"input_image": img_path},
+        )
+
+        assert result.success is True
+        mock_api.upload_image.assert_called_once_with(str(img_path))
+        mock_wf_instance.set_node_param.assert_any_call(
+            "Load Image", "image", "default_upload_folder/photo.png"
+        )
+
+    def test_missing_required_image_returns_error(self, tmp_path):
+        config = self._make_img_config(tmp_path)
+        wf_path = tmp_path / "assets" / "workflows" / "test.json"
+        wf_path.parent.mkdir(parents=True, exist_ok=True)
+        wf_path.write_text('{"1": {"class_type": "Test"}}')
+
+        result = execute_workflow(
+            config=config,
+            prompt="change hair to pink",
+            skill_root=tmp_path,
+            input_images={},
+        )
+        assert result.success is False
+        assert result.error["code"] == "NO_INPUT_IMAGE"
+
+    def test_image_file_not_found(self, tmp_path):
+        config = self._make_img_config(tmp_path)
+        wf_path = tmp_path / "assets" / "workflows" / "test.json"
+        wf_path.parent.mkdir(parents=True, exist_ok=True)
+        wf_path.write_text('{"1": {"class_type": "Test"}}')
+
+        result = execute_workflow(
+            config=config,
+            prompt="change hair to pink",
+            skill_root=tmp_path,
+            input_images={"input_image": tmp_path / "nonexistent.png"},
+        )
+        assert result.success is False
+        assert result.error["code"] == "INPUT_IMAGE_NOT_FOUND"
+
+    @patch("comfyui.services.executor.ComfyApiWrapper")
+    @patch("comfyui.services.executor.ComfyWorkflowWrapper")
+    def test_upload_failure_returns_error(self, MockWF, MockAPI, tmp_path):
+        MockWF.return_value = MagicMock()
+        mock_api = _make_mock_api()
+        mock_api.upload_image.side_effect = RuntimeError("Upload failed")
+        MockAPI.return_value = mock_api
+
+        img_path = tmp_path / "photo.png"
+        img_path.write_bytes(b"fake image data")
+        wf_path = tmp_path / "assets" / "workflows" / "test.json"
+        wf_path.parent.mkdir(parents=True, exist_ok=True)
+        wf_path.write_text('{"1": {"class_type": "Test"}}')
+
+        config = self._make_img_config(tmp_path)
+        result = execute_workflow(
+            config=config,
+            prompt="change hair to pink",
+            skill_root=tmp_path,
+            input_images={"input_image": img_path},
+        )
+        assert result.success is False
+        assert result.error["code"] == "IMAGE_UPLOAD_FAILED"
+
+    @patch("comfyui.services.executor.ComfyApiWrapper")
+    @patch("comfyui.services.executor.ComfyWorkflowWrapper")
+    def test_upload_with_empty_subfolder(self, MockWF, MockAPI, tmp_path):
+        mock_wf_instance = MagicMock()
+        mock_wf_instance.get_node_id.return_value = "9"
+        MockWF.return_value = mock_wf_instance
+        mock_api = _make_mock_api()
+        mock_api.upload_image.return_value = {"name": "photo.png", "subfolder": "", "type": "input"}
+        MockAPI.return_value = mock_api
+
+        img_path = tmp_path / "photo.png"
+        img_path.write_bytes(b"fake image data")
+        wf_path = tmp_path / "assets" / "workflows" / "test.json"
+        wf_path.parent.mkdir(parents=True, exist_ok=True)
+        wf_path.write_text('{"1": {"class_type": "Test"}}')
+
+        config = self._make_img_config(tmp_path)
+        result = execute_workflow(
+            config=config,
+            prompt="change hair to pink",
+            skill_root=tmp_path,
+            input_images={"input_image": img_path},
+        )
+
+        assert result.success is True
+        mock_wf_instance.set_node_param.assert_any_call(
+            "Load Image", "image", "photo.png"
+        )

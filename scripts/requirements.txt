@@ -1,1 +1,3 @@
+# Pin to a specific commit for reproducibility when releasing:
+# comfy_api_simplified @ git+https://github.com/MieMieeeee/run_comfyui_workflow.git@<commit_sha>
 comfy_api_simplified @ git+https://github.com/MieMieeeee/run_comfyui_workflow.git
