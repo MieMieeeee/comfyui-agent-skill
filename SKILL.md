@@ -23,7 +23,7 @@ description: >
 
 **`reference_to_image` (reference image → similar image via Agent vision):**
 
-- The Agent must **view the user's reference image** (multimodal), follow [prompt_enhancement/reference_to_image.md](references/prompt_enhancement/reference_to_image.md) to produce one English prompt, then call `run.py` with that prompt — **same** `z_image_turbo` pipeline as `text_to_image`. The reference image is **not** sent to ComfyUI.
+- The Agent must **view the user's reference image** (multimodal), follow [prompt_enhancement/reference_to_image.md](references/prompt_enhancement/reference_to_image.md) to produce one English prompt, then call `python -m comfyui generate` with that prompt — **same** `z_image_turbo` pipeline as `text_to_image`. The reference image is **not** sent to ComfyUI.
 - **This is NOT ComfyUI image-to-image.** It preserves semantic and stylistic direction only — it does **not** guarantee preservation of exact face, pose, composition, camera angle, or background layout. See [reference_to_image.md](references/prompt_enhancement/reference_to_image.md) for details.
 - **No** ComfyUI "image-to-text" or extra caption workflow: reverse-prompting is **Agent-only**.
 
@@ -52,6 +52,8 @@ description: >
 - Do NOT assume analyzer-generated configs can be used without human review
 - `image_to_image` is only supported when a registered img2img workflow exists — it does not automatically apply to all edit requests
 - When `check_server` fails, do NOT continue calling generation capabilities
+- **Must use `uv run python -m comfyui`** for all CLI invocations. Do NOT use bare `python -m comfyui`.
+- **Local `config.local.json`**: do **not** create, edit, or ask the user to change this file **unless** they explicitly want a persistent ComfyUI URL (equivalent to using `--save-server` / `python -m comfyui save-server` themselves). For one-off or Agent runs, prefer `COMFYUI_URL` or `--server` on the CLI. The file is git-ignored; see [VENDORING.md](VENDORING.md) for the optional `COMFYUI_CONFIG_FILE` test override.
 
 ## Design Principles
 
@@ -65,7 +67,7 @@ description: >
 - Image-to-image (`image_to_image`) — upload input image to ComfyUI, edit via prompt with stronger structural guidance than `reference_to_image`; actual preservation depends on the registered workflow. Default workflow: `klein_edit` (Flux2-Klein).
 
 ### Agent Enhancement Capabilities
-- **Reference-guided image generation** (`reference_to_image`): Agent uses vision to derive a prompt from a user-provided reference image, then runs the same `z_image_turbo` + `run.py` as T2I. Preserves semantic/stylistic direction only — **not** structural or identity-level similarity. **This is NOT ComfyUI img2img.** If the user requires structural fidelity (preserving face, pose, composition, clothing changes), use `image_to_image` instead.
+- **Reference-guided image generation** (`reference_to_image`): Agent uses vision to derive a prompt from a user-provided reference image, then runs the same `z_image_turbo` via `python -m comfyui generate` as T2I. Preserves semantic/stylistic direction only — **not** structural or identity-level similarity. **This is NOT ComfyUI img2img.** If the user requires structural fidelity (preserving face, pose, composition, clothing changes), use `image_to_image` instead.
 
 ### Operational Capabilities
 - Server health check via `/system_stats` (`--check`)
@@ -94,19 +96,30 @@ description: >
 
 ## Prerequisites
 
-1. ComfyUI server running with `GET /system_stats` endpoint available. **URL resolution (matches `get_comfyui_url()` in `scripts/comfyui/config.py`)**: for each invocation, `--server` if passed; else env var `COMFYUI_URL` > `config.local.json` > default `http://127.0.0.1:8188`
-2. Python dependency (see `scripts/requirements.txt`):
+1. **ComfyUI server** running with `GET /system_stats` endpoint available.
+   URL resolution (priority): `--server` CLI flag > `COMFYUI_URL` env var > `config.local.json` > default `http://127.0.0.1:8188`.
+   Override config path for tests with env **`COMFYUI_CONFIG_FILE`** (points to a temp JSON file).
+
+2. **Python 3.10+** + **uv**. Install uv if not present:
+   ```bash
+   pip install uv
    ```
-   pip install git+https://github.com/MieMieeeee/run_comfyui_workflow.git
+
+3. **Setup (from skill root — the folder containing `SKILL.md` and `scripts/`):**
+   ```bash
+   uv sync                          # create .venv, install deps + pytest
+   uv run python -m comfyui --help # verify installation
    ```
-3. Required models loaded. See [references/workflow_nodes.md](references/workflow_nodes.md).
-4. All commands assume **working directory is the skill root** (`comfyui/`).
+
+4. **Vendored Comfy API client**: [`comfy_api_simplified`](https://github.com/MieMieeeee/run_comfyui_workflow) is included under `scripts/comfy_api_simplified/` — no network install needed. See [VENDORING.md](VENDORING.md) to re-sync.
+
+5. **Required models**: see [references/workflow_nodes.md](references/workflow_nodes.md).
 
 ## Usage
 
 ### Fail-Fast Rules (Required)
 
-**ComfyUI / `run.py` (stdout JSON from the CLI):**
+**ComfyUI / `python -m comfyui generate` (stdout JSON from the CLI):**
 
 - If ComfyUI server is unavailable, **return `SERVER_UNAVAILABLE` immediately**.
 - If workflow is not registered, **return `WORKFLOW_NOT_REGISTERED` immediately**.
@@ -114,15 +127,15 @@ description: >
 - Do **not** search local disk/network for ComfyUI install path or alternative servers.
 - Do **not** auto-switch workflow/server silently; fail with explicit JSON error.
 
-**Agent-only (before calling `run.py` for `reference_to_image`):**
+**Agent-only (before calling `python -m comfyui generate` for `reference_to_image`):**
 
-- If the user did not provide a **reference image** (or it is unusable), stop and return **`NO_REFERENCE_IMAGE`** (see [Agent error output](#agent-error-output) below). Do not call `run.py`.
-- If the runtime **cannot** accept or interpret images (no vision / multimodal), stop and return **`VISION_UNAVAILABLE`**. Do **not** add ComfyUI "caption/interrogate" workflows, scan disk for Comfy install paths, or ask the user to install reverse-prompt nodes. Do not call `run.py`.
-- After a valid English prompt is produced, failures are reported **only** via the usual `run.py` JSON (`SERVER_UNAVAILABLE`, etc.).
+- If the user did not provide a **reference image** (or it is unusable), stop and return **`NO_REFERENCE_IMAGE`** (see [Agent error output](#agent-error-output) below). Do not call `python -m comfyui generate`.
+- If the runtime **cannot** accept or interpret images (no vision / multimodal), stop and return **`VISION_UNAVAILABLE`**. Do **not** add ComfyUI "caption/interrogate" workflows, scan disk for Comfy install paths, or ask the user to install reverse-prompt nodes. Do not call `python -m comfyui generate`.
+- After a valid English prompt is produced, failures are reported **only** via the usual `python -m comfyui generate` JSON (`SERVER_UNAVAILABLE`, etc.).
 
 ### Handling `SERVER_UNAVAILABLE`
 
-When `run.py` returns `SERVER_UNAVAILABLE`, the Agent should **help the user diagnose** rather than just reporting the error. Ask the user:
+When `python -m comfyui generate` returns `SERVER_UNAVAILABLE`, the Agent should **help the user diagnose** rather than just reporting the error. Ask the user:
 
 1. **Is ComfyUI running locally?** — If not, the user needs to start it first.
 2. **Is ComfyUI on a different machine?** — If so, ask for the address, save it with `--save-server`, then retry.
@@ -138,7 +151,7 @@ Which is your situation?
 ```
 
 When the user provides a remote address, the Agent should:
-1. Save it: `python scripts/run.py --save-server http://<address>:<port>`
+1. Save it: `python -m comfyui generate --save-server http://<address>:<port>` 或 `python -m comfyui save-server http://<address>:<port>`
 2. Retry the original generation command (no `--server` needed — it's now saved)
 
 Do **not** search the local filesystem for ComfyUI installations. Do **not** guess or try alternative ports.
@@ -146,19 +159,42 @@ Do **not** search the local filesystem for ComfyUI installations. Do **not** gue
 ### Health Check
 
 ```bash
-python scripts/run.py --check
+python -m comfyui generate --check
+# 或 (推荐已 pip install -e .):
+python -m comfyui check
 ```
 
 ### Generate Image
 
 ```bash
-python scripts/run.py "a cute cat sitting on a windowsill at golden hour"
+python -m comfyui generate "a cute cat sitting on a windowsill at golden hour"
+# 或:
+python -m comfyui generate -p "a cute cat sitting on a windowsill at golden hour"
 ```
+
+`--output` 语义：不传时默认保存到 `results/<workflow_id>/`（即技能目录）。传入相对路径时会拼到该目录下（如 `--output my_folder` → `results/<workflow_id>/my_folder/`）。传入绝对路径时直接透传。图片文件名由 ComfyUI/工作流决定，不由本参数指定。
+
+长耗时生成时可打开 **进度**（WebSocket 事件以 JSON 行输出到 **stderr**）:
+
+```bash
+python -m comfyui generate "prompt" --progress
+python -m comfyui generate -p "prompt" --progress
+```
+
+程序化调用（Agent / 服务）可传 `execute_workflow(..., progress_callback=fn)`，参数为 `dict`（`phase` 如 `queued`、`executing`、`status`、`finished` 等）。
 
 ### Specify Workflow and Server
 
 ```bash
-python scripts/run.py --workflow z_image_turbo --server http://192.168.1.100:8188 --prompt "a landscape"
+python -m comfyui generate --workflow z_image_turbo --server http://192.168.1.100:8188 --prompt "a landscape"
+python -m comfyui generate --workflow z_image_turbo --server http://192.168.1.100:8188 -p "a landscape"
+```
+
+### Save server (CLI)
+
+```bash
+python -m comfyui generate --save-server http://192.168.1.100:8188
+python -m comfyui save-server http://192.168.1.100:8188
 ```
 
 ### Options
@@ -170,9 +206,10 @@ python scripts/run.py --workflow z_image_turbo --server http://192.168.1.100:818
 | `--image` | — | `key=path` or bare path; repeat for multiple keys (I2I workflows) |
 | `--count` | `1` | Number of images to generate |
 | `--server` | config or `http://127.0.0.1:8188` | ComfyUI server URL (this invocation only) |
-| `--save-server` | — | Save server URL to `config.local.json` for all future invocations |
-| `--output` | `results/{workflow_id}/` | Output directory |
-| `--check` | — | Health check only |
+| `--save-server` | — | (`python -m comfyui generate` only) Save server URL to `config.local.json`; use `python -m comfyui save-server URL` for the module form |
+| `--output` | `results/<workflow>/` | Relative path → appended to default dir; absolute path → used as-is. Omit to use default. Filename chosen by ComfyUI/workflow. |
+| `--check` | — | Health check only (`python -m comfyui generate`); use `python -m comfyui check` as alternative |
+| `--progress` | off | Print JSON progress lines to stderr during generation |
 
 ## Input
 
@@ -183,19 +220,19 @@ Width, height, and negative prompt are configured per-workflow via `node_mapping
 
 ## Prompt Enhancement
 
-Before calling `run.py`, enhance the user's prompt using the appropriate enhancement instructions:
+Before calling `python -m comfyui generate`, enhance the user's prompt using the appropriate enhancement instructions:
 
 1. Determine the image type based on user intent
 2. Read the corresponding enhancement instructions from `references/prompt_enhancement/`
 3. Follow the instructions to expand the user's simple description into a detailed prompt
-4. Call `run.py` with the enhanced prompt
+4. Call `python -m comfyui generate` with the enhanced prompt
 
 **`reference_to_image` order (Agent must have vision for the reference image):**
 
 1. Ensure reference image is present; else return `NO_REFERENCE_IMAGE`.
 2. Read [prompt_enhancement/reference_to_image.md](references/prompt_enhancement/reference_to_image.md).
-3. Synthesize one English prompt from the **image** + user's short text (e.g. "类似""同风格"); if vision is unavailable, return `VISION_UNAVAILABLE` and **do not** call `run.py`.
-4. `python scripts/run.py "<enhanced English prompt>"` from skill root (same as T2I).
+3. Synthesize one English prompt from the **image** + user's short text (e.g. "类似""同风格"); if vision is unavailable, return `VISION_UNAVAILABLE` and **do not** call `python -m comfyui generate`.
+4. `python -m comfyui generate "<enhanced English prompt>"` from skill root (same as T2I).
 
 Available enhancement types:
 
@@ -211,7 +248,7 @@ User: "生成一个穿黑色皮衣的女孩"
   → Type: character
   → Read references/prompt_enhancement/character.md
   → Enhance: "Photorealistic, ultra-detailed portrait of a young woman..."
-  → Call: python scripts/run.py "Photorealistic, ultra-detailed portrait of a young woman..."
+  → Call: python -m comfyui generate "Photorealistic, ultra-detailed portrait of a young woman..."
 ```
 
 Example flow (`reference_to_image`):
@@ -221,7 +258,7 @@ User: [image] + "生成一个类似的图"
   → Type: reference_to_image
   → Read references/prompt_enhancement/reference_to_image.md
   → Enhance from vision + user text: "Photorealistic, ultra-detailed ..." (one paragraph)
-  → Call: python scripts/run.py "Photorealistic, ultra-detailed ..."
+  → Call: python -m comfyui generate "Photorealistic, ultra-detailed ..."
 ```
 
 Example flow (`image_to_image`):
@@ -230,14 +267,14 @@ User: [image] + "换成职业装"
   → Type: image_to_image
   → Read references/prompt_enhancement/image_to_image.md
   → Enhance: Agent analyzes image + user intent → "Change only the clothing to a tailored charcoal..."
-  → Call: python scripts/run.py --workflow klein_edit --image input_image=photo.png --prompt "Change only the clothing..."
+  → Call: python -m comfyui generate --workflow klein_edit --image input_image=photo.png --prompt "Change only the clothing..."
 ```
 
 ## Output
 
 ### Agent error output
 
-When the failure is **not** from `run.py` (missing reference image, or no vision), return a small JSON object so callers do not confuse it with Comfy errors:
+When the failure is **not** from `python -m comfyui generate` (missing reference image, or no vision), return a small JSON object so callers do not confuse it with Comfy errors:
 
 ```json
 {
@@ -249,13 +286,13 @@ When the failure is **not** from `run.py` (missing reference image, or no vision
 
 Codes: `NO_REFERENCE_IMAGE` (no attachment/path or empty), `VISION_UNAVAILABLE` (multimodal/vision not available or image unreadable). Do not use `SERVER_UNAVAILABLE` here; that is reserved for Comfy/CLI.
 
-### `run.py` (ComfyUI) JSON
+### `python -m comfyui generate` (ComfyUI) JSON
 
 Structured JSON to **stdout** from the CLI (success or Comfy-related failure).
 
 #### After Success: Presenting Results to User
 
-When `run.py` returns `"success": true`, the Agent **should present the generated image(s) to the user**:
+When `python -m comfyui generate` returns `"success": true`, the Agent **should present the generated image(s) to the user**:
 
 1. **If the Agent can display images** (e.g. Read tool supports image files, multimodal output): read the file at `outputs[].path` and display it directly to the user.
 2. **If the Agent cannot display images**: report the file path(s) to the user so they can open them manually.
@@ -288,7 +325,7 @@ Failure:
 }
 ```
 
-Error codes: `EMPTY_PROMPT`, `CONFIG_ERROR`, `MAPPING_NOT_FOUND`, `WORKFLOW_NOT_REGISTERED`, `WORKFLOW_FILE_NOT_FOUND`, `WORKFLOW_LOAD_FAILED`, `EXECUTION_FAILED`, `NO_OUTPUT`, `SAVE_FAILED`, `SERVER_UNAVAILABLE`, `NO_INPUT_IMAGE`, `INPUT_IMAGE_NOT_FOUND`, `IMAGE_UPLOAD_FAILED`, `INVALID_PARAM_TYPE`.
+Error codes: `EMPTY_PROMPT`, `CONFIG_ERROR`, `MAPPING_NOT_FOUND`, `WORKFLOW_NOT_REGISTERED`, `WORKFLOW_FILE_NOT_FOUND`, `WORKFLOW_LOAD_FAILED`, `EXECUTION_FAILED`, `NO_OUTPUT`, `SAVE_FAILED`, `SERVER_UNAVAILABLE`, `NO_INPUT_IMAGE`, `INPUT_IMAGE_NOT_FOUND`, `IMAGE_UPLOAD_FAILED`, `INVALID_PARAM`, `INVALID_PARAM_TYPE`.
 
 Planned error codes: `NODE_NOT_FOUND`, `PARAM_NOT_FOUND`.
 
@@ -314,7 +351,7 @@ For `--count > 1`, output format is:
 1. Place workflow JSON in `assets/workflows/`
 2. Run the analyzer to auto-generate a config template:
    ```bash
-   python scripts/analyze_workflow.py assets/workflows/new_workflow.json
+   uv run python scripts/analyze_workflow.py assets/workflows/new_workflow.json
    ```
    This creates `assets/workflows/new_workflow.config.json` with discovered nodes and mapped params.
 3. Review and edit the generated config:
