@@ -10,6 +10,14 @@ DEFAULT_URL = "http://127.0.0.1:8188"
 SKILL_ROOT = Path(__file__).resolve().parent.parent.parent
 
 
+def job_store_path() -> Path:
+    """Path to the SQLite job store. Override with env ``COMFYUI_JOB_STORE``."""
+    override = os.environ.get("COMFYUI_JOB_STORE")
+    if override:
+        return Path(override).expanduser().resolve()
+    return SKILL_ROOT / "jobs.db"
+
+
 def local_config_path() -> Path:
     """Path to the local JSON file for comfyui_url and other keys.
 

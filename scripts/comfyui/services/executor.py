@@ -6,16 +6,23 @@ Workflow-specific details come from WorkflowConfig.node_mapping.
 from __future__ import annotations
 
 import asyncio
+import json
 import random
 import sys
+import uuid
+from collections.abc import Callable
 from pathlib import Path
+from typing import Any
+
+import websockets
 
 try:
     from comfy_api_simplified import ComfyApiWrapper, ComfyWorkflowWrapper
 except ImportError:
     print(
-        "Error: comfy_api_simplified not installed.\n"
-        "Install with: pip install git+https://github.com/MieMieeeee/run_comfyui_workflow.git",
+        "Error: comfy_api_simplified not importable (vendored under scripts/comfy_api_simplified).\n"
+        "From the skill root run: pip install -e .\n"
+        "Or set PYTHONPATH to the scripts directory.",
         file=sys.stderr,
     )
     sys.exit(1)
@@ -25,8 +32,138 @@ from comfyui.models.result import GenerationResult
 from comfyui.services.workflow_config import WorkflowConfig
 
 
+def _connection_hint(url: str) -> str:
+    return (
+        f"Hint / 提示: Make sure ComfyUI is running and the IP/port is correct (current: {url}). "
+        f"请确认 ComfyUI 已在目标地址运行，并检查 IP 与端口是否正确（当前: {url}）。"
+    )
+
+
+def _should_add_connection_hint(message: str) -> bool:
+    low = message.lower()
+    triggers = (
+        "timeout",
+        "timed out",
+        "connection",
+        "refused",
+        "unreachable",
+        "10061",
+        "10060",
+        "errno 111",
+        "errno 10054",
+        "failed to establish",
+        "getaddrinfo",
+        "could not connect",
+        "error connecting",
+        "newconnectionerror",
+        "max retries",
+    )
+    return any(t in low for t in triggers)
+
+
+def _enrich_error(message: str, url: str) -> str:
+    if not message.strip():
+        return _connection_hint(url)
+    if _should_add_connection_hint(message):
+        return f"{message.rstrip()}\n{_connection_hint(url)}"
+    return message
+
+
+def _simplify_ws_event(prompt_id: str, message: dict[str, Any]) -> dict[str, Any]:
+    t = message.get("type", "unknown")
+    data = message.get("data") or {}
+    if t == "executing" and "node" in data:
+        return {"phase": "executing", "prompt_id": prompt_id, "node": data.get("node")}
+    if t == "status" and "status" in data:
+        ex = (data.get("status") or {}).get("exec_info") or {}
+        return {
+            "phase": "status",
+            "prompt_id": prompt_id,
+            "queue_remaining": ex.get("queue_remaining"),
+        }
+    if t == "progress" and isinstance(data, dict) and "value" in data:
+        return {
+            "phase": "progress",
+            "prompt_id": prompt_id,
+            "value": data.get("value"),
+            "max": data.get("max"),
+        }
+    return {"phase": t, "prompt_id": prompt_id, "raw": message}
+
+
+async def _queue_prompt_and_wait_with_progress(
+    api: ComfyApiWrapper,
+    prompt: dict,
+    on_progress: Callable[[dict[str, Any]], None],
+) -> str:
+    """Same contract as ComfyApiWrapper.queue_prompt_and_wait, with progress callbacks."""
+    client_id = str(uuid.uuid4())
+    resp = api.queue_prompt(prompt, client_id)
+    prompt_id: str = resp["prompt_id"]
+    on_progress({"phase": "queued", "prompt_id": prompt_id})
+    async with websockets.connect(uri=api.ws_url.format(client_id)) as websocket:
+        while True:
+            out = await websocket.recv()
+            if not isinstance(out, str):
+                continue
+            message = json.loads(out)
+            if message.get("type") == "crystools.monitor":
+                continue
+            mtype = message.get("type")
+            if mtype in ("status", "executing", "executed", "execution_cached", "progress"):
+                on_progress(_simplify_ws_event(prompt_id, message))
+            if mtype == "execution_error":
+                data = message["data"]
+                if data["prompt_id"] == prompt_id:
+                    raise RuntimeError("Execution error occurred (ComfyUI reported execution_error).")
+            if mtype == "status":
+                data = message["data"]
+                if data["status"]["exec_info"]["queue_remaining"] == 0:
+                    on_progress({"phase": "queue_empty", "prompt_id": prompt_id})
+                    return prompt_id
+            if mtype == "executing":
+                data = message["data"]
+                if data["node"] is None and data.get("prompt_id") == prompt_id:
+                    on_progress({"phase": "finished", "prompt_id": prompt_id})
+                    return prompt_id
+
+
 def _err(code: str, message: str) -> dict[str, str]:
     return {"code": code, "message": message}
+
+
+def _entry_is_string_input(entry: dict[str, Any]) -> bool:
+    vt = entry.get("value_type")
+    if vt == "string":
+        return True
+    if vt in ("integer", "image"):
+        return False
+    # Legacy JSON configs may omit value_type for CLIP-style text bindings
+    if vt is None and entry.get("param") == "text":
+        return True
+    return False
+
+
+def merge_text_inputs(
+    config: WorkflowConfig,
+    prompt: str,
+    text_inputs: dict[str, str] | None,
+) -> dict[str, str]:
+    """Merge CLI ``prompt`` into mapping key ``prompt`` when present; overlay ``text_inputs``."""
+    texts: dict[str, str] = dict(text_inputs or {})
+    if prompt.strip() and "prompt" in config.node_mapping:
+        texts.setdefault("prompt", prompt.strip())
+    return texts
+
+
+def _missing_string_error(mapping_key: str) -> dict[str, str]:
+    codes: dict[str, tuple[str, str]] = {
+        "prompt": ("EMPTY_PROMPT", "Prompt is empty."),
+        "speech_text": ("EMPTY_SPEECH_TEXT", "Speech text is empty."),
+        "instruct": ("EMPTY_INSTRUCT", "Voice instruct is empty."),
+    }
+    code, msg = codes.get(mapping_key, ("MISSING_INPUT", f"Required input '{mapping_key}' is empty."))
+    return _err(code, msg)
 
 
 def _get_default(config: WorkflowConfig, key: str, fallback: int) -> int:
@@ -46,25 +183,44 @@ def execute_workflow(
     width: int | None = None,
     height: int | None = None,
     seed: int | None = None,
+    progress_callback: Callable[[dict[str, Any]], None] | None = None,
+    text_inputs: dict[str, str] | None = None,
 ) -> GenerationResult:
     """Execute a ComfyUI workflow described by config."""
-    # Validate required node_mapping entries
-    prompt_entry = config.node_mapping.get("prompt")
-    if not prompt_entry:
+    workflow_path = config.resolve_workflow_path(skill_root)
+    if not workflow_path.exists():
         return GenerationResult(
             success=False,
             workflow_id=config.workflow_id,
             status="failed",
-            error=_err("MAPPING_NOT_FOUND", "Required mapping 'prompt' is missing from workflow config."),
+            error=_err("WORKFLOW_FILE_NOT_FOUND", f"Workflow file not found: {workflow_path}"),
         )
 
-    if not prompt or not prompt.strip():
+    has_string_mapping = any(
+        _entry_is_string_input(entry) for entry in config.node_mapping.values()
+    )
+    if not has_string_mapping:
         return GenerationResult(
             success=False,
             workflow_id=config.workflow_id,
             status="failed",
-            error=_err("EMPTY_PROMPT", "Prompt is empty."),
+            error=_err(
+                "MAPPING_NOT_FOUND",
+                "Workflow config has no string inputs (prompt/speech_text/etc.).",
+            ),
         )
+
+    texts = merge_text_inputs(config, prompt, text_inputs)
+    for key, entry in config.node_mapping.items():
+        if not _entry_is_string_input(entry) or not entry.get("required"):
+            continue
+        if not texts.get(key, "").strip():
+            return GenerationResult(
+                success=False,
+                workflow_id=config.workflow_id,
+                status="failed",
+                error=_missing_string_error(key),
+            )
 
     url = server_url or COMFYUI_URL
     w = width or _get_default(config, "width", 832)
@@ -75,16 +231,6 @@ def execute_workflow(
     actual_seed = seed if seed is not None else random.randint(0, 2**32 - 1)
 
     out_dir = results_dir or skill_root / "results" / config.workflow_id
-
-    # Load workflow
-    workflow_path = config.resolve_workflow_path(skill_root)
-    if not workflow_path.exists():
-        return GenerationResult(
-            success=False,
-            workflow_id=config.workflow_id,
-            status="failed",
-            error=_err("WORKFLOW_FILE_NOT_FOUND", f"Workflow file not found: {workflow_path}"),
-        )
 
     try:
         wf = ComfyWorkflowWrapper(str(workflow_path))
@@ -100,11 +246,12 @@ def execute_workflow(
     try:
         api = ComfyApiWrapper(url)
     except Exception as e:
+        msg = _enrich_error(str(e), url)
         return GenerationResult(
             success=False,
             workflow_id=config.workflow_id,
             status="failed",
-            error=_err("SERVER_UNAVAILABLE", f"Cannot connect to ComfyUI: {e}"),
+            error=_err("SERVER_UNAVAILABLE", f"Cannot connect to ComfyUI: {msg}"),
         )
 
     # Upload input images and bind to nodes
@@ -141,9 +288,14 @@ def execute_workflow(
         img_param = f"{meta['subfolder']}/{meta['name']}" if meta.get("subfolder") else meta["name"]
         wf.set_node_param(entry["node_title"], entry["param"], img_param)
 
-    # Apply node_mapping: set prompt
-    if prompt_entry:
-        wf.set_node_param(prompt_entry["node_title"], prompt_entry["param"], prompt.strip())
+    # Apply node_mapping: all string inputs (prompt, speech_text, instruct, negative_prompt, ...)
+    for key, entry in config.node_mapping.items():
+        if not _entry_is_string_input(entry):
+            continue
+        val = texts.get(key)
+        if val is None or not str(val).strip():
+            continue
+        wf.set_node_param(entry["node_title"], entry["param"], str(val).strip())
 
     # Apply node_mapping: set seed
     if seed_entry and seed_entry.get("node_title"):
@@ -161,46 +313,63 @@ def execute_workflow(
     try:
         loop = asyncio.new_event_loop()
         try:
-            prompt_id = loop.run_until_complete(api.queue_prompt_and_wait(wf))
+            if progress_callback is None:
+                prompt_id = loop.run_until_complete(api.queue_prompt_and_wait(wf))
+            else:
+                prompt_id = loop.run_until_complete(
+                    _queue_prompt_and_wait_with_progress(api, wf, progress_callback)
+                )
         finally:
             loop.close()
     except Exception as e:
+        err_text = str(e)
+        if _should_add_connection_hint(err_text):
+            err_text = _enrich_error(err_text, url)
         return GenerationResult(
             success=False,
             workflow_id=config.workflow_id,
             status="failed",
-            error=_err("EXECUTION_FAILED", f"Workflow execution failed: {e}"),
+            error=_err("EXECUTION_FAILED", f"Workflow execution failed: {err_text}"),
             job_id=prompt_id,
         )
 
-    # Retrieve outputs
+    # Retrieve outputs (images or audio)
+    output_kind = getattr(config, "output_kind", "image") or "image"
     try:
         output_node_id = wf.get_node_id(config.output_node_title)
         history = api.get_history(prompt_id) if prompt_id else {}
         history_entry = history.get(prompt_id, {})
         comfyui_outputs = history_entry.get("outputs", {})
         node_output = comfyui_outputs.get(output_node_id, {})
-        images_info = node_output.get("images", [])
+        if output_kind == "audio":
+            media_info = node_output.get("audio", [])
+        else:
+            media_info = node_output.get("images", [])
     except Exception:
-        images_info = []
+        media_info = []
 
-    if not images_info:
+    if not media_info:
+        msg = (
+            "Workflow completed but produced no audio."
+            if output_kind == "audio"
+            else "Workflow completed but produced no images."
+        )
         return GenerationResult(
             success=False,
             workflow_id=config.workflow_id,
             status="failed",
-            error=_err("NO_OUTPUT", "Workflow completed but produced no images."),
+            error=_err("NO_OUTPUT", msg),
             job_id=prompt_id,
         )
 
-    # Save images
+    # Save files (images or MP3 via same /view fetch)
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     outputs = []
-    for img_info in images_info:
-        filename = img_info["filename"]
-        subfolder = img_info.get("subfolder", "")
-        folder_type = img_info.get("type", "output")
+    for item in media_info:
+        filename = item["filename"]
+        subfolder = item.get("subfolder", "")
+        folder_type = item.get("type", "output")
         try:
             data = api.get_image(filename, subfolder, folder_type)
             out_path = out_dir / filename
@@ -212,13 +381,27 @@ def execute_workflow(
                 "size_bytes": len(data),
             })
         except Exception as e:
+            label = "audio" if output_kind == "audio" else "image"
             return GenerationResult(
                 success=False,
                 workflow_id=config.workflow_id,
                 status="failed",
-                error=_err("SAVE_FAILED", f"Failed to save image {filename}: {e}"),
+                error=_err("SAVE_FAILED", f"Failed to save {label} {filename}: {e}"),
                 job_id=prompt_id,
             )
+
+    meta: dict[str, Any] = {
+        "seed": actual_seed,
+        "prompt_id": prompt_id,
+    }
+    if prompt.strip():
+        meta["prompt"] = prompt
+    for k in ("speech_text", "instruct"):
+        if texts.get(k):
+            meta[k] = texts[k]
+    if config.size_strategy != "workflow_managed":
+        meta["width"] = w
+        meta["height"] = h
 
     return GenerationResult(
         success=True,
@@ -226,11 +409,5 @@ def execute_workflow(
         status="completed",
         outputs=outputs,
         job_id=prompt_id,
-        metadata={
-            "prompt": prompt,
-            "width": w,
-            "height": h,
-            "seed": actual_seed,
-            "prompt_id": prompt_id,
-        },
+        metadata=meta,
     )

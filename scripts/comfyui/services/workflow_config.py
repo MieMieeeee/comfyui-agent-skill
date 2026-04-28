@@ -21,6 +21,7 @@ class WorkflowConfig:
     capability: str = "text_to_image"
     description: str = ""
     size_strategy: str = ""  # "workflow_managed" = dims from workflow, not skill
+    output_kind: str = "image"  # "image" | "audio" — history outputs key (images vs audio)
 
     def resolve_workflow_path(self, skill_root: Path) -> Path:
         return skill_root / "assets" / "workflows" / self.workflow_file
@@ -33,6 +34,7 @@ class WorkflowConfig:
             "capability": self.capability,
             "description": self.description,
             "size_strategy": self.size_strategy,
+            "output_kind": self.output_kind,
             "node_mapping": self.node_mapping,
         }, ensure_ascii=False, indent=2)
 
@@ -60,6 +62,7 @@ class WorkflowConfig:
             capability=data.get("capability", "text_to_image"),
             description=data.get("description", ""),
             size_strategy=data.get("size_strategy", ""),
+            output_kind=data.get("output_kind", "image"),
         )
 
 

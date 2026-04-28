@@ -4,7 +4,6 @@ import os
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from threading import Thread
 from pathlib import Path
-from unittest.mock import patch
 
 import pytest
 
@@ -14,7 +13,6 @@ from comfyui.config import (
     save_comfyui_url,
     SKILL_ROOT,
     DEFAULT_URL,
-    _LOCAL_CONFIG_PATH,
 )
 
 
@@ -71,80 +69,83 @@ class TestCheckServer:
         assert result["available"] is False
         assert result["url"] == "http://127.0.0.1:59999"
         assert "error" in result
+        assert "hint" in result
+        assert "ComfyUI" in result["hint"] or "8188" in result["hint"] or "端口" in result["hint"]
 
 
 class TestComfyuiUrlResolution:
-    def test_default_when_no_env_and_no_config(self, tmp_path):
+    def test_default_when_no_env_and_no_config(self, tmp_path, monkeypatch):
         config_path = tmp_path / "nonexistent.json"
-        with patch.dict(os.environ, {}, clear=True):
-            with patch("comfyui.config._LOCAL_CONFIG_PATH", config_path):
-                url = get_comfyui_url()
-                assert url == DEFAULT_URL
+        monkeypatch.delenv("COMFYUI_URL", raising=False)
+        monkeypatch.delenv("COMFYUI_CONFIG_FILE", raising=False)
+        monkeypatch.setenv("COMFYUI_CONFIG_FILE", str(config_path))
+        url = get_comfyui_url()
+        assert url == DEFAULT_URL
 
-    def test_env_var_overrides_default(self):
-        with patch.dict(os.environ, {"COMFYUI_URL": "http://192.168.1.100:8188"}, clear=True):
-            url = get_comfyui_url()
-            assert url == "http://192.168.1.100:8188"
+    def test_env_var_overrides_default(self, monkeypatch):
+        monkeypatch.setenv("COMFYUI_URL", "http://192.168.1.100:8188")
+        url = get_comfyui_url()
+        assert url == "http://192.168.1.100:8188"
 
-    def test_env_var_overrides_local_config(self, tmp_path):
+    def test_env_var_overrides_local_config(self, tmp_path, monkeypatch):
         config_path = tmp_path / "config.local.json"
         config_path.write_text(json.dumps({"comfyui_url": "http://from-config:8188"}))
-        with patch.dict(os.environ, {"COMFYUI_URL": "http://from-env:8188"}, clear=True):
-            with patch("comfyui.config._LOCAL_CONFIG_PATH", config_path):
-                url = get_comfyui_url()
-                assert url == "http://from-env:8188"
+        monkeypatch.setenv("COMFYUI_CONFIG_FILE", str(config_path))
+        monkeypatch.setenv("COMFYUI_URL", "http://from-env:8188")
+        url = get_comfyui_url()
+        assert url == "http://from-env:8188"
 
-    def test_local_config_used_when_no_env(self, tmp_path):
+    def test_local_config_used_when_no_env(self, tmp_path, monkeypatch):
         config_path = tmp_path / "config.local.json"
         config_path.write_text(json.dumps({"comfyui_url": "http://192.168.1.50:8188"}))
-        with patch.dict(os.environ, {}, clear=True):
-            with patch("comfyui.config._LOCAL_CONFIG_PATH", config_path):
-                url = get_comfyui_url()
-                assert url == "http://192.168.1.50:8188"
+        monkeypatch.delenv("COMFYUI_URL", raising=False)
+        monkeypatch.setenv("COMFYUI_CONFIG_FILE", str(config_path))
+        url = get_comfyui_url()
+        assert url == "http://192.168.1.50:8188"
 
-    def test_falls_back_to_default_when_config_missing(self, tmp_path):
+    def test_falls_back_to_default_when_config_missing(self, tmp_path, monkeypatch):
         config_path = tmp_path / "nonexistent.json"
-        with patch.dict(os.environ, {}, clear=True):
-            with patch("comfyui.config._LOCAL_CONFIG_PATH", config_path):
-                url = get_comfyui_url()
-                assert url == DEFAULT_URL
+        monkeypatch.delenv("COMFYUI_URL", raising=False)
+        monkeypatch.setenv("COMFYUI_CONFIG_FILE", str(config_path))
+        url = get_comfyui_url()
+        assert url == DEFAULT_URL
 
 
 class TestSaveComfyuiUrl:
-    def test_saves_url_to_config_file(self, tmp_path):
+    def test_saves_url_to_config_file(self, tmp_path, monkeypatch):
         config_path = tmp_path / "config.local.json"
-        with patch("comfyui.config._LOCAL_CONFIG_PATH", config_path):
-            save_comfyui_url("http://192.168.1.100:8188")
+        monkeypatch.setenv("COMFYUI_CONFIG_FILE", str(config_path))
+        save_comfyui_url("http://192.168.1.100:8188")
 
         data = json.loads(config_path.read_text(encoding="utf-8"))
         assert data["comfyui_url"] == "http://192.168.1.100:8188"
 
-    def test_preserves_existing_fields(self, tmp_path):
+    def test_preserves_existing_fields(self, tmp_path, monkeypatch):
         config_path = tmp_path / "config.local.json"
         config_path.write_text(json.dumps({"other_key": "keep_me"}))
-        with patch("comfyui.config._LOCAL_CONFIG_PATH", config_path):
-            save_comfyui_url("http://new-url:8188")
+        monkeypatch.setenv("COMFYUI_CONFIG_FILE", str(config_path))
+        save_comfyui_url("http://new-url:8188")
 
         data = json.loads(config_path.read_text(encoding="utf-8"))
         assert data["comfyui_url"] == "http://new-url:8188"
         assert data["other_key"] == "keep_me"
 
-    def test_strips_trailing_slash(self, tmp_path):
+    def test_strips_trailing_slash(self, tmp_path, monkeypatch):
         config_path = tmp_path / "config.local.json"
-        with patch("comfyui.config._LOCAL_CONFIG_PATH", config_path):
-            save_comfyui_url("http://192.168.1.100:8188/")
+        monkeypatch.setenv("COMFYUI_CONFIG_FILE", str(config_path))
+        save_comfyui_url("http://192.168.1.100:8188/")
 
         data = json.loads(config_path.read_text(encoding="utf-8"))
         assert data["comfyui_url"] == "http://192.168.1.100:8188"
 
-    def test_rejects_empty_url(self, tmp_path):
+    def test_rejects_empty_url(self, tmp_path, monkeypatch):
         config_path = tmp_path / "config.local.json"
-        with patch("comfyui.config._LOCAL_CONFIG_PATH", config_path):
-            with pytest.raises(ValueError, match="empty"):
-                save_comfyui_url("")
+        monkeypatch.setenv("COMFYUI_CONFIG_FILE", str(config_path))
+        with pytest.raises(ValueError, match="empty"):
+            save_comfyui_url("")
 
-    def test_rejects_non_http_url(self, tmp_path):
+    def test_rejects_non_http_url(self, tmp_path, monkeypatch):
         config_path = tmp_path / "config.local.json"
-        with patch("comfyui.config._LOCAL_CONFIG_PATH", config_path):
-            with pytest.raises(ValueError, match="http"):
-                save_comfyui_url("ftp://server:8188")
+        monkeypatch.setenv("COMFYUI_CONFIG_FILE", str(config_path))
+        with pytest.raises(ValueError, match="http"):
+            save_comfyui_url("ftp://server:8188")

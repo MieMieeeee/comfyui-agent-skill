@@ -311,3 +311,46 @@ class TestExecuteWorkflowImageUpload:
         mock_wf_instance.set_node_param.assert_any_call(
             "Load Image", "image", "photo.png"
         )
+
+
+class TestProgressAndErrors:
+    @patch("comfyui.services.executor._queue_prompt_and_wait_with_progress", new_callable=AsyncMock)
+    @patch("comfyui.services.executor.ComfyApiWrapper")
+    @patch("comfyui.services.executor.ComfyWorkflowWrapper")
+    def test_progress_callback_invoked(self, MockWF, MockAPI, mock_wait, skill_root):
+        async def _side_effect(api, wf, on_progress):
+            on_progress({"phase": "queued", "prompt_id": "p1"})
+            return "test-123"
+
+        mock_wait.side_effect = _side_effect
+        mock_wf_instance = MagicMock()
+        mock_wf_instance.get_node_id.return_value = "9"
+        MockWF.return_value = mock_wf_instance
+        MockAPI.return_value = _make_mock_api(prompt_id="test-123")
+
+        events: list[dict] = []
+
+        def cb(ev: dict) -> None:
+            events.append(ev)
+
+        result = execute_workflow(
+            config=Z_IMAGE_TURBO,
+            prompt="a cute cat",
+            skill_root=skill_root,
+            results_dir=skill_root / "results" / "test",
+            progress_callback=cb,
+        )
+        assert result.success is True
+        assert any(e.get("phase") == "queued" for e in events)
+
+    @patch("comfyui.services.executor.ComfyApiWrapper", side_effect=ConnectionError("Connection refused"))
+    @patch("comfyui.services.executor.ComfyWorkflowWrapper")
+    def test_api_init_connection_error_includes_hint(self, MockWF, skill_root):
+        result = execute_workflow(
+            config=Z_IMAGE_TURBO,
+            prompt="a test",
+            skill_root=skill_root,
+        )
+        assert result.success is False
+        assert result.error["code"] == "SERVER_UNAVAILABLE"
+        assert "提示" in result.error["message"] or "127.0.0.1" in result.error["message"] or "运行" in result.error["message"]

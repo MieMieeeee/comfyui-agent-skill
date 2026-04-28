@@ -20,6 +20,7 @@ description: >
 - `text_to_image` — generate images from text prompts (default workflow: `z_image_turbo`)
 - `reference_to_image` — Agent vision + T2I, reference image **not** sent to ComfyUI
 - `image_to_image` — upload input image to ComfyUI, edit via prompt while preserving pose/structure/composition (default workflow: `klein_edit`)
+- `text_to_speech` — Qwen3-TTS VoiceDesign: spoken content plus voice/style **instruct** → MP3 (`workflow`: `qwen3_tts`). Requires ComfyUI custom nodes **`FB_Qwen3TTSVoiceDesign`** and **`SaveAudioMP3`** (see workflow pack used when exporting `qwen3_tts.json`).
 
 **`reference_to_image` (reference image → similar image via Agent vision):**
 
@@ -37,6 +38,7 @@ description: >
 - User explicitly asks to **generate an image** from a text description
 - User provides a **reference image** and wants a new image in a similar style or semantic direction
 - User provides an **input image** and wants to **edit** it (change style, clothing, background, etc.)
+- User asks to **synthesize speech / voice audio** from spoken script plus style instructions (use workflow `qwen3_tts` with `--speech-text` and `--instruct`)
 - User asks to **check ComfyUI server status**
 
 ### Should NOT invoke when
@@ -190,6 +192,24 @@ python -m comfyui generate --workflow z_image_turbo --server http://192.168.1.10
 python -m comfyui generate --workflow z_image_turbo --server http://192.168.1.100:8188 -p "a landscape"
 ```
 
+### Text-to-speech (Qwen3-TTS)
+
+Use **`--speech-text`** for the line to speak and **`--instruct`** for timbre/style/delivery (Chinese or English per model). Do **not** pass positional/`--prompt` for this workflow — use the two flags only.
+
+```bash
+uv run python -m comfyui generate --workflow qwen3_tts \
+  --speech-text "你好，这是一段测试语音。" \
+  --instruct "温柔清晰的女声，语速适中。"
+```
+
+Async queue (submit without waiting):
+
+```bash
+uv run python -m comfyui generate --submit --workflow qwen3_tts \
+  --speech-text "……" \
+  --instruct "……"
+```
+
 ### Save server (CLI)
 
 ```bash
@@ -202,7 +222,9 @@ python -m comfyui save-server http://192.168.1.100:8188
 | Flag | Default | Description |
 |------|---------|-------------|
 | `--workflow` | `z_image_turbo` | Workflow to execute |
-| `--prompt`, `-p` | — | Prompt text (alternative to positional prompt) |
+| `--prompt`, `-p` | — | Prompt text (alternative to positional prompt); not used for `qwen3_tts` |
+| `--speech-text` | — | Spoken content for `qwen3_tts` |
+| `--instruct` | — | Voice/style instruction for `qwen3_tts` |
 | `--image` | — | `key=path` or bare path; repeat for multiple keys (I2I workflows) |
 | `--count` | `1` | Number of images to generate |
 | `--server` | config or `http://127.0.0.1:8188` | ComfyUI server URL (this invocation only) |

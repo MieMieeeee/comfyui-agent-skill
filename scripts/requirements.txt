@@ -1,3 +1,4 @@
-# Pin to a specific commit for reproducibility when releasing:
-# comfy_api_simplified @ git+https://github.com/MieMieeeee/run_comfyui_workflow.git@<commit_sha>
-comfy_api_simplified @ git+https://github.com/MieMieeeee/run_comfyui_workflow.git
+# Same as pyproject.toml dependencies; use `pip install -e .` from the skill root.
+# comfy_api_simplified is vendored under scripts/comfy_api_simplified/ (see VENDORING.md).
+requests
+websockets

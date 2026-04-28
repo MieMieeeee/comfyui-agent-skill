@@ -6,6 +6,7 @@ import pytest
 
 from comfyui.services.workflow_config import (
     ConfigError,
+    WORKFLOW_REGISTRY,
     WorkflowConfig,
     load_configs_from_dir,
     Z_IMAGE_TURBO,
@@ -97,6 +98,21 @@ class TestJsonConfig:
         assert "z_image_turbo" in registry
         assert registry["z_image_turbo"].capability == "text_to_image"
 
+    def test_qwen3_tts_registry_and_paths(self, skill_root):
+        cfg = WORKFLOW_REGISTRY.get("qwen3_tts")
+        assert cfg is not None
+        assert cfg.output_kind == "audio"
+        assert cfg.output_node_title == "Save Audio (MP3)"
+        assert cfg.capability == "text_to_speech"
+        wf_path = cfg.resolve_workflow_path(skill_root)
+        assert wf_path.name == "qwen3_tts.json"
+        assert wf_path.exists()
+
+    def test_qwen3_tts_node_mapping(self):
+        cfg = WORKFLOW_REGISTRY["qwen3_tts"]
+        assert cfg.node_mapping["speech_text"]["param"] == "text"
+        assert cfg.node_mapping["instruct"]["param"] == "instruct"
+
     def test_to_json_roundtrip(self):
         cfg = WorkflowConfig(
             workflow_id="test",
@@ -149,16 +165,19 @@ class TestBadConfig:
         cfg = WorkflowConfig.from_json_file(config)
         assert cfg.node_mapping == {}
 
-    def test_missing_prompt_mapping_detected_by_executor(self):
-        """Executor should fail fast when prompt mapping is missing."""
+    def test_missing_prompt_mapping_detected_by_executor(self, tmp_path):
+        """Executor should fail when workflow has no string inputs configured."""
         from comfyui.services.executor import execute_workflow
+        wf = tmp_path / "assets" / "workflows" / "x.json"
+        wf.parent.mkdir(parents=True, exist_ok=True)
+        wf.write_text("{}", encoding="utf-8")
         bad_config = WorkflowConfig(
             workflow_id="no_prompt",
             workflow_file="x.json",
             output_node_title="Out",
             node_mapping={},
         )
-        result = execute_workflow(config=bad_config, prompt="test", skill_root=Path("/tmp"))
+        result = execute_workflow(config=bad_config, prompt="test", skill_root=tmp_path)
         assert result.success is False
         assert result.error["code"] == "MAPPING_NOT_FOUND"
 

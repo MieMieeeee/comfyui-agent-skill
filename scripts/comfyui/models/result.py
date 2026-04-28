@@ -8,7 +8,7 @@ from typing import Any
 class GenerationResult:
     success: bool
     workflow_id: str
-    status: str  # "completed" | "failed" | "server_unavailable"
+    status: str  # sync: "completed"|"failed"|"server_unavailable"; async CLI snapshots may use submitted/executing
     outputs: list[dict[str, Any]] = field(default_factory=list)
     error: dict[str, str] | None = None  # {"code": "ERROR_CODE", "message": "..."}
     job_id: str | None = None
