@@ -65,7 +65,7 @@ def _print_error_and_exit(
                 "error": {"code": code, "message": message},
                 "metadata": metadata or {},
             },
-            ensure_ascii=False,
+            ensure_ascii=True,
             indent=2,
         )
     )
@@ -90,7 +90,7 @@ def _cli_run_preflight_only(config, server_url: str) -> int:
                     },
                     "error": {"code": "WORKFLOW_FILE_NOT_FOUND", "message": str(e)},
                 },
-                ensure_ascii=False,
+                ensure_ascii=True,
                 indent=2,
             )
         )
@@ -109,13 +109,13 @@ def _cli_run_preflight_only(config, server_url: str) -> int:
                     },
                     "error": {"code": "WORKFLOW_LOAD_FAILED", "message": str(e)},
                 },
-                ensure_ascii=False,
+                ensure_ascii=True,
                 indent=2,
             )
         )
         return 1
     payload = build_preflight_cli_payload(config.workflow_id, pr)
-    print(json.dumps(payload, ensure_ascii=False, indent=2))
+    print(json.dumps(payload, ensure_ascii=True, indent=2))
     return 0 if pr.ok else 1
 
 
@@ -208,7 +208,7 @@ def _run_single_generate(
     if progress:
 
         def _cb(ev: dict[str, Any]) -> None:
-            print(json.dumps({"event": "comfyui_progress", **ev}, ensure_ascii=False), file=sys.stderr)
+            print(json.dumps({"event": "comfyui_progress", **ev}, ensure_ascii=True), file=sys.stderr)
 
         progress_cb = _cb
     return execute_workflow(
@@ -334,9 +334,9 @@ def run_generate_from_args(args: argparse.Namespace) -> int:
         total = len(prompts) * count
 
     if total == 1:
-        print(json.dumps(results[0], ensure_ascii=False, indent=2))
+        print(json.dumps(results[0], ensure_ascii=True, indent=2))
     else:
-        print(json.dumps({"count": total, "success": all_success, "results": results}, ensure_ascii=False, indent=2))
+        print(json.dumps({"count": total, "success": all_success, "results": results}, ensure_ascii=True, indent=2))
     return 0 if all_success else 1
 
 
@@ -370,7 +370,7 @@ def cmd_generate() -> int:
                     },
                     "metadata": {},
                 },
-                ensure_ascii=False,
+                ensure_ascii=True,
                 indent=2,
             )
         )
@@ -389,7 +389,7 @@ def cmd_generate() -> int:
                         "message": "--submit, --poll, and --poll-all are mutually exclusive.",
                     },
                 },
-                ensure_ascii=False,
+                ensure_ascii=True,
                 indent=2,
             )
         )
@@ -400,7 +400,7 @@ def cmd_generate() -> int:
 
         store = JobStore(job_store_path())
         result = poll_job(args.poll, store, args.server)
-        print(json.dumps(result, ensure_ascii=False, indent=2))
+        print(json.dumps(result, ensure_ascii=True, indent=2))
         return 0
 
     if getattr(args, "poll_all", False):
@@ -408,12 +408,12 @@ def cmd_generate() -> int:
 
         store = JobStore(job_store_path())
         results = poll_all_jobs(store, args.server)
-        print(json.dumps({"jobs": results}, ensure_ascii=False, indent=2))
+        print(json.dumps({"jobs": results}, ensure_ascii=True, indent=2))
         return 0
 
     if getattr(args, "submit", False):
         if "--workflow" not in sys.argv and "-w" not in sys.argv:
-            print(json.dumps({"success": False, "workflow_id": args.workflow, "status": "failed", "error": {"code": "WORKFLOW_REQUIRED", "message": "--submit requires an explicit --workflow flag"}}, ensure_ascii=False, indent=2))
+            print(json.dumps({"success": False, "workflow_id": args.workflow, "status": "failed", "error": {"code": "WORKFLOW_REQUIRED", "message": "--submit requires an explicit --workflow flag"}}, ensure_ascii=True, indent=2))
             return 1
         prompts = list(args.prompt) + list(args.prompt_flags)
         store_path = job_store_path()
@@ -434,18 +434,18 @@ def cmd_generate() -> int:
         instruct = (getattr(args, "instruct", None) or "").strip()
         if is_tts_submit:
             if prompts:
-                print(json.dumps({"success": False, "workflow_id": args.workflow, "status": "failed", "error": {"code": "INVALID_ARGS", "message": "For TTS workflows use --speech-text and --instruct with --submit."}}, ensure_ascii=False, indent=2))
+                print(json.dumps({"success": False, "workflow_id": args.workflow, "status": "failed", "error": {"code": "INVALID_ARGS", "message": "For TTS workflows use --speech-text and --instruct with --submit."}}, ensure_ascii=True, indent=2))
                 return 1
             if not speech or not instruct:
-                print(json.dumps({"success": False, "workflow_id": args.workflow, "status": "failed", "error": {"code": "EMPTY_SPEECH_TEXT" if not speech else "EMPTY_INSTRUCT", "message": "--speech-text and --instruct are required for this workflow."}}, ensure_ascii=False, indent=2))
+                print(json.dumps({"success": False, "workflow_id": args.workflow, "status": "failed", "error": {"code": "EMPTY_SPEECH_TEXT" if not speech else "EMPTY_INSTRUCT", "message": "--speech-text and --instruct are required for this workflow."}}, ensure_ascii=True, indent=2))
                 return 1
             submit_text_inputs = {"speech_text": speech, "instruct": instruct}
         elif not prompts:
-            print(json.dumps({"success": False, "workflow_id": args.workflow, "status": "failed", "error": {"code": "EMPTY_PROMPT", "message": "Prompt is required for --submit."}}, ensure_ascii=False, indent=2))
+            print(json.dumps({"success": False, "workflow_id": args.workflow, "status": "failed", "error": {"code": "EMPTY_PROMPT", "message": "Prompt is required for --submit."}}, ensure_ascii=True, indent=2))
             return 1
         else:
             if len(prompts) > 1:
-                print(json.dumps({"success": False, "workflow_id": args.workflow, "status": "failed", "error": {"code": "MULTIPLE_PROMPTS_NOT_SUPPORTED", "message": "--submit accepts a single prompt only. Submit each prompt individually."}}, ensure_ascii=False, indent=2))
+                print(json.dumps({"success": False, "workflow_id": args.workflow, "status": "failed", "error": {"code": "MULTIPLE_PROMPTS_NOT_SUPPORTED", "message": "--submit accepts a single prompt only. Submit each prompt individually."}}, ensure_ascii=True, indent=2))
                 return 1
             submit_prompt = prompts[0]
 
@@ -461,7 +461,7 @@ def cmd_generate() -> int:
             if key and path_str:
                 img_path = Path(path_str)
                 if not img_path.exists():
-                    print(json.dumps({"success": False, "workflow_id": args.workflow, "status": "failed", "error": {"code": "INPUT_IMAGE_NOT_FOUND", "message": f"Image file not found: {img_path}"}}, ensure_ascii=False, indent=2))
+                    print(json.dumps({"success": False, "workflow_id": args.workflow, "status": "failed", "error": {"code": "INPUT_IMAGE_NOT_FOUND", "message": f"Image file not found: {img_path}"}}, ensure_ascii=True, indent=2))
                     return 1
                 input_images[key] = img_path
 
@@ -480,11 +480,11 @@ def cmd_generate() -> int:
             text_inputs=submit_text_inputs,
             skip_preflight=getattr(args, "skip_preflight", False),
         )
-        print(json.dumps(result, ensure_ascii=False, indent=2))
+        print(json.dumps(result, ensure_ascii=True, indent=2))
         return 0 if result.get("submitted") else 1
 
     try:
         return run_generate_from_args(args)
     except ConfigError as e:
-        print(json.dumps({"success": False, "workflow_id": "unknown", "status": "failed", "outputs": [], "job_id": None, "error": {"code": "CONFIG_ERROR", "message": str(e)}, "metadata": {}}, ensure_ascii=False, indent=2))
+        print(json.dumps({"success": False, "workflow_id": "unknown", "status": "failed", "outputs": [], "job_id": None, "error": {"code": "CONFIG_ERROR", "message": str(e)}, "metadata": {}}, ensure_ascii=True, indent=2))
         return 1

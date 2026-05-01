@@ -15,7 +15,7 @@ def cmd_check() -> int:
     args = p.parse_args()
     url = args.server or get_comfyui_url()
     result = check_server(url)
-    print(json.dumps(result, ensure_ascii=False, indent=2))
+    print(json.dumps(result, ensure_ascii=True, indent=2))
     return 0 if result["available"] else 1
 
 
@@ -31,7 +31,7 @@ def cmd_save_server() -> int:
                 "comfyui_url": args.url,
                 "config_file": str(local_config_path()),
             },
-            ensure_ascii=False,
+            ensure_ascii=True,
             indent=2,
         )
     )
@@ -65,7 +65,7 @@ def cmd_import_workflow() -> int:
                     "workflow_id": "unknown",
                     "error": {"code": "INVALID_WORKFLOW_ID", "message": str(e)},
                 },
-                ensure_ascii=False,
+                ensure_ascii=True,
                 indent=2,
             )
         )
@@ -80,17 +80,16 @@ def cmd_import_workflow() -> int:
         )
     except FileNotFoundError as e:
         err = {"code": "WORKFLOW_FILE_NOT_FOUND", "message": str(e)}
-        print(json.dumps({"success": False, "workflow_id": wid, "error": err}, ensure_ascii=False, indent=2))
+        print(json.dumps({"success": False, "workflow_id": wid, "error": err}, ensure_ascii=True, indent=2))
         return 1
     except FileExistsError:
         err = {"code": "WORKFLOW_ALREADY_EXISTS", "message": f"Workflow '{wid}' already exists. Use --force to overwrite."}
-        print(json.dumps({"success": False, "workflow_id": wid, "error": err}, ensure_ascii=False, indent=2))
+        print(json.dumps({"success": False, "workflow_id": wid, "error": err}, ensure_ascii=True, indent=2))
         return 1
     except ValueError as e:
         err = {"code": "WORKFLOW_JSON_INVALID", "message": str(e)}
-        print(json.dumps({"success": False, "workflow_id": wid, "error": err}, ensure_ascii=False, indent=2))
+        print(json.dumps({"success": False, "workflow_id": wid, "error": err}, ensure_ascii=True, indent=2))
         return 1
 
-    print(json.dumps(payload, ensure_ascii=False, indent=2))
+    print(json.dumps(payload, ensure_ascii=True, indent=2))
     return 0
-
