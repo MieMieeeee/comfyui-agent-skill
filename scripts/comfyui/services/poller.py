@@ -14,6 +14,11 @@ except ImportError:
     ComfyWorkflowWrapper = None  # type: ignore
 
 from comfyui.config import SKILL_ROOT
+from comfyui.services.executor import (
+    job_hierarchy_output_dir,
+    node_output_media_list,
+    parse_job_anchor_from_iso,
+)
 from comfyui.services.job_store import JobStore
 from comfyui.services.workflow_config import WORKFLOW_REGISTRY, WorkflowConfig
 
@@ -53,7 +58,12 @@ def _materialize_outputs(
             if output_kind == "audio" and node_data.get("audio"):
                 output_node_id = nid
                 break
-            if output_kind != "audio" and node_data.get("images"):
+            if output_kind == "video" and any(
+                node_data.get(k) for k in ("images", "gifs", "videos")
+            ):
+                output_node_id = nid
+                break
+            if output_kind == "image" and node_data.get("images"):
                 output_node_id = nid
                 break
 
@@ -61,10 +71,7 @@ def _materialize_outputs(
         return [], comfyui_outputs
 
     node_output = comfyui_outputs.get(output_node_id, {})
-    if output_kind == "audio":
-        media_info = node_output.get("audio", [])
-    else:
-        media_info = node_output.get("images", [])
+    media_info = node_output_media_list(node_output, output_kind)
 
     results_dir.mkdir(parents=True, exist_ok=True)
     artifacts: list[dict[str, Any]] = []
@@ -211,11 +218,25 @@ def poll_job(
             store.update_job(job_id, status="failed", error=json.dumps(err_obj))
             return {**job, "status": "failed", "error": err_obj}
 
-        out_dir = results_dir if results_dir is not None else (root / "results" / wf_id)
+        if results_dir is not None:
+            out_dir = results_dir
+        else:
+            anchor = parse_job_anchor_from_iso(job.get("created_at"))
+            out_dir = job_hierarchy_output_dir(
+                root,
+                job_id,
+                anchor=anchor or datetime.now(timezone.utc).astimezone(),
+            )
         artifacts, raw_outputs = _materialize_outputs(api, config, root, history_entry, out_dir)
 
         if not artifacts:
-            kind = "audio" if getattr(config, "output_kind", "image") == "audio" else "images"
+            okind = getattr(config, "output_kind", "image") or "image"
+            if okind == "audio":
+                kind = "audio"
+            elif okind == "video":
+                kind = "video"
+            else:
+                kind = "images"
             err_obj = _err("SAVE_FAILED", f"Could not download output {kind} from ComfyUI.")
             store.update_job(job_id, status="failed", error=json.dumps(err_obj))
             return {**job, "status": "failed", "error": err_obj}

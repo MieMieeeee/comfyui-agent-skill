@@ -6,6 +6,8 @@ import random
 from pathlib import Path
 from typing import Any
 
+from comfyui.config import check_server
+from comfyui.preflight import build_preflight_cli_payload, preflight_registered_workflow
 from comfyui.services.executor import _entry_is_string_input, merge_text_inputs, _missing_string_error
 from comfyui.services.job_store import JobStore
 from comfyui.services.workflow_config import WORKFLOW_REGISTRY, WorkflowConfig
@@ -40,6 +42,8 @@ def submit_workflow(
     seed: int | None = None,
     count: int = 1,
     text_inputs: dict[str, str] | None = None,
+    *,
+    skip_preflight: bool = False,
 ) -> dict[str, Any]:
     """
     Validate → upload images → submit to ComfyUI → store in JobStore → return job_ids.
@@ -73,6 +77,24 @@ def submit_workflow(
     workflow_path = config.resolve_workflow_path(skill_root)
     if not workflow_path.exists():
         return {"submitted": False, "error": _err("WORKFLOW_FILE_NOT_FOUND", f"Workflow file not found: {workflow_path}")}
+
+    health = check_server(server_url)
+    if not health["available"]:
+        return {"submitted": False, "error": _err("SERVER_UNAVAILABLE", f"ComfyUI server not available at {server_url}: {health['error']}")}
+
+    if not skip_preflight:
+        try:
+            pr = preflight_registered_workflow(server_url, workflow_path)
+        except (OSError, ValueError) as e:
+            code = "WORKFLOW_FILE_NOT_FOUND" if isinstance(e, OSError) else "WORKFLOW_LOAD_FAILED"
+            return {"submitted": False, "error": _err(code, str(e))}
+        if not pr.ok:
+            payload = build_preflight_cli_payload(workflow_id, pr)
+            return {
+                "submitted": False,
+                "error": payload["error"] or _err("PREFLIGHT_FAILED", "Preflight failed"),
+                "preflight": payload["preflight"],
+            }
 
     try:
         api = ComfyApiWrapper(server_url)
@@ -119,9 +141,16 @@ def submit_workflow(
         if seed_entry and seed_entry.get("node_title"):
             wf.set_node_param(seed_entry["node_title"], seed_entry["param"], actual_seed)
 
-        if config.size_strategy != "workflow_managed":
-            w = width or _get_default(config, "width", 832)
-            h = height or _get_default(config, "height", 1280)
+        dim_w_entry = config.node_mapping.get("width")
+        dim_h_entry = config.node_mapping.get("height")
+        apply_dims = (
+            config.size_strategy != "workflow_managed"
+            and dim_w_entry
+            and dim_h_entry
+        )
+        if apply_dims:
+            w = width if width is not None else _get_default(config, "width", 832)
+            h = height if height is not None else _get_default(config, "height", 1280)
             for dim_key, dim_val in [("width", w), ("height", h)]:
                 dim_entry = config.node_mapping.get(dim_key)
                 if dim_entry:

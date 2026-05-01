@@ -21,13 +21,16 @@ class WorkflowConfig:
     capability: str = "text_to_image"
     description: str = ""
     size_strategy: str = ""  # "workflow_managed" = dims from workflow, not skill
-    output_kind: str = "image"  # "image" | "audio" — history outputs key (images vs audio)
+    output_kind: str = "image"  # "image" | "audio" | "video" — selects history output keys (see executor.node_output_media_list)
+    # Optional: human/Agent reference only unless tooling consumes them
+    resolution_presets: dict[str, Any] = field(default_factory=dict)
+    default_resolution: str = ""
 
     def resolve_workflow_path(self, skill_root: Path) -> Path:
         return skill_root / "assets" / "workflows" / self.workflow_file
 
     def to_json(self) -> str:
-        return json.dumps({
+        payload = {
             "workflow_id": self.workflow_id,
             "workflow_file": self.workflow_file,
             "output_node_title": self.output_node_title,
@@ -36,7 +39,12 @@ class WorkflowConfig:
             "size_strategy": self.size_strategy,
             "output_kind": self.output_kind,
             "node_mapping": self.node_mapping,
-        }, ensure_ascii=False, indent=2)
+        }
+        if self.resolution_presets:
+            payload["resolution_presets"] = self.resolution_presets
+        if self.default_resolution:
+            payload["default_resolution"] = self.default_resolution
+        return json.dumps(payload, ensure_ascii=False, indent=2)
 
     @classmethod
     def from_json_file(cls, path: Path) -> WorkflowConfig:
@@ -63,6 +71,8 @@ class WorkflowConfig:
             description=data.get("description", ""),
             size_strategy=data.get("size_strategy", ""),
             output_kind=data.get("output_kind", "image"),
+            resolution_presets=data.get("resolution_presets") or {},
+            default_resolution=data.get("default_resolution") or "",
         )
 
 

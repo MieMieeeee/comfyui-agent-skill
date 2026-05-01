@@ -11,6 +11,7 @@ import random
 import sys
 import uuid
 from collections.abc import Callable
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -132,6 +133,20 @@ def _err(code: str, message: str) -> dict[str, str]:
     return {"code": code, "message": message}
 
 
+def node_output_media_list(node_output: dict[str, Any], output_kind: str) -> list[Any]:
+    """Resolve ComfyUI history ``outputs[node_id]`` media entries for image / audio / video."""
+    kind = (output_kind or "image").strip()
+    if kind == "audio":
+        return list(node_output.get("audio") or [])
+    if kind == "video":
+        for key in ("images", "gifs", "videos"):
+            lst = node_output.get(key)
+            if lst:
+                return list(lst)
+        return []
+    return list(node_output.get("images") or [])
+
+
 def _entry_is_string_input(entry: dict[str, Any]) -> bool:
     vt = entry.get("value_type")
     if vt == "string":
@@ -173,12 +188,60 @@ def _get_default(config: WorkflowConfig, key: str, fallback: int) -> int:
     return fallback
 
 
+def _sanitize_prompt_id_for_path(prompt_id: str) -> str:
+    return (
+        str(prompt_id)
+        .replace("/", "_")
+        .replace("\\", "_")
+        .replace(":", "_")
+    )
+
+
+def parse_job_anchor_from_iso(created_at: str | None) -> datetime | None:
+    """Parse JobStore ``created_at`` (ISO-8601) for folder naming; ``None`` if invalid."""
+    if not created_at or not str(created_at).strip():
+        return None
+    raw = str(created_at).strip()
+    if raw.endswith("Z"):
+        raw = raw[:-1] + "+00:00"
+    try:
+        dt = datetime.fromisoformat(raw)
+    except ValueError:
+        return None
+    if dt.tzinfo is not None:
+        return dt.astimezone()
+    return dt
+
+
+def job_hierarchy_output_dir(
+    skill_root: Path,
+    prompt_id: str,
+    *,
+    anchor: datetime | None = None,
+    output_subdir: Path | None = None,
+) -> Path:
+    """Default artifact directory: ``results/%Y%m%d/%H%M%S_{prompt_id}/`` under ``skill_root``.
+
+    Used for all workflow outputs when no explicit ``results_dir`` is set: raster images,
+    audio, and future media types (e.g. video) saved under the same hierarchy.
+    """
+    anchor = anchor or datetime.now()
+    date_part = anchor.strftime("%Y%m%d")
+    time_part = anchor.strftime("%H%M%S")
+    safe_id = _sanitize_prompt_id_for_path(prompt_id)
+    base = skill_root / "results" / date_part / f"{time_part}_{safe_id}"
+    if output_subdir is not None:
+        base = base / output_subdir
+    return base
+
+
 def execute_workflow(
     config: WorkflowConfig,
     prompt: str,
     skill_root: Path,
     server_url: str | None = None,
     results_dir: Path | None = None,
+    output_subdir: Path | None = None,
     input_images: dict[str, Path] | None = None,
     width: int | None = None,
     height: int | None = None,
@@ -223,14 +286,18 @@ def execute_workflow(
             )
 
     url = server_url or COMFYUI_URL
-    w = width or _get_default(config, "width", 832)
-    h = height or _get_default(config, "height", 1280)
+    dim_w_entry = config.node_mapping.get("width")
+    dim_h_entry = config.node_mapping.get("height")
+    if config.size_strategy != "workflow_managed" and dim_w_entry and dim_h_entry:
+        w = width if width is not None else _get_default(config, "width", 832)
+        h = height if height is not None else _get_default(config, "height", 1280)
+    else:
+        w = width
+        h = height
 
     # Resolve seed
     seed_entry = config.node_mapping.get("seed", {})
     actual_seed = seed if seed is not None else random.randint(0, 2**32 - 1)
-
-    out_dir = results_dir or skill_root / "results" / config.workflow_id
 
     try:
         wf = ComfyWorkflowWrapper(str(workflow_path))
@@ -301,8 +368,8 @@ def execute_workflow(
     if seed_entry and seed_entry.get("node_title"):
         wf.set_node_param(seed_entry["node_title"], seed_entry["param"], actual_seed)
 
-    # Apply node_mapping: set dimensions (skip if workflow manages its own size)
-    if config.size_strategy != "workflow_managed":
+    # Apply node_mapping: set dimensions (skip if workflow manages its own size or has no dim mapping)
+    if config.size_strategy != "workflow_managed" and dim_w_entry and dim_h_entry:
         for dim_key, dim_val in [("width", w), ("height", h)]:
             dim_entry = config.node_mapping.get(dim_key)
             if dim_entry:
@@ -341,19 +408,17 @@ def execute_workflow(
         history_entry = history.get(prompt_id, {})
         comfyui_outputs = history_entry.get("outputs", {})
         node_output = comfyui_outputs.get(output_node_id, {})
-        if output_kind == "audio":
-            media_info = node_output.get("audio", [])
-        else:
-            media_info = node_output.get("images", [])
+        media_info = node_output_media_list(node_output, output_kind)
     except Exception:
         media_info = []
 
     if not media_info:
-        msg = (
-            "Workflow completed but produced no audio."
-            if output_kind == "audio"
-            else "Workflow completed but produced no images."
-        )
+        if output_kind == "audio":
+            msg = "Workflow completed but produced no audio."
+        elif output_kind == "video":
+            msg = "Workflow completed but produced no video output."
+        else:
+            msg = "Workflow completed but produced no images."
         return GenerationResult(
             success=False,
             workflow_id=config.workflow_id,
@@ -362,8 +427,17 @@ def execute_workflow(
             job_id=prompt_id,
         )
 
-    # Save files (images or MP3 via same /view fetch)
-    out_dir = Path(out_dir)
+    if results_dir is not None:
+        out_dir = Path(results_dir)
+    else:
+        out_dir = job_hierarchy_output_dir(
+            skill_root,
+            str(prompt_id),
+            anchor=datetime.now(),
+            output_subdir=output_subdir,
+        )
+
+    # Save files (images, audio, or other media via same /view fetch)
     out_dir.mkdir(parents=True, exist_ok=True)
     outputs = []
     for item in media_info:
@@ -381,7 +455,12 @@ def execute_workflow(
                 "size_bytes": len(data),
             })
         except Exception as e:
-            label = "audio" if output_kind == "audio" else "image"
+            if output_kind == "audio":
+                label = "audio"
+            elif output_kind == "video":
+                label = "video"
+            else:
+                label = "image"
             return GenerationResult(
                 success=False,
                 workflow_id=config.workflow_id,
@@ -399,7 +478,7 @@ def execute_workflow(
     for k in ("speech_text", "instruct"):
         if texts.get(k):
             meta[k] = texts[k]
-    if config.size_strategy != "workflow_managed":
+    if config.size_strategy != "workflow_managed" and dim_w_entry and dim_h_entry:
         meta["width"] = w
         meta["height"] = h
 

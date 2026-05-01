@@ -18,13 +18,16 @@ def execute(
     server_url: str | None = None,
     results_dir: str | Path | None = None,
     skill_root: Path | None = None,
+    width: int | None = None,
+    height: int | None = None,
 ) -> GenerationResult:
     """执行 z_image_turbo 文生图工作流.
 
     Args:
         prompt: 英文/自然语言提示词（正面）。
         server_url: ComfyUI 服务根 URL；默认 `COMFYUI_URL` / `config.local.json` / `http://127.0.0.1:8188`。
-        results_dir: 输出目录；省略时使用 ``{技能根}/results/z_image_turbo/``。
+        results_dir: 输出目录；省略时使用技能根下 ``results/%Y%m%d/%H%M%S_{job_id}/``（与 CLI 默认一致）。
+        width, height: 可选像素尺寸；须同时传入或同时省略，对应 CLI ``--width`` / ``--height``。
         skill_root: 技能根目录（含 `assets/`）；默认从包内 `config` 自动解析（无需改 PYTHONPATH 若已 `pip install -e .`）。
 
     Returns:
@@ -54,4 +57,6 @@ def execute(
         skill_root=root,
         server_url=server_url,
         results_dir=out,
+        width=width,
+        height=height,
     )

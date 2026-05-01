@@ -14,6 +14,7 @@ from comfyui.config import (
 from comfyui.services.executor import execute_workflow
 from comfyui.services.poller import poll_all_jobs, poll_job
 from comfyui.services.submitter import submit_workflow
+from comfyui.preflight import build_preflight_cli_payload, preflight_registered_workflow
 from comfyui.services.workflow_config import WORKFLOW_REGISTRY, ConfigError
 
 DEFAULT_WORKFLOW = "z_image_turbo"
@@ -23,27 +24,45 @@ _IMAGE_LIKE_SUFFIXES = frozenset(
     {".png", ".jpg", ".jpeg", ".webp", ".gif", ".bmp", ".tif", ".tiff", ".avif"}
 )
 _AUDIO_LIKE_SUFFIXES = frozenset({".mp3", ".wav", ".flac", ".ogg", ".m4a"})
-_MEDIA_OUTPUT_SUFFIXES = _IMAGE_LIKE_SUFFIXES | _AUDIO_LIKE_SUFFIXES
+_VIDEO_LIKE_SUFFIXES = frozenset({".mp4", ".webm", ".mov", ".mkv"})
+_MEDIA_OUTPUT_SUFFIXES = _IMAGE_LIKE_SUFFIXES | _AUDIO_LIKE_SUFFIXES | _VIDEO_LIKE_SUFFIXES
 
 
-def resolve_output_directory(raw: str | None, *, fallback: Path) -> Path:
-    """Resolve CLI ``--output`` to a results directory.
+def resolve_generate_output(raw: str | None) -> tuple[Path | None, Path | None]:
+    """Resolve ``--output`` for ``generate``.
 
-    - ``None`` or empty → ``fallback`` (typically ``results/<workflow_id>/``).
-    - Path ending with a known image extension → parent directory (e.g. ``E:/tmp/out.png`` → ``E:/tmp``).
-    - Otherwise → treated as a subdirectory name under ``fallback``;
-      i.e. ``--output foo/bar`` → ``fallback/foo/bar``.
-      The directory is created if it does not exist.
+    Returns ``(explicit_dir, relative_under_job)``:
+
+    - Empty → ``(None, None)``: executor writes to per-job
+      ``results/%Y%m%d/%H%M%S_{prompt_id}/`` under the skill root (images, audio, video, etc.).
+    - Path ending with a known media extension → parent directory as fixed output dir.
+    - Absolute path → that directory as fixed output dir.
+    - Relative path → ``(None, Path(...))``: appended under each job's hierarchy folder.
     """
     if not raw or not raw.strip():
-        return fallback
+        return (None, None)
     p = Path(raw.strip()).expanduser()
     if p.suffix.lower() in _MEDIA_OUTPUT_SUFFIXES:
         parent = p.parent
         if parent == Path(".") or str(parent) in (".", ""):
             parent = Path.cwd()
-        return parent.resolve()
-    return (fallback / p).resolve()
+        return (parent.resolve(), None)
+    if p.is_absolute():
+        return (p.resolve(), None)
+    return (None, p)
+
+
+def resolve_output_directory(raw: str | None, *, fallback: Path) -> Path:
+    """Backward-compatible resolver: ``--output`` relative to ``fallback`` (legacy tests).
+
+    Prefer :func:`resolve_generate_output` for CLI generation.
+    """
+    explicit, rel = resolve_generate_output(raw)
+    if explicit is not None:
+        return explicit
+    if rel is not None:
+        return (fallback / rel).resolve()
+    return fallback
 
 
 def _print_error_and_exit(
@@ -72,6 +91,83 @@ def _print_error_and_exit(
     sys.exit(1)
 
 
+def _cli_run_preflight_only(config, server_url: str) -> int:
+    """Print preflight JSON to stdout; return exit code (0 = ok)."""
+    path = config.resolve_workflow_path(SKILL_ROOT)
+    try:
+        pr = preflight_registered_workflow(server_url, path)
+    except OSError as e:
+        print(
+            json.dumps(
+                {
+                    "success": False,
+                    "workflow_id": config.workflow_id,
+                    "preflight": {
+                        "server_reachable": False,
+                        "missing_node_types": [],
+                        "missing_models": [],
+                        "warnings": [],
+                    },
+                    "error": {"code": "WORKFLOW_FILE_NOT_FOUND", "message": str(e)},
+                },
+                ensure_ascii=False,
+                indent=2,
+            )
+        )
+        return 1
+    except ValueError as e:
+        print(
+            json.dumps(
+                {
+                    "success": False,
+                    "workflow_id": config.workflow_id,
+                    "preflight": {
+                        "server_reachable": False,
+                        "missing_node_types": [],
+                        "missing_models": [],
+                        "warnings": [],
+                    },
+                    "error": {"code": "WORKFLOW_LOAD_FAILED", "message": str(e)},
+                },
+                ensure_ascii=False,
+                indent=2,
+            )
+        )
+        return 1
+    payload = build_preflight_cli_payload(config.workflow_id, pr)
+    print(json.dumps(payload, ensure_ascii=False, indent=2))
+    return 0 if pr.ok else 1
+
+
+def _cli_preflight_gate_or_exit(server_url: str, config) -> None:
+    """Run preflight before generation; exit process with JSON error if not ok."""
+    path = config.resolve_workflow_path(SKILL_ROOT)
+    try:
+        pr = preflight_registered_workflow(server_url, path)
+    except OSError as e:
+        _print_error_and_exit(
+            code="WORKFLOW_FILE_NOT_FOUND",
+            message=str(e),
+            workflow_id=config.workflow_id,
+        )
+    except ValueError as e:
+        _print_error_and_exit(
+            code="WORKFLOW_LOAD_FAILED",
+            message=str(e),
+            workflow_id=config.workflow_id,
+        )
+    if pr.ok:
+        return
+    payload = build_preflight_cli_payload(config.workflow_id, pr)
+    err = payload["error"] or {"code": "PREFLIGHT_FAILED", "message": "Preflight failed"}
+    _print_error_and_exit(
+        code=err["code"],
+        message=err["message"],
+        workflow_id=config.workflow_id,
+        metadata={"preflight": payload["preflight"]},
+    )
+
+
 def _add_generate_arguments(p: argparse.ArgumentParser, *, default_workflow: str) -> None:
     p.add_argument(
         "prompt",
@@ -95,8 +191,10 @@ def _add_generate_arguments(p: argparse.ArgumentParser, *, default_workflow: str
         default=None,
         metavar="DIR",
         help=(
-            "Output directory for all generated images (filenames are chosen by ComfyUI). "
-            "If the path ends with an image extension, its parent directory is used."
+            "Output directory for generated media (images, audio, etc.; filenames from ComfyUI). "
+            "Default: per-run results/%%Y%%m%%d/%%H%%M%%S_{job_id}/ under the skill root. "
+            "Relative path adds a segment under that job folder; absolute path overrides. "
+            "If the path ends with a known media extension, its parent directory is used."
         ),
     )
     p.add_argument(
@@ -164,16 +262,33 @@ def _add_generate_arguments(p: argparse.ArgumentParser, *, default_workflow: str
         metavar="TEXT",
         help="For qwen3_tts: voice/style instruction text.",
     )
+    p.add_argument(
+        "--preflight",
+        action="store_true",
+        help=(
+            "Only validate that workflow node types exist in GET /object_info and model paths appear under GET /models; "
+            "prints JSON and exits (no prompt or generation required)."
+        ),
+    )
+    p.add_argument(
+        "--skip-preflight",
+        action="store_true",
+        help="Skip automatic preflight before generate or --submit (advanced / debugging only).",
+    )
 
 
 def _run_single_generate(
     config,
     prompt: str,
     server_url: str,
-    results_dir: Path,
+    results_dir: Path | None,
+    output_subdir: Path | None,
     input_images: dict[str, Path] | None,
     progress: bool,
     text_inputs: dict[str, str] | None = None,
+    *,
+    width: int | None = None,
+    height: int | None = None,
 ) -> Any:
     progress_cb: Callable[[dict[str, Any]], None] | None = None
     if progress:
@@ -191,7 +306,10 @@ def _run_single_generate(
         skill_root=SKILL_ROOT,
         server_url=server_url,
         results_dir=results_dir,
+        output_subdir=output_subdir,
         input_images=input_images or None,
+        width=width,
+        height=height,
         progress_callback=progress_cb,
         text_inputs=text_inputs,
     )
@@ -210,10 +328,62 @@ def run_generate_from_args(args: argparse.Namespace) -> int:
             metadata={"available_workflows": sorted(WORKFLOW_REGISTRY.keys())},
         )
     config = WORKFLOW_REGISTRY[workflow_id]
+
+    if getattr(args, "preflight", False):
+        return _cli_run_preflight_only(config, server_url)
+
     prompts = list(args.prompt) + list(args.prompt_flags)
     is_audio_workflow = getattr(config, "output_kind", "image") == "audio"
+    is_tts_workflow = getattr(config, "capability", "") == "text_to_speech"
 
-    if is_audio_workflow:
+    aw = getattr(args, "width", None)
+    ah = getattr(args, "height", None)
+    if (aw is None) != (ah is None):
+        _print_error_and_exit(
+            code="INVALID_PARAM",
+            message="--width and --height must be used together, or both omitted.",
+            workflow_id=config.workflow_id,
+        )
+    if is_audio_workflow and (aw is not None or ah is not None):
+        _print_error_and_exit(
+            code="INVALID_PARAM",
+            message="--width and --height apply to image/video workflows only, not audio outputs.",
+            workflow_id=config.workflow_id,
+        )
+    if (
+        not is_audio_workflow
+        and config.size_strategy == "workflow_managed"
+        and (aw is not None or ah is not None)
+    ):
+        _print_error_and_exit(
+            code="INVALID_PARAM",
+            message=(
+                f"Workflow '{config.workflow_id}' manages output size internally; "
+                "--width and --height are not supported. Use a text-to-image workflow (e.g. z_image_turbo) to set dimensions."
+            ),
+            workflow_id=config.workflow_id,
+        )
+
+    has_dim_mapping = (
+        config.node_mapping.get("width") is not None
+        and config.node_mapping.get("height") is not None
+    )
+    if (
+        not is_audio_workflow
+        and config.size_strategy != "workflow_managed"
+        and not has_dim_mapping
+        and (aw is not None or ah is not None)
+    ):
+        _print_error_and_exit(
+            code="INVALID_PARAM",
+            message=(
+                f"Workflow '{config.workflow_id}' derives output resolution from the workflow graph "
+                "(e.g. uploaded image size); --width and --height are not applicable."
+            ),
+            workflow_id=config.workflow_id,
+        )
+
+    if is_tts_workflow:
         speech = (getattr(args, "speech_text", None) or "").strip()
         instruct = (getattr(args, "instruct", None) or "").strip()
         if prompts:
@@ -276,14 +446,16 @@ def run_generate_from_args(args: argparse.Namespace) -> int:
             status="server_unavailable",
         )
 
-    default_results = SKILL_ROOT / "results" / config.workflow_id
-    results_dir = resolve_output_directory(args.output, fallback=default_results)
+    if not getattr(args, "skip_preflight", False):
+        _cli_preflight_gate_or_exit(server_url, config)
+
+    explicit_out, output_subdir = resolve_generate_output(args.output)
     count: int = args.count
     results = []
     all_success = True
     progress: bool = getattr(args, "progress", False)
 
-    if is_audio_workflow:
+    if is_tts_workflow:
         speech = getattr(args, "speech_text", "") or ""
         instruct = getattr(args, "instruct", "") or ""
         ti = {"speech_text": speech.strip(), "instruct": instruct.strip()}
@@ -292,10 +464,13 @@ def run_generate_from_args(args: argparse.Namespace) -> int:
                 config,
                 "",
                 server_url,
-                results_dir,
+                explicit_out,
+                output_subdir,
                 input_images or None,
                 progress,
                 text_inputs=ti,
+                width=aw,
+                height=ah,
             )
             results.append(result.to_dict())
             if not result.success:
@@ -306,7 +481,15 @@ def run_generate_from_args(args: argparse.Namespace) -> int:
         for prompt in prompts:
             for _ in range(count):
                 result = _run_single_generate(
-                    config, prompt, server_url, results_dir, input_images or None, progress
+                    config,
+                    prompt,
+                    server_url,
+                    explicit_out,
+                    output_subdir,
+                    input_images or None,
+                    progress,
+                    width=aw,
+                    height=ah,
                 )
                 results.append(result.to_dict())
                 if not result.success:
@@ -381,6 +564,19 @@ def main_run_script() -> None:
 
     server_url = args.server or comfyui_url
     poll_server_url = args.server
+
+    if getattr(args, "preflight", False):
+        workflow_id = args.workflow
+        if workflow_id not in WORKFLOW_REGISTRY:
+            _print_error_and_exit(
+                code="WORKFLOW_NOT_REGISTERED",
+                message=f"Workflow '{workflow_id}' is not registered",
+                workflow_id=workflow_id,
+                metadata={"available_workflows": sorted(WORKFLOW_REGISTRY.keys())},
+            )
+        cfg = WORKFLOW_REGISTRY[workflow_id]
+        sys.exit(_cli_run_preflight_only(cfg, server_url))
+
     if args.check:
         result = check_server(server_url)
         print(json.dumps(result, ensure_ascii=False, indent=2))
@@ -406,14 +602,22 @@ def main_run_script() -> None:
         prompts = list(args.prompt) + list(args.prompt_flags)
         store_path = job_store_path()
         input_images: dict[str, Path] = {}
-        config = WORKFLOW_REGISTRY.get(args.workflow)
+        if args.workflow not in WORKFLOW_REGISTRY:
+            _print_error_and_exit(
+                code="WORKFLOW_NOT_REGISTERED",
+                message=f"Workflow '{args.workflow}' is not registered",
+                workflow_id=args.workflow,
+                metadata={"available_workflows": sorted(WORKFLOW_REGISTRY.keys())},
+            )
+        config = WORKFLOW_REGISTRY[args.workflow]
         submit_prompt = ""
         submit_text_inputs: dict[str, str] | None = None
+
         if config:
-            is_audio_submit = getattr(config, "output_kind", "image") == "audio"
+            is_tts_submit = getattr(config, "capability", "") == "text_to_speech"
             speech = (getattr(args, "speech_text", None) or "").strip()
             instruct = (getattr(args, "instruct", None) or "").strip()
-            if is_audio_submit:
+            if is_tts_submit:
                 if prompts:
                     print(
                         json.dumps(
@@ -464,23 +668,24 @@ def main_run_script() -> None:
                 )
                 sys.exit(1)
             else:
+                if len(prompts) > 1:
+                    print(
+                        json.dumps(
+                            {
+                                "success": False,
+                                "workflow_id": args.workflow,
+                                "status": "failed",
+                                "error": {
+                                    "code": "MULTIPLE_PROMPTS_NOT_SUPPORTED",
+                                    "message": "--submit accepts a single prompt only. Submit each prompt individually.",
+                                },
+                            },
+                            ensure_ascii=False,
+                            indent=2,
+                        )
+                    )
+                    sys.exit(1)
                 submit_prompt = prompts[0]
-        elif not prompts:
-            print(
-                json.dumps(
-                    {
-                        "success": False,
-                        "workflow_id": args.workflow,
-                        "status": "failed",
-                        "error": {"code": "EMPTY_PROMPT", "message": "Prompt is required for --submit."},
-                    },
-                    ensure_ascii=False,
-                    indent=2,
-                )
-            )
-            sys.exit(1)
-        else:
-            submit_prompt = prompts[0]
 
         if config:
             image_roles = {k for k, v in config.node_mapping.items() if v.get("value_type") == "image"}
@@ -494,8 +699,21 @@ def main_run_script() -> None:
                     key, path_str = None, img_arg
                 if key and path_str:
                     img_path = Path(path_str)
-                    if img_path.exists():
-                        input_images[key] = img_path
+                    if not img_path.exists():
+                        print(
+                            json.dumps(
+                                {
+                                    "success": False,
+                                    "workflow_id": args.workflow,
+                                    "status": "failed",
+                                    "error": {"code": "INPUT_IMAGE_NOT_FOUND", "message": f"Image file not found: {img_path}"},
+                                },
+                                ensure_ascii=False,
+                                indent=2,
+                            )
+                        )
+                        sys.exit(1)
+                    input_images[key] = img_path
         result = submit_workflow(
             workflow_id=args.workflow,
             prompt=submit_prompt,
@@ -507,6 +725,7 @@ def main_run_script() -> None:
             height=args.height,
             count=args.count,
             text_inputs=submit_text_inputs,
+            skip_preflight=getattr(args, "skip_preflight", False),
         )
         print(json.dumps(result, ensure_ascii=False, indent=2))
         sys.exit(0 if result.get("submitted") else 1)
@@ -589,7 +808,7 @@ def cmd_generate() -> int:
                         "code": "INVALID_PARAM",
                         "message": (
                             "Unrecognized or unsupported arguments. "
-                            "Supported flags: --prompt/-p, --output, --workflow/-w, --count, --server, --image, --progress. "
+                            "Supported flags: --prompt/-p, --output, --workflow/-w, --count, --width, --height, --server, --image, --progress. "
                             "Use 'python -m comfyui generate -p \"your prompt\"' to start."
                         ),
                     },

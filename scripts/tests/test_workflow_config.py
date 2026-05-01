@@ -113,6 +113,65 @@ class TestJsonConfig:
         assert cfg.node_mapping["speech_text"]["param"] == "text"
         assert cfg.node_mapping["instruct"]["param"] == "instruct"
 
+    def test_ltx_t2v_cli_dimensions_and_presets(self, skill_root):
+        cfg = WORKFLOW_REGISTRY["ltx_23_t2v_distill"]
+        assert cfg.size_strategy != "workflow_managed"
+        assert cfg.node_mapping["width"]["node_title"] == "EmptyImage"
+        assert cfg.node_mapping["width"]["default"] == 768
+        assert cfg.node_mapping["height"]["default"] == 512
+        assert cfg.resolution_presets["landscape_fhd"]["width"] == 1920
+        assert cfg.default_resolution == "landscape_fast"
+
+    def test_ltx_i2v_dimensions_follow_upload_no_mapping(self, skill_root):
+        cfg = WORKFLOW_REGISTRY["ltx_23_i2v_distilled"]
+        assert "width" not in cfg.node_mapping
+        assert "height" not in cfg.node_mapping
+        assert cfg.resolution_presets == {}
+        assert "upload" in cfg.description.lower() or "上传" in cfg.description
+
+    def test_qwen_image_defaults_and_presets(self, skill_root):
+        cfg = WORKFLOW_REGISTRY["qwen_image_2512_4step"]
+        assert cfg.node_mapping["width"]["default"] == 512
+        assert cfg.node_mapping["height"]["default"] == 768
+        assert cfg.resolution_presets["portrait_hd"]["height"] == 1280
+        assert cfg.default_resolution == "portrait_fast"
+
+    def test_to_json_includes_resolution_presets_when_non_empty(self):
+        cfg = WorkflowConfig(
+            workflow_id="preset_test",
+            workflow_file="preset_test.json",
+            output_node_title="Out",
+            node_mapping={
+                "prompt": {"node_title": "P", "param": "text", "required": True},
+            },
+            resolution_presets={
+                "p1": {"width": 100, "height": 200, "label": "small"},
+            },
+            default_resolution="p1",
+        )
+        raw = cfg.to_json()
+        data = json.loads(raw)
+        assert data["resolution_presets"]["p1"]["width"] == 100
+        assert data["default_resolution"] == "p1"
+
+    def test_to_json_omits_empty_presets(self):
+        cfg = WorkflowConfig(
+            workflow_id="no_preset",
+            workflow_file="no.json",
+            output_node_title="Out",
+            node_mapping={"prompt": {"node_title": "P", "param": "text", "required": True}},
+        )
+        data = json.loads(cfg.to_json())
+        assert "resolution_presets" not in data
+        assert "default_resolution" not in data
+
+    def test_from_json_presets_survive_load(self, skill_root):
+        cfg = WORKFLOW_REGISTRY["ltx_23_t2v_distill"]
+        path = skill_root / "assets" / "workflows" / "ltx_23_t2v_distill.config.json"
+        loaded = WorkflowConfig.from_json_file(path)
+        assert loaded.resolution_presets["landscape_hd"]["width"] == 1280
+        assert loaded.default_resolution == "landscape_fast"
+
     def test_to_json_roundtrip(self):
         cfg = WorkflowConfig(
             workflow_id="test",

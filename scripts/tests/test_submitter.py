@@ -5,9 +5,56 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from comfyui.preflight import PreflightResult
 from comfyui.services.job_store import JobStore
 
 SKILL_ROOT = Path(__file__).resolve().parent.parent.parent
+
+
+@pytest.fixture(autouse=True)
+def _stub_preflight_for_submitter_unit_tests(monkeypatch):
+    """Avoid HTTP preflight and server checks during mocked ComfyApiWrapper tests."""
+
+    def _ok(url, path):
+        return PreflightResult(ok=True, server_reachable=True)
+
+    monkeypatch.setattr(
+        "comfyui.services.submitter.preflight_registered_workflow",
+        _ok,
+    )
+    monkeypatch.setattr(
+        "comfyui.services.submitter.check_server",
+        lambda url: {"available": True, "url": url},
+    )
+
+
+class TestSubmitWorkflowPreflight:
+    """Preflight gate when not stubbed (override autouse)."""
+
+    def test_preflight_failure_blocks_submit(self, tmp_path, monkeypatch):
+        from comfyui.services import submitter as sm
+
+        def bad_pf(url, path):
+            return PreflightResult(
+                ok=False,
+                server_reachable=True,
+                missing_node_types=["GhostLoader"],
+                error="missing_node_types",
+            )
+
+        monkeypatch.setattr(sm, "preflight_registered_workflow", bad_pf)
+
+        result = sm.submit_workflow(
+            workflow_id="z_image_turbo",
+            prompt="hi",
+            skill_root=SKILL_ROOT,
+            job_store_path=tmp_path / "jobs.db",
+            server_url="http://127.0.0.1:8188",
+            skip_preflight=False,
+        )
+        assert result["submitted"] is False
+        assert result["error"]["code"] == "PREFLIGHT_MISSING_NODES"
+        assert "GhostLoader" in result["preflight"]["missing_node_types"]
 
 
 class TestSubmitWorkflowValidation:
@@ -288,6 +335,90 @@ class TestSubmitWorkflowDimensions:
             assert result["submitted"] is True
             store = JobStore(store_path)
             row = store.get_job(result["job_ids"][0])
+            assert row["width"] is None
+            assert row["height"] is None
+        finally:
+            img_file.unlink(missing_ok=True)
+
+    def test_ltx_t2v_stores_provided_dimensions(self, tmp_path):
+        from comfyui.services.submitter import submit_workflow
+
+        store_path = tmp_path / "jobs.db"
+        mock_api = MagicMock()
+        mock_api.queue_prompt.return_value = {"prompt_id": "ltx-t2v-dims"}
+
+        with patch("comfyui.services.submitter.ComfyApiWrapper", return_value=mock_api):
+            result = submit_workflow(
+                workflow_id="ltx_23_t2v_distill",
+                prompt="pan shot",
+                skill_root=SKILL_ROOT,
+                job_store_path=store_path,
+                width=1920,
+                height=1088,
+                server_url="http://127.0.0.1:8188",
+                skip_preflight=True,
+            )
+
+        assert result["submitted"] is True
+        store = JobStore(store_path)
+        row = store.get_job("ltx-t2v-dims")
+        assert row["width"] == 1920
+        assert row["height"] == 1088
+
+    def test_ltx_t2v_stores_config_defaults_when_dimensions_omitted(self, tmp_path):
+        from comfyui.services.submitter import submit_workflow
+
+        store_path = tmp_path / "jobs.db"
+        mock_api = MagicMock()
+        mock_api.queue_prompt.return_value = {"prompt_id": "ltx-t2v-default"}
+
+        with patch("comfyui.services.submitter.ComfyApiWrapper", return_value=mock_api):
+            result = submit_workflow(
+                workflow_id="ltx_23_t2v_distill",
+                prompt="motion",
+                skill_root=SKILL_ROOT,
+                job_store_path=store_path,
+                server_url="http://127.0.0.1:8188",
+                skip_preflight=True,
+            )
+
+        assert result["submitted"] is True
+        row = JobStore(store_path).get_job("ltx-t2v-default")
+        assert row["width"] == 768
+        assert row["height"] == 512
+
+    def test_ltx_i2v_stores_dimensions_with_input_image(self, tmp_path):
+        from comfyui.services.submitter import submit_workflow
+
+        img_file = SKILL_ROOT / "assets" / "workflows" / "test_input_i2v.png"
+        img_file.parent.mkdir(parents=True, exist_ok=True)
+        img_file.write_bytes(b"fake png")
+
+        store_path = tmp_path / "jobs.db"
+        mock_api = MagicMock()
+        mock_api.queue_prompt.return_value = {"prompt_id": "ltx-i2v-dims"}
+        mock_api.upload_image.return_value = {
+            "name": "test_input_i2v.png",
+            "subfolder": "default_upload_folder",
+            "type": "input",
+        }
+
+        try:
+            with patch("comfyui.services.submitter.ComfyApiWrapper", return_value=mock_api):
+                result = submit_workflow(
+                    workflow_id="ltx_23_i2v_distilled",
+                    prompt="animate",
+                    skill_root=SKILL_ROOT,
+                    job_store_path=store_path,
+                    input_images={"input_image": img_file},
+                    width=1920,
+                    height=1088,
+                    server_url="http://127.0.0.1:8188",
+                    skip_preflight=True,
+                )
+
+            assert result["submitted"] is True
+            row = JobStore(store_path).get_job("ltx-i2v-dims")
             assert row["width"] is None
             assert row["height"] is None
         finally:

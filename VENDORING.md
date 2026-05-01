@@ -36,4 +36,10 @@ so that `pip install -e .` does not need a `git+` dependency or network access t
 **Development install with `uv`**
 
 From the skill root, `uv sync` (see `uv.lock` and `[tool.uv]` in `pyproject.toml`) installs the package and dev
-dependencies; use `uv run pytest …` to run the test suite without activating the venv manually.
+dependencies; use `uv run --no-sync pytest …` to run the test suite without activating the venv manually.
+The `--no-sync` flag prevents `uv` from re-syncing dependencies on every invocation, which avoids `.venv` write
+conflicts in multi-agent environments.
+
+**Multi-agent / external venv**: set `UV_PROJECT_ENVIRONMENT` (e.g. `%LOCALAPPDATA%\comfyui-skill\venv` on Windows,
+`~/.cache/comfyui-skill/venv` on Linux/macOS) before `uv sync` to place the virtual environment outside the
+project tree.

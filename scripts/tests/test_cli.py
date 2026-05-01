@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from comfyui.cli import resolve_output_directory
+from comfyui.cli import resolve_generate_output, resolve_output_directory
 
 SKILL_ROOT = Path(__file__).resolve().parent.parent.parent
 RUN_PY = Path(__file__).resolve().parent.parent / "run.py"
@@ -34,6 +34,20 @@ def _run_module(*args: str, extra_env: dict | None = None) -> subprocess.Complet
         cwd=str(SKILL_ROOT),
         env=env,
     )
+
+
+class TestResolveGenerateOutput:
+    def test_empty_uses_job_hierarchy(self):
+        assert resolve_generate_output(None) == (None, None)
+        assert resolve_generate_output("") == (None, None)
+        assert resolve_generate_output("   ") == (None, None)
+
+    def test_relative_is_suffix_under_job_dir(self):
+        assert resolve_generate_output("nested/extra") == (None, Path("nested/extra"))
+
+    def test_absolute_is_fixed(self, tmp_path):
+        out = tmp_path / "fixed_out"
+        assert resolve_generate_output(str(out)) == (out.resolve(), None)
 
 
 class TestResolveOutputDirectory:
@@ -63,6 +77,25 @@ class TestResolveOutputDirectory:
         fb = tmp_path / "fb"
         out = tmp_path / "new_results" / "batch1"
         assert resolve_output_directory(str(out), fallback=fb) == out.resolve()
+
+
+class TestCLIPreflight:
+    def test_preflight_only_unreachable_server_json(self):
+        """RED: --preflight against dead port returns PREFLIGHT_* without needing a prompt."""
+        r = _run_module(
+            "generate",
+            "--preflight",
+            "--workflow",
+            "z_image_turbo",
+            "--server",
+            "http://127.0.0.1:59997",
+        )
+        assert r.returncode == 1
+        data = json.loads(r.stdout)
+        assert data["success"] is False
+        assert data["workflow_id"] == "z_image_turbo"
+        assert data["error"]["code"] == "PREFLIGHT_SERVER_UNREACHABLE"
+        assert "preflight" in data
 
 
 class TestComfyuiModule:
@@ -162,6 +195,107 @@ class TestCLIQwen3TTS:
         )
         data = json.loads(result.stdout)
         assert data["error"]["code"] == "INVALID_ARGS"
+
+
+class TestCLIWidthHeight:
+    def test_width_without_height_returns_invalid_param(self):
+        result = _run_cli(
+            "--server", "http://127.0.0.1:59999",
+            "--prompt", "test",
+            "--width", "1024",
+        )
+        data = json.loads(result.stdout)
+        assert data["error"]["code"] == "INVALID_PARAM"
+        assert "height" in data["error"]["message"].lower()
+
+    def test_klein_edit_rejects_explicit_dimensions(self):
+        result = _run_cli(
+            "--server", "http://127.0.0.1:59999",
+            "--workflow", "klein_edit",
+            "--prompt", "test",
+            "--width", "1024",
+            "--height", "1024",
+        )
+        data = json.loads(result.stdout)
+        assert data["error"]["code"] == "INVALID_PARAM"
+        assert "klein_edit" in data["error"]["message"] or "manages" in data["error"]["message"].lower()
+
+    def test_tts_rejects_width_height(self):
+        result = _run_cli(
+            "--server", "http://127.0.0.1:59999",
+            "--workflow", "qwen3_tts",
+            "--speech-text", "hello",
+            "--instruct", "soft voice",
+            "--width", "512",
+            "--height", "512",
+        )
+        data = json.loads(result.stdout)
+        assert data["error"]["code"] == "INVALID_PARAM"
+
+    def test_ltx_t2v_accepts_width_height_dead_server_not_invalid_param(self):
+        """T2V maps dimensions to EmptyImage — CLI must allow `--width` / `--height`."""
+        result = _run_cli(
+            "--server", "http://127.0.0.1:59999",
+            "--workflow", "ltx_23_t2v_distill",
+            "-p", "camera pan",
+            "--width", "1280",
+            "--height", "704",
+        )
+        data = json.loads(result.stdout)
+        assert data["error"]["code"] != "INVALID_PARAM"
+        assert data["workflow_id"] == "ltx_23_t2v_distill"
+        assert data["error"]["code"] == "SERVER_UNAVAILABLE"
+
+    def test_ltx_i2v_rejects_width_height(self):
+        """I2V resolution follows uploaded image / workflow wiring — CLI dimensions are invalid."""
+        result = _run_cli(
+            "--server", "http://127.0.0.1:59999",
+            "--workflow", "ltx_23_i2v_distilled",
+            "-p", "motion",
+            "--width", "1920",
+            "--height", "1088",
+        )
+        data = json.loads(result.stdout)
+        assert data["error"]["code"] == "INVALID_PARAM"
+        assert "ltx_23_i2v_distilled" in data["error"]["message"]
+
+    def test_ltx_i2v_without_dims_reaches_server(self):
+        result = _run_cli(
+            "--server", "http://127.0.0.1:59999",
+            "--workflow", "ltx_23_i2v_distilled",
+            "-p", "motion",
+        )
+        data = json.loads(result.stdout)
+        assert data["error"]["code"] == "SERVER_UNAVAILABLE"
+        assert data["workflow_id"] == "ltx_23_i2v_distilled"
+
+    def test_ace_music_rejects_width_height(self):
+        """Audio output_kind rejects pixel dimensions."""
+        result = _run_cli(
+            "--server", "http://127.0.0.1:59999",
+            "--workflow", "ace_step_15_music",
+            "-p",
+            "orchestral",
+            "--width",
+            "512",
+            "--height",
+            "512",
+        )
+        data = json.loads(result.stdout)
+        assert data["error"]["code"] == "INVALID_PARAM"
+
+    def test_qwen_image_accepts_dimensions_dead_server_not_invalid_param(self):
+        result = _run_cli(
+            "--server", "http://127.0.0.1:59999",
+            "--workflow", "qwen_image_2512_4step",
+            "-p", "cat",
+            "--width", "704",
+            "--height", "1280",
+        )
+        data = json.loads(result.stdout)
+        assert data["error"]["code"] != "INVALID_PARAM"
+        assert data["workflow_id"] == "qwen_image_2512_4step"
+        assert data["error"]["code"] == "SERVER_UNAVAILABLE"
 
 
 class TestCLICount:

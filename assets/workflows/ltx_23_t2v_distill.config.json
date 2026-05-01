@@ -1,0 +1,39 @@
+{
+  "workflow_id": "ltx_23_t2v_distill",
+  "workflow_file": "ltx_23_t2v_distill.json",
+  "output_node_title": "Video Combine (Primary MP4)",
+  "capability": "text_to_video",
+  "description": "LTX 2.3 distilled text-to-video (primary Video Combine branch)",
+  "output_kind": "video",
+  "resolution_presets": {
+    "landscape_fast": { "width": 768,  "height": 512,  "label": "快速迭代 (3:2)" },
+    "landscape_hd":   { "width": 1280, "height": 704,  "label": "高清 (HD)" },
+    "landscape_fhd":  { "width": 1920, "height": 1088, "label": "超清 (Full HD)" }
+  },
+  "default_resolution": "landscape_fast",
+  "node_mapping": {
+    "prompt": {
+      "node_title": "CLIP Text Encode (Positive Prompt)",
+      "param": "text",
+      "value_type": "string",
+      "required": true
+    },
+    "negative_prompt": {
+      "node_title": "CLIP Text Encode (Negative Prompt)",
+      "param": "text",
+      "value_type": "string"
+    },
+    "width": {
+      "node_title": "EmptyImage",
+      "param": "width",
+      "value_type": "integer",
+      "default": 768
+    },
+    "height": {
+      "node_title": "EmptyImage",
+      "param": "height",
+      "value_type": "integer",
+      "default": 512
+    }
+  }
+}
