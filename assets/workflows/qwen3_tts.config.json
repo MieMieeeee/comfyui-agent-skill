@@ -1,0 +1,29 @@
+{
+  "workflow_id": "qwen3_tts",
+  "workflow_file": "qwen3_tts.json",
+  "output_node_title": "Save Audio (MP3)",
+  "output_kind": "audio",
+  "capability": "text_to_speech",
+  "description": "Qwen3-TTS VoiceDesign: speech content + style instruct → MP3 (requires FB_Qwen3TTSVoiceDesign + SaveAudioMP3 custom nodes)",
+  "size_strategy": "workflow_managed",
+  "node_mapping": {
+    "speech_text": {
+      "node_title": "🎨 Qwen3-TTS VoiceDesign",
+      "param": "text",
+      "value_type": "string",
+      "required": true
+    },
+    "instruct": {
+      "node_title": "🎨 Qwen3-TTS VoiceDesign",
+      "param": "instruct",
+      "value_type": "string",
+      "required": true
+    },
+    "seed": {
+      "node_title": "🎨 Qwen3-TTS VoiceDesign",
+      "param": "seed",
+      "value_type": "integer",
+      "auto_random": true
+    }
+  }
+}

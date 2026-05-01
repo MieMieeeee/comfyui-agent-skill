@@ -1,0 +1,133 @@
+{
+  "3": {
+    "inputs": {
+      "seed": 31,
+      "steps": 8,
+      "cfg": 1,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "denoise": 1,
+      "model": [
+        "78",
+        0
+      ],
+      "positive": [
+        "94",
+        0
+      ],
+      "negative": [
+        "47",
+        0
+      ],
+      "latent_image": [
+        "98",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "KSampler"
+    }
+  },
+  "18": {
+    "inputs": {
+      "samples": [
+        "3",
+        0
+      ],
+      "vae": [
+        "97",
+        2
+      ]
+    },
+    "class_type": "VAEDecodeAudio",
+    "_meta": {
+      "title": "VAE Decode Audio"
+    }
+  },
+  "47": {
+    "inputs": {
+      "conditioning": [
+        "94",
+        0
+      ]
+    },
+    "class_type": "ConditioningZeroOut",
+    "_meta": {
+      "title": "ConditioningZeroOut"
+    }
+  },
+  "78": {
+    "inputs": {
+      "shift": 3,
+      "model": [
+        "97",
+        0
+      ]
+    },
+    "class_type": "ModelSamplingAuraFlow",
+    "_meta": {
+      "title": "ModelSamplingAuraFlow"
+    }
+  },
+  "94": {
+    "inputs": {
+      "tags": "A cinematic and epic orchestral track that builds intense momentum for a grand narrative. The piece opens with deep, thunderous percussion and rhythmic taiko drums, layering in staccato strings and a powerful brass section that conveys a sense of heroic duty. As the arrangement swells, soaring choral chants and sweeping violins create a feeling of sacrifice and ultimate glory. The production is vast and atmospheric, featuring high dynamic range and a driving, march-like energy perfect for a high-stakes battle or a dramatic trailer climax, evoking a mood of solemnity and triumphant resilience.",
+      "lyrics": "[en]\n[Intro]\n(Low brass hum, distant drums pounding)\nThe shadows rise across the ancient land.\n\n[Verse 1]\nThrough the ashes of the fallen sky\nWe march beneath the banners held on high\nNo turning back, the embers start to glow\nAgainst the tide where silver rivers flow\nThe weight of crowns, the cost of every breath\nWe walk the line between the light and death.\n\n[Chorus]\nRise from the silence, the glory and the pain\nFor every hero born in iron and rain\nThe world will tremble, the heavens will cry\nOur names are written in the burning sky\nEternal fire, the spirit never dies.\n\n[Verse 2]\nThe sword is heavy but the will is strong\nWe carry echoes of a forgotten song\nBeyond the gates where destiny awaits\nWe challenge gods and master our own fates\nA single spark to light the darkest night\nThe final stand, the dawn of holy light.\n\n[Chorus]\nRise from the silence, the glory and the pain\nFor every hero born in iron and rain\nThe world will tremble, the heavens will cry\nOur names are written in the burning sky\nEternal fire, the spirit never dies.\n\n[Outro]\n(Epic choral swell)\nVictory... in the silence...\nGlory... remains.\n(Final thunderous drum hit)",
+      "seed": 31,
+      "bpm": 105,
+      "duration": 120,
+      "timesignature": "2",
+      "language": "en",
+      "keyscale": "D minor",
+      "generate_audio_codes": true,
+      "cfg_scale": 2,
+      "temperature": 0.85,
+      "top_p": 0.9,
+      "top_k": 0,
+      "min_p": 0,
+      "clip": [
+        "97",
+        1
+      ]
+    },
+    "class_type": "TextEncodeAceStepAudio1.5",
+    "_meta": {
+      "title": "TextEncodeAceStepAudio1.5"
+    }
+  },
+  "97": {
+    "inputs": {
+      "ckpt_name": "Ace_Step_1.5\\ace_step_1.5_turbo_aio.safetensors"
+    },
+    "class_type": "CheckpointLoaderSimple",
+    "_meta": {
+      "title": "Load Checkpoint"
+    }
+  },
+  "98": {
+    "inputs": {
+      "seconds": 120,
+      "batch_size": 1
+    },
+    "class_type": "EmptyAceStep1.5LatentAudio",
+    "_meta": {
+      "title": "Empty Ace Step 1.5 Latent Audio"
+    }
+  },
+  "104": {
+    "inputs": {
+      "filename_prefix": "audio/ace-step-1.5",
+      "quality": "128k",
+      "audioUI": "",
+      "audio": [
+        "18",
+        0
+      ]
+    },
+    "class_type": "SaveAudioMP3",
+    "_meta": {
+      "title": "Save Audio (MP3)"
+    }
+  }
+}

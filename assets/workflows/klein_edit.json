@@ -1,0 +1,240 @@
+{
+  "9": {
+    "inputs": {
+      "filename_prefix": "Flux2-Klein-Edit",
+      "images": [
+        "104",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "Save Image"
+    }
+  },
+  "76": {
+    "inputs": {
+      "image": "z-image-720x1280-20260320_010007_429585.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "Load Image"
+    }
+  },
+  "104": {
+    "inputs": {
+      "samples": [
+        "146",
+        0
+      ],
+      "vae": [
+        "110",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE Decode"
+    }
+  },
+  "106": {
+    "inputs": {
+      "unet_name": "Flux\\Flux.2-Klein\\flux-2-klein-9b-fp8.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {
+      "title": "Load Diffusion Model"
+    }
+  },
+  "107": {
+    "inputs": {
+      "clip_name": "Flux.2-Klein\\qwen_3_8b_fp8mixed.safetensors",
+      "type": "flux2",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {
+      "title": "Load CLIP"
+    }
+  },
+  "108": {
+    "inputs": {
+      "text": "Change only the clothing and shoes of the woman to a sleek shiny silver metallic futuristic sci-fi armor suit with high collar, segmented shoulder and arm armor plates, rounded metallic breastplate with strong curves, highly reflective chrome-like surface with bright star-like highlights and realistic reflections, tight bodycon fit, paired with matching silver metallic boots, keep the exact same pose, body position, hairstyle, facial expression, actions, lighting, and background completely unchanged, highly detailed metallic texture and glossy reflections",
+      "clip": [
+        "107",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP Text Encode (Positive Prompt)"
+    }
+  },
+  "109": {
+    "inputs": {
+      "text": "",
+      "clip": [
+        "107",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP Text Encode (Negative Prompt)"
+    }
+  },
+  "110": {
+    "inputs": {
+      "vae_name": "Flux\\flux2-vae.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "Load VAE"
+    }
+  },
+  "114": {
+    "inputs": {
+      "image": [
+        "76",
+        0
+      ]
+    },
+    "class_type": "GetImageSize",
+    "_meta": {
+      "title": "Get Image Size"
+    }
+  },
+  "115": {
+    "inputs": {
+      "conditioning": [
+        "109",
+        0
+      ],
+      "latent": [
+        "116",
+        0
+      ]
+    },
+    "class_type": "ReferenceLatent",
+    "_meta": {
+      "title": "ReferenceLatent"
+    }
+  },
+  "116": {
+    "inputs": {
+      "pixels": [
+        "76",
+        0
+      ],
+      "vae": [
+        "110",
+        0
+      ]
+    },
+    "class_type": "VAEEncode",
+    "_meta": {
+      "title": "VAE Encode"
+    }
+  },
+  "117": {
+    "inputs": {
+      "conditioning": [
+        "108",
+        0
+      ],
+      "latent": [
+        "116",
+        0
+      ]
+    },
+    "class_type": "ReferenceLatent",
+    "_meta": {
+      "title": "ReferenceLatent"
+    }
+  },
+  "128": {
+    "inputs": {
+      "width": [
+        "114",
+        0
+      ],
+      "height": [
+        "114",
+        1
+      ],
+      "batch_size": 1
+    },
+    "class_type": "EmptyFlux2LatentImage",
+    "_meta": {
+      "title": "Empty Flux 2 Latent"
+    }
+  },
+  "146": {
+    "inputs": {
+      "seed": 839612726158145,
+      "steps": 6,
+      "cfg": 1,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "denoise": 1,
+      "model": [
+        "106",
+        0
+      ],
+      "positive": [
+        "117",
+        0
+      ],
+      "negative": [
+        "115",
+        0
+      ],
+      "latent_image": [
+        "128",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "KSampler"
+    }
+  },
+  "163": {
+    "inputs": {
+      "unet_name": "Flux\\Flux.2-Klein\\flux-2-klein-9b-Q6_K.gguf"
+    },
+    "class_type": "UnetLoaderGGUF",
+    "_meta": {
+      "title": "Unet Loader (GGUF)"
+    }
+  },
+  "166": {
+    "inputs": {
+      "video": "i2v_00006.mp4",
+      "force_rate": 0,
+      "custom_width": 0,
+      "custom_height": 0,
+      "frame_load_cap": 0,
+      "skip_first_frames": 80,
+      "select_every_nth": 1,
+      "format": "AnimateDiff"
+    },
+    "class_type": "VHS_LoadVideo",
+    "_meta": {
+      "title": "Load Video (Upload) 🎥🅥🅗🅢"
+    }
+  },
+  "167": {
+    "inputs": {
+      "images": [
+        "166",
+        0
+      ]
+    },
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "Preview Image"
+    }
+  }
+}

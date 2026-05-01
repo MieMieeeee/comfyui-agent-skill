@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "comfyui-skill"
+version = "0.1.0"
+description = "ComfyUI workflow execution skill for agents (z_image_turbo, klein_edit, …)"
+requires-python = ">=3.10"
+dependencies = [
+    "requests",
+    "websockets",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0"]
+
+# PEP 735 dependency groups — used by `uv sync` / `uv run` (see [tool.uv]).
+[dependency-groups]
+dev = ["pytest>=7.0"]
+
+[tool.uv]
+# `uv sync` from the skill root installs the project + dev group (pytest) by default.
+default-groups = ["dev"]
+
+[tool.setuptools]
+package-dir = { "" = "scripts" }
+
+[tool.setuptools.packages.find]
+where = ["scripts"]
+include = ["comfyui*", "comfy_api_simplified*"]
+
+[tool.pytest.ini_options]
+testpaths = ["scripts/tests"]
+pythonpath = ["scripts"]

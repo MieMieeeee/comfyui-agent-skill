@@ -1,0 +1,44 @@
+{
+  "workflow_id": "qwen_image_2512_4step",
+  "workflow_file": "qwen_image_2512_4step.json",
+  "output_node_title": "Save Image",
+  "capability": "text_to_image",
+  "description": "Qwen Image 2512 4-step lightning text-to-image",
+  "output_kind": "image",
+  "resolution_presets": {
+    "portrait_fast": { "width": 512,  "height": 768,  "label": "快速" },
+    "portrait_hd":   { "width": 704,  "height": 1280, "label": "高清" }
+  },
+  "default_resolution": "portrait_fast",
+  "node_mapping": {
+    "prompt": {
+      "node_title": "CLIP Text Encode (Positive Prompt)",
+      "param": "text",
+      "value_type": "string",
+      "required": true
+    },
+    "negative_prompt": {
+      "node_title": "CLIP Text Encode (Negative Prompt)",
+      "param": "text",
+      "value_type": "string"
+    },
+    "seed": {
+      "node_title": "KSampler",
+      "param": "seed",
+      "value_type": "integer",
+      "auto_random": true
+    },
+    "width": {
+      "node_title": "EmptySD3LatentImage",
+      "param": "width",
+      "value_type": "integer",
+      "default": 512
+    },
+    "height": {
+      "node_title": "EmptySD3LatentImage",
+      "param": "height",
+      "value_type": "integer",
+      "default": 768
+    }
+  }
+}

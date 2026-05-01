@@ -1,0 +1,4 @@
+# Same as pyproject.toml dependencies; use `pip install -e .` from the skill root.
+# comfy_api_simplified is vendored under scripts/comfy_api_simplified/ (see VENDORING.md).
+requests
+websockets
