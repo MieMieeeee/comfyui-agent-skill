@@ -7,6 +7,7 @@ Run with: python -m pytest scripts/tests/test_integration.py -v
 Skip with: python -m pytest scripts/tests/ -v --ignore=scripts/tests/test_integration.py
 """
 import json
+import os
 from pathlib import Path
 
 import pytest
@@ -19,19 +20,16 @@ SERVER_URL = "http://127.0.0.1:8188"
 SKILL_ROOT = Path(__file__).resolve().parent.parent.parent
 
 
-def _server_available() -> bool:
-    return check_server(SERVER_URL)["available"]
+def _require_server() -> None:
+    if os.environ.get("COMFYUI_LIVE_TESTS") != "1":
+        pytest.skip("Live ComfyUI tests disabled (set COMFYUI_LIVE_TESTS=1 to enable).")
+    if not check_server(SERVER_URL)["available"]:
+        pytest.skip("ComfyUI server not available at 127.0.0.1:8188")
 
 
-requires_server = pytest.mark.skipif(
-    not _server_available(),
-    reason="ComfyUI server not available at 127.0.0.1:8188",
-)
-
-
-@requires_server
 class TestCheckServerLive:
     def test_system_stats_returns_valid_data(self):
+        _require_server()
         result = check_server(SERVER_URL)
         assert result["available"] is True
         assert "stats" in result
@@ -41,10 +39,12 @@ class TestCheckServerLive:
         assert stats["system"]["ram_total"] > 0
 
     def test_comfyui_version_present(self):
+        _require_server()
         result = check_server(SERVER_URL)
         assert result["stats"]["system"]["comfyui_version"] is not None
 
     def test_gpu_info_present(self):
+        _require_server()
         result = check_server(SERVER_URL)
         devices = result["stats"].get("devices", [])
         assert len(devices) > 0
@@ -52,9 +52,9 @@ class TestCheckServerLive:
         assert any(d.get("name") for d in devices)
 
 
-@requires_server
 class TestExecuteZImageTurboLive:
     def test_generates_image_from_prompt(self, tmp_path):
+        _require_server()
         result = execute_workflow(
             config=Z_IMAGE_TURBO,
             prompt="a simple red circle on white background, minimal",
@@ -81,6 +81,7 @@ class TestExecuteZImageTurboLive:
             assert out["size_bytes"] == Path(out["path"]).stat().st_size
 
     def test_image_is_valid_png(self, tmp_path):
+        _require_server()
         result = execute_workflow(
             config=Z_IMAGE_TURBO,
             prompt="a blue square, simple test image",
@@ -96,6 +97,7 @@ class TestExecuteZImageTurboLive:
             assert data[:4] == b"\x89PNG"
 
     def test_empty_prompt_fails_gracefully(self, tmp_path):
+        _require_server()
         result = execute_workflow(
             config=Z_IMAGE_TURBO,
             prompt="",
@@ -109,9 +111,9 @@ class TestExecuteZImageTurboLive:
         assert result.error["code"] == "EMPTY_PROMPT"
 
 
-@requires_server
 class TestWorkflowRegistryLive:
     def test_registry_contains_z_image_turbo(self):
+        _require_server()
         assert "z_image_turbo" in WORKFLOW_REGISTRY
         cfg = WORKFLOW_REGISTRY["z_image_turbo"]
         assert cfg.workflow_file == "z_image_turbo.json"
@@ -124,9 +126,9 @@ class TestWorkflowRegistryLive:
             assert resolved.exists(), f"Workflow {wid}: file not found at {resolved}"
 
 
-@requires_server
 class TestCLIIntegration:
     def test_cli_check_mode(self):
+        _require_server()
         import subprocess
         import sys
 
@@ -142,6 +144,7 @@ class TestCLIIntegration:
         assert data["available"] is True
 
     def test_cli_generate_image(self, tmp_path):
+        _require_server()
         import subprocess
         import sys
 

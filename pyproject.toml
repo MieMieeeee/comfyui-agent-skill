@@ -12,6 +12,9 @@ dependencies = [
     "websockets",
 ]
 
+[project.scripts]
+comfyui-skill = "comfyui.cli:main_module"
+
 [project.optional-dependencies]
 dev = ["pytest>=7.0"]
 

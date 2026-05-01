@@ -6,6 +6,19 @@ This file is for maintainers who update workflows, mappings, or runtime behavior
 
 Source of truth: [references/extension.md](references/extension.md)
 
+## Import a Workflow (Generate Template)
+
+Use the import command to copy a workflow JSON into `assets/workflows/` and generate a `*.config.template.json` for review:
+
+```bash
+uv run --no-sync python -m comfyui import-workflow /absolute/path/to/my-workflow.json
+```
+
+Optional:
+
+- Override workflow id: `--id my_workflow_id`
+- Overwrite existing imported files: `--force`
+
 Short checklist:
 
 1. Put the exported ComfyUI workflow JSON under `assets/workflows/`.
