@@ -29,5 +29,10 @@ jobs:
       - name: Install package (editable) + test deps
         run: uv pip install -e ".[dev]"
 
-      - name: Run tests
-        run: uv run --no-sync python -m pytest -q scripts/tests
+      - name: Run tests (Windows)
+        if: runner.os == 'Windows'
+        run: .\.venv\Scripts\python -m pytest -q scripts/tests
+
+      - name: Run tests (Unix)
+        if: runner.os != 'Windows'
+        run: .venv/bin/python -m pytest -q scripts/tests
