@@ -93,7 +93,6 @@ $env:PYTHONPATH="E:\CC\comfyui\scripts"; python -m pytest -q scripts/tests
 
 ## 验证结果
 
-- `SKILL.md` 当前约 220 行。
 - Markdown 链接检查通过。
 - 关键错误示例检查通过：没有文档让 Agent 调用 `generate --check` 或 `generate --save-server`。
-- 测试通过：`205 passed in 80.09s`。
+- 测试通过（以当前 `pytest` 输出或 CI 为准）。

@@ -8,8 +8,7 @@ import pytest
 
 
 SKILL_ROOT = Path(__file__).resolve().parent.parent.parent
-RUN_PY = Path(__file__).resolve().parent.parent / "run.py"
-SCRIPTS_DIR = RUN_PY.parent
+SCRIPTS_DIR = (SKILL_ROOT / "scripts").resolve()
 
 
 def _run_module(*args: str, extra_env: dict | None = None, cwd: Path | None = None) -> subprocess.CompletedProcess:

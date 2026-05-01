@@ -1,4 +1,4 @@
-"""Tests for the CLI entry point (run.py) and `python -m comfyui`。"""
+"""Tests for the `python -m comfyui` entry point."""
 import json
 import os
 import subprocess
@@ -7,22 +7,10 @@ from pathlib import Path
 
 import pytest
 
-from comfyui.cli import resolve_generate_output, resolve_output_directory
+from comfyui.cli_generate import resolve_generate_output, resolve_output_directory
 
 SKILL_ROOT = Path(__file__).resolve().parent.parent.parent
-RUN_PY = Path(__file__).resolve().parent.parent / "run.py"
-SCRIPTS_DIR = RUN_PY.parent
-
-
-def _run_cli(*args: str, extra_env: dict | None = None) -> subprocess.CompletedProcess:
-    env = {**os.environ, **(extra_env or {})}
-    return subprocess.run(
-        [sys.executable, str(RUN_PY), *args],
-        capture_output=True,
-        text=True,
-        cwd=str(SKILL_ROOT),
-        env=env,
-    )
+SCRIPTS_DIR = (SKILL_ROOT / "scripts").resolve()
 
 
 def _run_module(*args: str, extra_env: dict | None = None) -> subprocess.CompletedProcess:
@@ -99,12 +87,6 @@ class TestCLIPreflight:
 
 
 class TestComfyuiModule:
-    def test_module_check_matches_run_py(self):
-        a = _run_cli("--check", "--server", "http://127.0.0.1:59999")
-        b = _run_module("check", "--server", "http://127.0.0.1:59999")
-        assert json.loads(a.stdout) == json.loads(b.stdout)
-        assert a.returncode == b.returncode
-
     def test_module_unknown_subcommand_exits_2(self):
         r = _run_module("nope")
         assert r.returncode == 2
@@ -113,13 +95,13 @@ class TestComfyuiModule:
 
 class TestCLICheckMode:
     def test_check_flag_returns_json(self):
-        result = _run_cli("--check")
+        result = _run_module("--check")
         data = json.loads(result.stdout)
         assert "available" in data
         assert "url" in data
 
     def test_check_with_custom_server(self):
-        result = _run_cli("--check", "--server", "http://127.0.0.1:59999")
+        result = _run_module("--check", "--server", "http://127.0.0.1:59999")
         data = json.loads(result.stdout)
         assert data["available"] is False
         assert result.returncode == 1
@@ -127,7 +109,7 @@ class TestCLICheckMode:
 
 class TestCLIPrompt:
     def test_missing_prompt_shows_error(self):
-        result = _run_cli()
+        result = _run_module()
         assert result.returncode != 0
         data = json.loads(result.stdout)
         assert data["success"] is False
@@ -135,7 +117,7 @@ class TestCLIPrompt:
 
     def test_prompt_via_flag(self):
         """--prompt flag should work as alternative to positional."""
-        result = _run_cli("--server", "http://127.0.0.1:59999", "--prompt", "test")
+        result = _run_module("--server", "http://127.0.0.1:59999", "--prompt", "test")
         # Will fail because server is down, but should parse args correctly
         data = json.loads(result.stdout)
         assert data["success"] is False
@@ -145,7 +127,7 @@ class TestCLIPrompt:
 class TestCLIWorkflowFlag:
     def test_workflow_flag_accepted(self):
         """--workflow z_image_turbo should be accepted (even if server is down)."""
-        result = _run_cli(
+        result = _run_module(
             "--server", "http://127.0.0.1:59999",
             "--workflow", "z_image_turbo",
             "--prompt", "test",
@@ -156,7 +138,7 @@ class TestCLIWorkflowFlag:
 
     def test_workflow_flag_invalid(self):
         """--workflow with unknown value should return structured error."""
-        result = _run_cli(
+        result = _run_module(
             "--server", "http://127.0.0.1:59999",
             "--workflow", "nonexistent",
             "--prompt", "test",
@@ -168,7 +150,7 @@ class TestCLIWorkflowFlag:
 
     def test_default_workflow_is_z_image_turbo(self):
         """Without --workflow, should default to z_image_turbo."""
-        result = _run_cli(
+        result = _run_module(
             "--server", "http://127.0.0.1:59999",
             "--prompt", "test",
         )
@@ -178,7 +160,7 @@ class TestCLIWorkflowFlag:
 
 class TestCLIQwen3TTS:
     def test_tts_requires_speech_text_and_instruct(self):
-        result = _run_cli(
+        result = _run_module(
             "--server", "http://127.0.0.1:59999",
             "--workflow", "qwen3_tts",
             "--instruct", "some voice style",
@@ -188,7 +170,7 @@ class TestCLIQwen3TTS:
         assert data["error"]["code"] == "EMPTY_SPEECH_TEXT"
 
     def test_tts_rejects_positional_prompt_with_server_down(self):
-        result = _run_cli(
+        result = _run_module(
             "--server", "http://127.0.0.1:59999",
             "--workflow", "qwen3_tts",
             "hello world",
@@ -199,7 +181,7 @@ class TestCLIQwen3TTS:
 
 class TestCLIWidthHeight:
     def test_width_without_height_returns_invalid_param(self):
-        result = _run_cli(
+        result = _run_module(
             "--server", "http://127.0.0.1:59999",
             "--prompt", "test",
             "--width", "1024",
@@ -209,7 +191,7 @@ class TestCLIWidthHeight:
         assert "height" in data["error"]["message"].lower()
 
     def test_klein_edit_rejects_explicit_dimensions(self):
-        result = _run_cli(
+        result = _run_module(
             "--server", "http://127.0.0.1:59999",
             "--workflow", "klein_edit",
             "--prompt", "test",
@@ -221,7 +203,7 @@ class TestCLIWidthHeight:
         assert "klein_edit" in data["error"]["message"] or "manages" in data["error"]["message"].lower()
 
     def test_tts_rejects_width_height(self):
-        result = _run_cli(
+        result = _run_module(
             "--server", "http://127.0.0.1:59999",
             "--workflow", "qwen3_tts",
             "--speech-text", "hello",
@@ -234,7 +216,7 @@ class TestCLIWidthHeight:
 
     def test_ltx_t2v_accepts_width_height_dead_server_not_invalid_param(self):
         """T2V maps dimensions to EmptyImage — CLI must allow `--width` / `--height`."""
-        result = _run_cli(
+        result = _run_module(
             "--server", "http://127.0.0.1:59999",
             "--workflow", "ltx_23_t2v_distill",
             "-p", "camera pan",
@@ -248,7 +230,7 @@ class TestCLIWidthHeight:
 
     def test_ltx_i2v_rejects_width_height(self):
         """I2V resolution follows uploaded image / workflow wiring — CLI dimensions are invalid."""
-        result = _run_cli(
+        result = _run_module(
             "--server", "http://127.0.0.1:59999",
             "--workflow", "ltx_23_i2v_distilled",
             "-p", "motion",
@@ -260,7 +242,7 @@ class TestCLIWidthHeight:
         assert "ltx_23_i2v_distilled" in data["error"]["message"]
 
     def test_ltx_i2v_without_dims_reaches_server(self):
-        result = _run_cli(
+        result = _run_module(
             "--server", "http://127.0.0.1:59999",
             "--workflow", "ltx_23_i2v_distilled",
             "-p", "motion",
@@ -271,7 +253,7 @@ class TestCLIWidthHeight:
 
     def test_ace_music_rejects_width_height(self):
         """Audio output_kind rejects pixel dimensions."""
-        result = _run_cli(
+        result = _run_module(
             "--server", "http://127.0.0.1:59999",
             "--workflow", "ace_step_15_music",
             "-p",
@@ -285,7 +267,7 @@ class TestCLIWidthHeight:
         assert data["error"]["code"] == "INVALID_PARAM"
 
     def test_qwen_image_accepts_dimensions_dead_server_not_invalid_param(self):
-        result = _run_cli(
+        result = _run_module(
             "--server", "http://127.0.0.1:59999",
             "--workflow", "qwen_image_2512_4step",
             "-p", "cat",
@@ -301,7 +283,7 @@ class TestCLIWidthHeight:
 class TestCLICount:
     def test_count_flag_with_server_down(self):
         """--count 2 should parse correctly even when server is down."""
-        result = _run_cli(
+        result = _run_module(
             "--server", "http://127.0.0.1:59999",
             "--count", "2",
             "--prompt", "test",
@@ -312,7 +294,7 @@ class TestCLICount:
 
     def test_count_default_is_one(self):
         """Without --count, defaults to 1 (single execution)."""
-        result = _run_cli(
+        result = _run_module(
             "--server", "http://127.0.0.1:59999",
             "--prompt", "test",
         )
@@ -326,7 +308,7 @@ class TestCLISaveServer:
     def test_save_server_creates_config(self, tmp_path):
         """--save-server writes URL to the file given by COMFYUI_CONFIG_FILE."""
         config_file = tmp_path / "config.local.json"
-        result = _run_cli(
+        result = _run_module(
             "--save-server",
             "http://192.168.1.100:8188",
             extra_env={"COMFYUI_CONFIG_FILE": str(config_file)},
@@ -342,7 +324,7 @@ class TestCLISaveServer:
 
 class TestCLIImage:
     def test_image_file_not_found(self):
-        result = _run_cli(
+        result = _run_module(
             "--server", "http://127.0.0.1:59999",
             "--workflow", "klein_edit",
             "--image", "input_image=nonexistent.png",
@@ -360,7 +342,7 @@ class TestCLIImage:
             f.write(b"fake")
             tmp_img = f.name
         try:
-            result = _run_cli(
+            result = _run_module(
                 "--server", "http://127.0.0.1:59999",
                 "--workflow", "klein_edit",
                 "--image", tmp_img,
@@ -376,7 +358,7 @@ class TestCLIImage:
 class TestCLISubmit:
     def test_submit_flag_requires_workflow(self):
         """--submit without --workflow should fail."""
-        result = _run_cli("--submit", "--prompt", "test")
+        result = _run_module("--submit", "--prompt", "test")
         # Should exit with error
         assert result.returncode != 0
 

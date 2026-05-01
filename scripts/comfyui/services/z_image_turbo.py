@@ -25,7 +25,7 @@ def execute(
 
     Args:
         prompt: 英文/自然语言提示词（正面）。
-        server_url: ComfyUI 服务根 URL；默认 `COMFYUI_URL` / `config.local.json` / `http://127.0.0.1:8188`。
+        server_url: ComfyUI 服务根 URL；省略时从 `COMFYUI_URL` / `config.local.json` / `http://127.0.0.1:8188` 解析。
         results_dir: 输出目录；省略时使用技能根下 ``results/%Y%m%d/%H%M%S_{job_id}/``（与 CLI 默认一致）。
         width, height: 可选像素尺寸；须同时传入或同时省略，对应 CLI ``--width`` / ``--height``。
         skill_root: 技能根目录（含 `assets/`）；默认从包内 `config` 自动解析（无需改 PYTHONPATH 若已 `pip install -e .`）。
@@ -46,7 +46,6 @@ def execute(
         命令行（推荐，无需手写 PYTHONPATH 若已可编辑安装）::
 
             python -m comfyui generate -p "a cat" --output ./out
-            # 或: python scripts/run.py "a cat"
     """
     root = skill_root or SKILL_ROOT
     out = Path(results_dir) if results_dir else None

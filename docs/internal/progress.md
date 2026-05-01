@@ -9,8 +9,8 @@
 - 新增 `references/cli.md`，承接 CLI 参数、输出路径、async submit/poll、JSON schema 和错误码。
 - 新增 `references/extension.md`，承接新增 workflow、analyzer 安全规则、config schema 和 review checklist。
 - 已将 `SKILL.md` 精简为核心 Agent SOP，并链接到三份新 reference。
-- 静态验证通过：`SKILL.md` 约 220 行，新增 Markdown 链接均可解析。
-- 测试通过：`205 passed in 80.09s`。
+- 静态验证通过：新增 Markdown 链接均可解析。
+- 测试通过（以当前 `pytest` 输出或 CI 为准）。
 - 发布准备：新增 README/MAINTAINER 分流，主分支切换为 `main`，并发布 `v0.1.0`。
 - 路线图规划：决定对标 OpenClaw 的 1/3/4（导入体验、入口命令、文档），暂不做 multi-server。
 

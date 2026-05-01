@@ -72,6 +72,38 @@ class TestCheckServer:
         assert "hint" in result
         assert "ComfyUI" in result["hint"] or "8188" in result["hint"] or "端口" in result["hint"]
 
+    def test_unavailable_when_system_stats_not_json(self):
+        class Handler(BaseHTTPRequestHandler):
+            def do_GET(self):
+                if self.path == "/system_stats":
+                    body = b"not-json"
+                    self.send_response(200)
+                    self.send_header("Content-Type", "text/plain")
+                    self.send_header("Content-Length", str(len(body)))
+                    self.end_headers()
+                    self.wfile.write(body)
+                else:
+                    self.send_response(404)
+                    self.end_headers()
+
+            def log_message(self, *args):
+                pass
+
+        server = HTTPServer(("127.0.0.1", 0), Handler)
+        port = server.server_address[1]
+        thread = Thread(target=server.handle_request, daemon=True)
+        thread.start()
+
+        url = f"http://127.0.0.1:{port}"
+        result = check_server(url)
+
+        assert result["available"] is False
+        assert result["url"] == url
+        assert "error" in result
+        assert "hint" in result
+
+        server.server_close()
+
 
 class TestComfyuiUrlResolution:
     def test_default_when_no_env_and_no_config(self, tmp_path, monkeypatch):

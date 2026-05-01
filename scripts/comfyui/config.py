@@ -1,5 +1,6 @@
 import json
 import os
+import urllib.parse
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -55,16 +56,16 @@ def get_comfyui_url() -> str:
     return DEFAULT_URL
 
 
-COMFYUI_URL = get_comfyui_url()
-
-
 def save_comfyui_url(url: str) -> None:
     """Persist a ComfyUI server URL to config.local.json."""
     if not url or not url.strip():
         raise ValueError("URL cannot be empty")
     url = url.strip().rstrip("/")
-    if not url.startswith(("http://", "https://")):
+    parsed = urllib.parse.urlparse(url)
+    if parsed.scheme not in ("http", "https"):
         raise ValueError(f"URL must start with http:// or https://, got: {url}")
+    if not parsed.netloc:
+        raise ValueError(f"URL must include host (and optional port), got: {url}")
     config = _load_local_config()
     config["comfyui_url"] = url
     path = local_config_path()
@@ -85,7 +86,7 @@ def check_server(url: str | None = None) -> dict:
         with urllib.request.urlopen(req, timeout=5) as resp:
             data = json.loads(resp.read())
             return {"available": True, "url": server_url, "stats": data}
-    except (urllib.error.URLError, ConnectionError, TimeoutError, OSError) as e:
+    except (urllib.error.URLError, ConnectionError, TimeoutError, OSError, json.JSONDecodeError) as e:
         err = str(e)
         hint = (
             f"Hint / 提示: Make sure ComfyUI is running and the IP/port is correct (current: {server_url}). "

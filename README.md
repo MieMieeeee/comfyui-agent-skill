@@ -2,6 +2,24 @@
 
 This repository is an Agent Skill folder (Claude Code / Claude.ai / Agent Skills). The only required file is [SKILL.md](SKILL.md).
 
+## Status
+
+- Requires a local or trusted self-hosted ComfyUI server (this repo is not a hosted service).
+- Stable interface: registered workflows only + CLI with structured JSON output.
+- Recommended trust model: do not point this at an untrusted public ComfyUI endpoint.
+
+## Registered Workflows
+
+Stable (reviewed configs in `assets/workflows/*.config.json`):
+
+- `z_image_turbo` (text-to-image)
+- `klein_edit` (image edit)
+- `qwen3_tts` (text-to-speech)
+- `ltx_23_t2v_distill` (text-to-video)
+- `ltx_23_i2v_distilled` (image-to-video)
+- `ace_step_15_music` (music/audio)
+- `qwen_image_2512_4step` (text-to-image)
+
 ## For Skill Users (Generate / Edit / Video / Audio)
 
 Use this when you want to run registered ComfyUI workflows via the CLI in this repo.

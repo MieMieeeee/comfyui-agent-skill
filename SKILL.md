@@ -56,6 +56,14 @@ uv run --no-sync python -m comfyui --help
 
 ## Quick Workflow Choice
 
+Minimal decision tree:
+
+- User gives text only → `generate -p "..."` (defaults to `z_image_turbo`)
+- User gives a reference image and wants a new similar image → vision → `reference_to_image` prompt → run `z_image_turbo`
+- User gives an input image and wants edits → `generate --workflow klein_edit --image input_image=... -p "..."`
+- User wants TTS / voice audio → `generate --workflow qwen3_tts --speech-text "..." --instruct "..."`
+- User wants video → `ltx_23_t2v_distill` (text→video) or `ltx_23_i2v_distilled` (image→video)
+
 | User intent | Workflow / mode | Required command shape |
 |-------------|-----------------|------------------------|
 | Text to image | `z_image_turbo` default | `generate -p "prompt"` |

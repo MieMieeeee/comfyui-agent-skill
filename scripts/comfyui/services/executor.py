@@ -28,7 +28,7 @@ except ImportError:
     )
     sys.exit(1)
 
-from comfyui.config import COMFYUI_URL
+from comfyui.config import get_comfyui_url
 from comfyui.models.result import GenerationResult
 from comfyui.services.workflow_config import WorkflowConfig
 
@@ -285,7 +285,7 @@ def execute_workflow(
                 error=_missing_string_error(key),
             )
 
-    url = server_url or COMFYUI_URL
+    url = server_url or get_comfyui_url()
     dim_w_entry = config.node_mapping.get("width")
     dim_h_entry = config.node_mapping.get("height")
     if config.size_strategy != "workflow_managed" and dim_w_entry and dim_h_entry:

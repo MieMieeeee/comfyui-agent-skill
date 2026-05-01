@@ -132,12 +132,12 @@ class TestCLIIntegration:
         import subprocess
         import sys
 
-        run_py = Path(__file__).resolve().parent.parent / "run.py"
         proc = subprocess.run(
-            [sys.executable, str(run_py), "--check", "--server", SERVER_URL],
+            [sys.executable, "-m", "comfyui", "check", "--server", SERVER_URL],
             capture_output=True,
             text=True,
             cwd=str(SKILL_ROOT),
+            env={"PYTHONPATH": str(SKILL_ROOT / "scripts"), **os.environ},
         )
         assert proc.returncode == 0
         data = json.loads(proc.stdout)
@@ -148,18 +148,24 @@ class TestCLIIntegration:
         import subprocess
         import sys
 
-        run_py = Path(__file__).resolve().parent.parent / "run.py"
         out_dir = tmp_path / "cli_results"
         proc = subprocess.run(
             [
-                sys.executable, str(run_py),
-                "--server", SERVER_URL,
-                "--output", str(out_dir),
-                "--prompt", "a green triangle on white background",
+                sys.executable,
+                "-m",
+                "comfyui",
+                "generate",
+                "--server",
+                SERVER_URL,
+                "--output",
+                str(out_dir),
+                "--prompt",
+                "a green triangle on white background",
             ],
             capture_output=True,
             text=True,
             cwd=str(SKILL_ROOT),
+            env={"PYTHONPATH": str(SKILL_ROOT / "scripts"), **os.environ},
             timeout=120,
         )
 
