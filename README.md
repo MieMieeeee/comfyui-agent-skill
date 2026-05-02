@@ -51,7 +51,7 @@ uv run --no-sync comfyui-skill generate -p "a cute cat sitting on a windowsill a
 ### Option B: Install as a tool (no git clone)
 
 ```bash
-pipx install comfyui-skill
+pipx install dist/comfyui_skill-*.whl
 comfyui-skill check
 comfyui-skill generate -p "a cute cat sitting on a windowsill at golden hour"
 ```
@@ -59,9 +59,15 @@ comfyui-skill generate -p "a cute cat sitting on a windowsill at golden hour"
 Or with uv:
 
 ```bash
-uv tool install comfyui-skill
+uv tool install dist/comfyui_skill-*.whl
 comfyui-skill check
 comfyui-skill generate -p "a cute cat sitting on a windowsill at golden hour"
+```
+
+If you don't have a wheel yet, you can install from GitHub:
+
+```bash
+pipx install "git+https://github.com/MieMieeeee/comfyui-agent-skill.git"
 ```
 
 In tool-install mode, workflows/references are read from the installed package, while writable data goes to a per-user directory:

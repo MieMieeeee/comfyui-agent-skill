@@ -51,3 +51,22 @@ jobs:
           uv pip install dist/*.whl
           .venv/bin/comfyui-skill --help
           .venv/bin/comfyui-skill generate --preflight --workflow z_image_turbo --server http://127.0.0.1:59997
+
+      - name: pipx install from wheel (Unix)
+        if: runner.os != 'Windows'
+        env:
+          PIPX_HOME: ${{ github.workspace }}/.pipx
+          PIPX_BIN_DIR: ${{ github.workspace }}/.pipx/bin
+          COMFYUI_SKILL_USER_DATA_ROOT: ${{ github.workspace }}/.ci-user-data
+        run: |
+          uv pip install pipx
+          .venv/bin/pipx install dist/*.whl --force
+          ${{ github.workspace }}/.pipx/bin/comfyui-skill --help
+
+      - name: uv tool install from wheel (Unix)
+        if: runner.os != 'Windows'
+        env:
+          COMFYUI_SKILL_USER_DATA_ROOT: ${{ github.workspace }}/.ci-user-data
+        run: |
+          uv tool install dist/*.whl
+          comfyui-skill --help
