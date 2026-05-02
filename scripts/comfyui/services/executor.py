@@ -238,7 +238,7 @@ def job_hierarchy_output_dir(
 def execute_workflow(
     config: WorkflowConfig,
     prompt: str,
-    skill_root: Path,
+    skill_root: Path | None = None,
     server_url: str | None = None,
     results_dir: Path | None = None,
     output_subdir: Path | None = None,
@@ -248,9 +248,18 @@ def execute_workflow(
     seed: int | None = None,
     progress_callback: Callable[[dict[str, Any]], None] | None = None,
     text_inputs: dict[str, str] | None = None,
+    workflows_dir: Path | None = None,
 ) -> GenerationResult:
     """Execute a ComfyUI workflow described by config."""
-    workflow_path = config.resolve_workflow_path(skill_root)
+    from comfyui.config import get_user_data_root, get_workflows_dir
+
+    data_root = skill_root if skill_root is not None else get_user_data_root()
+    wf_dir = workflows_dir
+    if wf_dir is None:
+        legacy = data_root / "assets" / "workflows"
+        wf_dir = legacy if legacy.is_dir() else get_workflows_dir()
+
+    workflow_path = config.resolve_workflow_path(wf_dir)
     if not workflow_path.exists():
         return GenerationResult(
             success=False,
@@ -431,7 +440,7 @@ def execute_workflow(
         out_dir = Path(results_dir)
     else:
         out_dir = job_hierarchy_output_dir(
-            skill_root,
+            data_root,
             str(prompt_id),
             anchor=datetime.now(),
             output_subdir=output_subdir,

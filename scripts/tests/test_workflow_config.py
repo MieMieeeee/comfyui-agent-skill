@@ -104,7 +104,7 @@ class TestJsonConfig:
         assert cfg.output_kind == "audio"
         assert cfg.output_node_title == "Save Audio (MP3)"
         assert cfg.capability == "text_to_speech"
-        wf_path = cfg.resolve_workflow_path(skill_root)
+        wf_path = cfg.resolve_workflow_path(skill_root / "assets" / "workflows")
         assert wf_path.name == "qwen3_tts.json"
         assert wf_path.exists()
 

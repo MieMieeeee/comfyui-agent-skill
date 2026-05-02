@@ -1,0 +1,28 @@
+{
+  "workflow_id": "ace_step_15_music",
+  "workflow_file": "ace_step_15_music.json",
+  "output_node_title": "Save Audio (MP3)",
+  "capability": "text_to_music",
+  "description": "Ace Step 1.5 music generation to MP3 (tags + optional lyrics)",
+  "size_strategy": "workflow_managed",
+  "output_kind": "audio",
+  "node_mapping": {
+    "prompt": {
+      "node_title": "TextEncodeAceStepAudio1.5",
+      "param": "tags",
+      "value_type": "string",
+      "required": true
+    },
+    "lyrics": {
+      "node_title": "TextEncodeAceStepAudio1.5",
+      "param": "lyrics",
+      "value_type": "string"
+    },
+    "seed": {
+      "node_title": "TextEncodeAceStepAudio1.5",
+      "param": "seed",
+      "value_type": "integer",
+      "auto_random": true
+    }
+  }
+}

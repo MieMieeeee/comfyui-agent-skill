@@ -117,12 +117,12 @@ class TestWorkflowRegistryLive:
         assert "z_image_turbo" in WORKFLOW_REGISTRY
         cfg = WORKFLOW_REGISTRY["z_image_turbo"]
         assert cfg.workflow_file == "z_image_turbo.json"
-        resolved = cfg.resolve_workflow_path(SKILL_ROOT)
+        resolved = cfg.resolve_workflow_path(SKILL_ROOT / "assets" / "workflows")
         assert resolved.exists()
 
     def test_all_registered_workflows_have_files(self):
         for wid, cfg in WORKFLOW_REGISTRY.items():
-            resolved = cfg.resolve_workflow_path(SKILL_ROOT)
+            resolved = cfg.resolve_workflow_path(SKILL_ROOT / "assets" / "workflows")
             assert resolved.exists(), f"Workflow {wid}: file not found at {resolved}"
 
 

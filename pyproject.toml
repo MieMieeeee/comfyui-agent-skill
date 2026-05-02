@@ -28,10 +28,19 @@ default-groups = ["dev"]
 
 [tool.setuptools]
 package-dir = { "" = "scripts" }
+include-package-data = true
 
 [tool.setuptools.packages.find]
 where = ["scripts"]
 include = ["comfyui*", "comfy_api_simplified*"]
+
+[tool.setuptools.package-data]
+comfyui = [
+    "assets/workflows/*.json",
+    "assets/workflows/*.config.json",
+    "references/*.md",
+    "references/prompt_enhancement/*.md",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["scripts/tests"]

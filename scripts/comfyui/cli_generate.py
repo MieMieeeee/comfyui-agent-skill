@@ -7,7 +7,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from comfyui.config import SKILL_ROOT, check_server, get_comfyui_url, job_store_path
+from comfyui.config import check_server, get_comfyui_url, job_store_path, get_user_data_root, get_workflows_dir
 from comfyui.preflight import build_preflight_cli_payload, preflight_registered_workflow
 from comfyui.services.executor import execute_workflow
 from comfyui.services.poller import poll_all_jobs, poll_job
@@ -73,7 +73,7 @@ def _print_error_and_exit(
 
 
 def _cli_run_preflight_only(config, server_url: str) -> int:
-    path = config.resolve_workflow_path(SKILL_ROOT)
+    path = config.resolve_workflow_path(get_workflows_dir())
     try:
         pr = preflight_registered_workflow(server_url, path)
     except OSError as e:
@@ -120,7 +120,7 @@ def _cli_run_preflight_only(config, server_url: str) -> int:
 
 
 def _cli_preflight_gate_or_exit(server_url: str, config) -> None:
-    path = config.resolve_workflow_path(SKILL_ROOT)
+    path = config.resolve_workflow_path(get_workflows_dir())
     try:
         pr = preflight_registered_workflow(server_url, path)
     except OSError as e:
@@ -214,7 +214,7 @@ def _run_single_generate(
     return execute_workflow(
         config=config,
         prompt=prompt,
-        skill_root=SKILL_ROOT,
+        skill_root=get_user_data_root(),
         server_url=server_url,
         results_dir=results_dir,
         output_subdir=output_subdir,
@@ -223,6 +223,7 @@ def _run_single_generate(
         height=height,
         progress_callback=progress_cb,
         text_inputs=text_inputs,
+        workflows_dir=get_workflows_dir(),
     )
 
 
@@ -478,7 +479,7 @@ def cmd_generate() -> int:
         result = submit_workflow(
             workflow_id=args.workflow,
             prompt=submit_prompt,
-            skill_root=SKILL_ROOT,
+            skill_root=get_user_data_root(),
             job_store_path=store_path,
             server_url=server_url,
             input_images=input_images or None,
@@ -486,6 +487,7 @@ def cmd_generate() -> int:
             height=args.height,
             count=args.count,
             text_inputs=submit_text_inputs,
+            workflows_dir=get_workflows_dir(),
             skip_preflight=getattr(args, "skip_preflight", False),
         )
         print(json.dumps(result, ensure_ascii=True, indent=2))

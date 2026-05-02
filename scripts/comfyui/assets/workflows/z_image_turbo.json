@@ -1,0 +1,128 @@
+{
+  "3": {
+    "inputs": {
+      "seed": 77,
+      "steps": 9,
+      "cfg": 1,
+      "sampler_name": "res_multistep",
+      "scheduler": "sgm_uniform",
+      "denoise": 1,
+      "model": [
+        "16",
+        0
+      ],
+      "positive": [
+        "6",
+        0
+      ],
+      "negative": [
+        "7",
+        0
+      ],
+      "latent_image": [
+        "13",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "KSampler"
+    }
+  },
+  "6": {
+    "inputs": {
+      "text": "Photorealistic, ultra-detailed full-body portrait of a young woman standing confidently, leaning slightly against a stage barrier, holding a pair of glasses in her right hand near her lips; dressed in a black beret, black leather biker jacket with white trim, black turtleneck, black pleated mini skirt with silver buckle belt, and black sheer tights; background features stage lights and large speakers, dark moody urban stage setting with cool-tone, ambient lighting; 50mm feel, f/2.0, eye-level shot, focus on facial expression, skin pores, hair strands, leather texture, fabric weave, and metallic hardware; cinematic editorial mood with high contrast and deep shadows.",
+      "clip": [
+        "18",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP Text Encode (Positive Prompt)"
+    }
+  },
+  "7": {
+    "inputs": {
+      "text": "blurry ugly bad",
+      "clip": [
+        "18",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP Text Encode (Negative Prompt)"
+    }
+  },
+  "8": {
+    "inputs": {
+      "samples": [
+        "3",
+        0
+      ],
+      "vae": [
+        "17",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE Decode"
+    }
+  },
+  "9": {
+    "inputs": {
+      "filename_prefix": "zzzz/z",
+      "images": [
+        "8",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "Save Image"
+    }
+  },
+  "13": {
+    "inputs": {
+      "width": 832,
+      "height": 1280,
+      "batch_size": 1
+    },
+    "class_type": "EmptySD3LatentImage",
+    "_meta": {
+      "title": "EmptySD3LatentImage"
+    }
+  },
+  "16": {
+    "inputs": {
+      "unet_name": "Z-Image\\z_image_turbo_bf16.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {
+      "title": "Load Diffusion Model"
+    }
+  },
+  "17": {
+    "inputs": {
+      "vae_name": "Flux\\ae.sft"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "Load VAE"
+    }
+  },
+  "18": {
+    "inputs": {
+      "clip_name": "Qwen\\qwen_3_4b.safetensors",
+      "type": "lumina2",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {
+      "title": "Load CLIP"
+    }
+  }
+}

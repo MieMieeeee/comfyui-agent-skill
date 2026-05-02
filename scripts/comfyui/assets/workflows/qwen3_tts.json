@@ -1,0 +1,39 @@
+{
+  "38": {
+    "inputs": {
+      "text": "你再盯着我看……我可就要收点利息了哦～……",
+      "instruct": "模拟成熟女性的低沉略哑烟嗓，气息感很重，声音像刚睡醒又喝了红酒的性感女性，语速缓慢而松弛，语调带着漫不经心的慵懒，每句话都像在耳边轻轻吐息，尾音常常往下沉并带一点沙哑的笑意，传递出“我随时可以把你吃掉，但现在还不想动”的危险女性魅力。",
+      "model_choice": "1.7B",
+      "device": "auto",
+      "precision": "bf16",
+      "language": "Chinese",
+      "seed": 845203391849865,
+      "max_new_tokens": 2048,
+      "top_p": 0.8,
+      "top_k": 20,
+      "temperature": 1,
+      "repetition_penalty": 1.05,
+      "attention": "sdpa",
+      "unload_model_after_generate": false
+    },
+    "class_type": "FB_Qwen3TTSVoiceDesign",
+    "_meta": {
+      "title": "🎨 Qwen3-TTS VoiceDesign"
+    }
+  },
+  "47": {
+    "inputs": {
+      "filename_prefix": "audio/audio",
+      "quality": "V0",
+      "audioUI": "/api/view?filename=audio_00002_.mp3&type=output&subfolder=audio&rand=0.5994552945364313",
+      "audio": [
+        "38",
+        0
+      ]
+    },
+    "class_type": "SaveAudioMP3",
+    "_meta": {
+      "title": "Save Audio (MP3)"
+    }
+  }
+}

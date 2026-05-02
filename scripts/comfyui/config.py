@@ -1,5 +1,6 @@
 import json
 import os
+import sys
 import urllib.parse
 import urllib.error
 import urllib.request
@@ -7,8 +8,56 @@ from pathlib import Path
 
 DEFAULT_URL = "http://127.0.0.1:8188"
 
-# Resolve skill root from this file: config.py -> comfyui/ -> scripts/ -> skill_root/
-SKILL_ROOT = Path(__file__).resolve().parent.parent.parent
+PACKAGE_ROOT = Path(__file__).resolve().parent
+_REPO_ROOT_CANDIDATE = PACKAGE_ROOT.parent.parent
+if (_REPO_ROOT_CANDIDATE / "SKILL.md").exists():
+    SKILL_ROOT = _REPO_ROOT_CANDIDATE
+else:
+    SKILL_ROOT = PACKAGE_ROOT
+
+
+def _looks_like_skill_root(path: Path) -> bool:
+    return (path / "assets" / "workflows").is_dir() and (path / "scripts").is_dir()
+
+
+def get_resource_root() -> Path:
+    override = os.environ.get("COMFYUI_SKILL_RESOURCE_ROOT")
+    if override:
+        return Path(override).expanduser().resolve()
+    if _looks_like_skill_root(SKILL_ROOT):
+        return SKILL_ROOT
+    return PACKAGE_ROOT
+
+
+def get_workflows_dir() -> Path:
+    return get_resource_root() / "assets" / "workflows"
+
+
+def get_references_dir() -> Path:
+    return get_resource_root() / "references"
+
+
+def get_user_data_root() -> Path:
+    override = os.environ.get("COMFYUI_SKILL_USER_DATA_ROOT")
+    if override:
+        return Path(override).expanduser().resolve()
+    if _looks_like_skill_root(SKILL_ROOT):
+        return SKILL_ROOT
+    if sys.platform.startswith("win"):
+        base = os.environ.get("APPDATA") or os.environ.get("LOCALAPPDATA")
+        if base:
+            return (Path(base) / "comfyui-skill").resolve()
+        return (Path.home() / "AppData" / "Roaming" / "comfyui-skill").resolve()
+    if sys.platform == "darwin":
+        return (Path.home() / "Library" / "Application Support" / "comfyui-skill").resolve()
+    xdg = os.environ.get("XDG_DATA_HOME")
+    if xdg:
+        return (Path(xdg) / "comfyui-skill").resolve()
+    return (Path.home() / ".local" / "share" / "comfyui-skill").resolve()
+
+
+def get_results_dir() -> Path:
+    return get_user_data_root() / "results"
 
 
 def job_store_path() -> Path:
@@ -16,19 +65,19 @@ def job_store_path() -> Path:
     override = os.environ.get("COMFYUI_JOB_STORE")
     if override:
         return Path(override).expanduser().resolve()
-    return SKILL_ROOT / "jobs.db"
+    return get_user_data_root() / "jobs.db"
 
 
 def local_config_path() -> Path:
     """Path to the local JSON file for comfyui_url and other keys.
 
     Override with env ``COMFYUI_CONFIG_FILE`` (absolute or relative path) for tests
-    or non-default layouts. Default: ``<skill root>/config.local.json``.
+    or non-default layouts. Default: ``<user data root>/config.local.json``.
     """
     override = os.environ.get("COMFYUI_CONFIG_FILE")
     if override:
         return Path(override).expanduser().resolve()
-    return SKILL_ROOT / "config.local.json"
+    return get_user_data_root() / "config.local.json"
 
 
 def _load_local_config() -> dict:

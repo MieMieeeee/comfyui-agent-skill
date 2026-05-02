@@ -13,7 +13,7 @@ except ImportError:
     ComfyApiWrapper = None  # type: ignore
     ComfyWorkflowWrapper = None  # type: ignore
 
-from comfyui.config import SKILL_ROOT
+from comfyui.config import SKILL_ROOT, get_user_data_root, get_workflows_dir
 from comfyui.services.executor import (
     job_hierarchy_output_dir,
     node_output_media_list,
@@ -34,7 +34,7 @@ def _now_iso() -> str:
 def _materialize_outputs(
     api: Any,
     config: WorkflowConfig,
-    skill_root: Path,
+    workflows_dir: Path,
     history_entry: dict,
     results_dir: Path,
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
@@ -43,7 +43,7 @@ def _materialize_outputs(
         return [], history_entry.get("outputs", {})
 
     comfyui_outputs = history_entry.get("outputs", {})
-    workflow_path = config.resolve_workflow_path(skill_root)
+    workflow_path = config.resolve_workflow_path(workflows_dir)
     output_node_id: str | None = None
     if workflow_path.exists():
         try:
@@ -153,6 +153,7 @@ def poll_job(
     *,
     skill_root: Path | None = None,
     results_dir: Path | None = None,
+    workflows_dir: Path | None = None,
 ) -> dict[str, Any]:
     """
     Single-shot poll: read job from store, check ComfyUI status, update store, return snapshot.
@@ -233,7 +234,11 @@ def poll_job(
 
     url = poll_server_url if poll_server_url is not None else job["server_url"]
 
-    root = skill_root if skill_root is not None else SKILL_ROOT
+    root = skill_root if skill_root is not None else get_user_data_root()
+    wf_dir = workflows_dir
+    if wf_dir is None:
+        legacy = root / "assets" / "workflows"
+        wf_dir = legacy if legacy.is_dir() else get_workflows_dir()
 
     try:
         api = ComfyApiWrapper(url)
@@ -340,7 +345,7 @@ def poll_job(
                 job_id,
                 anchor=anchor or datetime.now(timezone.utc).astimezone(),
             )
-        artifacts, raw_outputs = _materialize_outputs(api, config, root, history_entry, out_dir)
+        artifacts, raw_outputs = _materialize_outputs(api, config, wf_dir, history_entry, out_dir)
 
         if not artifacts:
             okind = getattr(config, "output_kind", "image") or "image"

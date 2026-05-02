@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from comfyui.config import SKILL_ROOT
+from comfyui.config import get_user_data_root, get_workflows_dir
 from comfyui.models.result import GenerationResult
 from comfyui.services.executor import execute_workflow
 from comfyui.services.workflow_config import Z_IMAGE_TURBO
@@ -47,7 +47,7 @@ def execute(
 
             python -m comfyui generate -p "a cat" --output ./out
     """
-    root = skill_root or SKILL_ROOT
+    root = skill_root or get_user_data_root()
     out = Path(results_dir) if results_dir else None
 
     return execute_workflow(
@@ -58,4 +58,5 @@ def execute(
         results_dir=out,
         width=width,
         height=height,
+        workflows_dir=get_workflows_dir(),
     )

@@ -5,6 +5,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from comfyui.config import get_workflows_dir
+
 
 class ConfigError(Exception):
     """Raised when a workflow config file is invalid."""
@@ -26,8 +28,8 @@ class WorkflowConfig:
     resolution_presets: dict[str, Any] = field(default_factory=dict)
     default_resolution: str = ""
 
-    def resolve_workflow_path(self, skill_root: Path) -> Path:
-        return skill_root / "assets" / "workflows" / self.workflow_file
+    def resolve_workflow_path(self, workflows_dir: Path) -> Path:
+        return workflows_dir / self.workflow_file
 
     def to_json(self) -> str:
         payload = {
@@ -130,9 +132,7 @@ Z_IMAGE_TURBO = WorkflowConfig(
 # Registry: workflow_id → WorkflowConfig. Prefer JSON configs; fall back to built-in.
 def _build_registry() -> dict[str, WorkflowConfig]:
     registry: dict[str, WorkflowConfig] = {}
-    # Resolve skill root: workflow_config.py -> services/ -> comfyui/ -> scripts/ -> skill_root/
-    skill_root = Path(__file__).resolve().parent.parent.parent.parent
-    workflows_dir = skill_root / "assets" / "workflows"
+    workflows_dir = get_workflows_dir()
     if workflows_dir.is_dir():
         registry.update(load_configs_from_dir(workflows_dir))
     # Built-in fallbacks (only if JSON config didn't load them)

@@ -6,7 +6,7 @@ import random
 from pathlib import Path
 from typing import Any
 
-from comfyui.config import check_server
+from comfyui.config import check_server, job_store_path as default_job_store_path, get_workflows_dir
 from comfyui.preflight import build_preflight_cli_payload, preflight_registered_workflow
 from comfyui.services.executor import _entry_is_string_input, merge_text_inputs, _missing_string_error
 from comfyui.services.job_store import JobStore
@@ -42,6 +42,7 @@ def submit_workflow(
     seed: int | None = None,
     count: int = 1,
     text_inputs: dict[str, str] | None = None,
+    workflows_dir: Path | None = None,
     *,
     skip_preflight: bool = False,
 ) -> dict[str, Any]:
@@ -70,11 +71,15 @@ def submit_workflow(
             return {"submitted": False, "error": _missing_string_error(key)}
 
     if job_store_path is None:
-        job_store_path = skill_root / "jobs.db"
+        job_store_path = default_job_store_path()
     job_store_path = Path(job_store_path)
     store = JobStore(job_store_path)
 
-    workflow_path = config.resolve_workflow_path(skill_root)
+    wf_dir = workflows_dir
+    if wf_dir is None:
+        legacy = skill_root / "assets" / "workflows"
+        wf_dir = legacy if legacy.is_dir() else get_workflows_dir()
+    workflow_path = config.resolve_workflow_path(wf_dir)
     if not workflow_path.exists():
         return {"submitted": False, "error": _err("WORKFLOW_FILE_NOT_FOUND", f"Workflow file not found: {workflow_path}")}
 
