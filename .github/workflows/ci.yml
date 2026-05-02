@@ -41,13 +41,13 @@ jobs:
 
       - name: Build wheel (Unix)
         if: runner.os != 'Windows'
-        run: .venv/bin/python -m pip install wheel && .venv/bin/python -m pip wheel . -w dist
+        run: uv pip install wheel && uv pip wheel . -w dist
 
       - name: Install wheel + smoke CLI (Unix)
         if: runner.os != 'Windows'
         env:
           COMFYUI_SKILL_USER_DATA_ROOT: ${{ github.workspace }}/.ci-user-data
         run: |
-          .venv/bin/python -m pip install dist/*.whl
-          comfyui-skill --help
-          comfyui-skill generate --preflight --workflow z_image_turbo --server http://127.0.0.1:59997
+          uv pip install dist/*.whl
+          .venv/bin/comfyui-skill --help
+          .venv/bin/comfyui-skill generate --preflight --workflow z_image_turbo --server http://127.0.0.1:59997
