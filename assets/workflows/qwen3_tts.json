@@ -23,9 +23,9 @@
   },
   "47": {
     "inputs": {
-      "filename_prefix": "audio/cbyy",
+      "filename_prefix": "audio/audio",
       "quality": "V0",
-      "audioUI": "/api/view?filename=cbyy_00002_.mp3&type=output&subfolder=audio&rand=0.5994552945364313",
+      "audioUI": "/api/view?filename=audio_00002_.mp3&type=output&subfolder=audio&rand=0.5994552945364313",
       "audio": [
         "38",
         0
