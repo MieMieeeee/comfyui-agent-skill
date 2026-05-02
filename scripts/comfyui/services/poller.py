@@ -82,6 +82,7 @@ def _materialize_outputs(
         try:
             data = api.get_image(filename, subfolder, folder_type)
             out_path = results_dir / filename
+            out_path.parent.mkdir(parents=True, exist_ok=True)
             out_path.write_bytes(data)
             artifacts.append({
                 "path": str(out_path.resolve()),

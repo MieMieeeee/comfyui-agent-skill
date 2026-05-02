@@ -77,7 +77,7 @@ class TestPollJobCompleted:
                     "outputs": {
                         "9": {
                             "images": [
-                                {"filename": "img_00001.png", "subfolder": "", "type": "output"}
+                                {"filename": "nested/img_00001.png", "subfolder": "", "type": "output"}
                             ]
                         }
                     }
@@ -108,6 +108,7 @@ class TestPollJobCompleted:
         row = store.get_job("job-done-1")
         assert row["status"] == "completed"
         assert row["outputs"] is not None
+        assert (tmp_path / "done_out" / "nested" / "img_00001.png").exists()
 
     def test_completed_extracts_text_inputs_from_text_inputs_column(self, tmp_path):
         from comfyui.services.poller import poll_job
