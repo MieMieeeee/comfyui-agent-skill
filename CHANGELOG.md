@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.2 - 2026-05-02
+
+### Features
+- Add `doctor` command to check server availability and preflight all registered workflows (nodes/models).
+
+### Documentation
+- Make `pipx` the primary recommended install path and clarify command naming and self-hosted usage.
+
 ## 0.1.1 - 2026-05-02
 
 ### Reliability
