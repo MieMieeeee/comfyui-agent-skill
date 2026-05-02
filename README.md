@@ -107,6 +107,10 @@ uv tool upgrade comfyui-agent-skill-mie
 
 ## Troubleshooting
 
+- Run an environment doctor check (server + workflow preflight):
+  - `comfyui-skill doctor` (recommended)
+  - `comfyui-agent-skill-mie doctor`
+  - `uv run --no-sync python -m comfyui doctor` (source mode)
 - `SERVER_UNAVAILABLE`: ComfyUI is not reachable at the target URL. Start ComfyUI or re-run with `--server http://<ip>:8188`.
 - `PREFLIGHT_MISSING_NODES`: install/enable required custom nodes on the ComfyUI server.
 - `PREFLIGHT_MISSING_MODELS`: download required model files on the ComfyUI server.

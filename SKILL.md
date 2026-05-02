@@ -98,6 +98,22 @@ For workflow-specific size rules, capability boundaries, and examples, read [ref
 
 ## Core Commands
 
+Environment doctor (check server + preflight registered workflows):
+
+Tool-install mode:
+
+```bash
+comfyui-skill doctor
+```
+
+Source mode:
+
+```bash
+uv run --no-sync python -m comfyui doctor
+```
+
+If it exits with code 0, the environment is ready for all checked workflows. Exit code 1 means missing nodes/models or server is unreachable (see JSON payload).
+
 Health check:
 
 ```bash

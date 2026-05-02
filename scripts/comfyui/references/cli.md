@@ -29,6 +29,7 @@ Do not pass `--check` or `--save-server` to `generate`; they are top-level compa
 | Command | Purpose |
 |---------|---------|
 | `uv run --no-sync python -m comfyui check` | Health check via `GET /system_stats` |
+| `uv run --no-sync python -m comfyui doctor` | Environment check: server + preflight (nodes/models) for registered workflows |
 | `uv run --no-sync python -m comfyui save-server URL` | Persist a ComfyUI server URL to `config.local.json` |
 | `uv run --no-sync python -m comfyui generate [options]` | Execute or submit a registered workflow |
 | `uv run --no-sync python -m comfyui import-workflow PATH` | Import a workflow JSON into `assets/workflows/` and generate a `*.config.template.json` for review |
@@ -37,6 +38,12 @@ Health check:
 
 ```bash
 uv run --no-sync python -m comfyui check
+```
+
+Environment doctor:
+
+```bash
+uv run --no-sync python -m comfyui doctor
 ```
 
 Save server:
