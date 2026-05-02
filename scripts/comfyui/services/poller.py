@@ -295,6 +295,8 @@ def poll_job(
             error=json.dumps(err_obj),
             phase=phase,
             node=node,
+            last_polled_at=_now_iso(),
+            last_error=None,
         )
         return _snapshot(
             success=False,
@@ -312,7 +314,13 @@ def poll_job(
         config = WORKFLOW_REGISTRY.get(wf_id)
         if config is None:
             err_obj = _err("WORKFLOW_NOT_REGISTERED", f"Workflow '{wf_id}' is not registered.")
-            store.update_job(job_id, status="failed", error=json.dumps(err_obj))
+            store.update_job(
+                job_id,
+                status="failed",
+                error=json.dumps(err_obj),
+                last_polled_at=_now_iso(),
+                last_error=None,
+            )
             return _snapshot(
                 success=False,
                 status="failed",
@@ -343,7 +351,13 @@ def poll_job(
             else:
                 kind = "images"
             err_obj = _err("SAVE_FAILED", f"Could not download output {kind} from ComfyUI.")
-            store.update_job(job_id, status="failed", error=json.dumps(err_obj))
+            store.update_job(
+                job_id,
+                status="failed",
+                error=json.dumps(err_obj),
+                last_polled_at=_now_iso(),
+                last_error=None,
+            )
             return {**job, "status": "failed", "error": err_obj}
 
         completed_at = _now_iso()
@@ -355,6 +369,8 @@ def poll_job(
             completed_at=completed_at,
             phase=phase,
             node=node,
+            last_polled_at=_now_iso(),
+            last_error=None,
         )
         metadata = _base_metadata()
         metadata["comfyui_outputs"] = raw_outputs
@@ -388,6 +404,8 @@ def poll_job(
         update_fields["phase"] = eff_phase
     if eff_node is not None:
         update_fields["node"] = eff_node
+    update_fields["last_polled_at"] = _now_iso()
+    update_fields["last_error"] = None
 
     store.update_job(job_id, **update_fields)
     return _snapshot(

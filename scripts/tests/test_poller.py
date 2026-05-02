@@ -426,6 +426,34 @@ class TestPollJobTransientErrors:
         assert row["last_error"] is not None
         assert row["last_polled_at"] is not None
 
+    def test_successful_poll_clears_last_error(self, tmp_path):
+        from comfyui.services.poller import poll_job
+
+        store = JobStore(tmp_path / "jobs.db")
+        store.save_job(
+            job_id="job-transient-3",
+            workflow_id="z_image_turbo",
+            prompt="test",
+            server_url="http://127.0.0.1:8188",
+            status="submitted",
+        )
+
+        with patch("comfyui.services.poller.ComfyApiWrapper", side_effect=Exception("no route")):
+            poll_job("job-transient-3", store, "http://127.0.0.1:8188")
+        row = store.get_job("job-transient-3")
+        assert row["last_error"] is not None
+
+        with patch("comfyui.services.poller.ComfyApiWrapper") as mock_cls:
+            mock_inst = MagicMock()
+            mock_inst.get_history.return_value = {}  # success poll, still not completed
+            mock_cls.return_value = mock_inst
+            result = poll_job("job-transient-3", store, "http://127.0.0.1:8188")
+
+        assert result.get("transient_error") is not True
+        row2 = store.get_job("job-transient-3")
+        assert row2["last_error"] is None
+        assert row2["last_polled_at"] is not None
+
 
 class TestPollJobOutputs:
     def test_completed_with_multiple_images(self, tmp_path):
