@@ -162,7 +162,7 @@ def _add_generate_arguments(p: argparse.ArgumentParser, *, default_workflow: str
         metavar="DIR",
         help=(
             "Output directory for generated media (images, audio, etc.; filenames from ComfyUI). "
-            "Default: per-run results/%Y%m%d/%H%M%S_{job_id}/ under the skill root. "
+            "Default: per-run results/%%Y%%m%%d/%%H%%M%%S_{job_id}/ under the skill root. "
             "Relative path adds a segment under that job folder; absolute path overrides. "
             "If the path ends with a known media extension, its parent directory is used."
         ),
@@ -341,6 +341,12 @@ def run_generate_from_args(args: argparse.Namespace) -> int:
 
 
 class _SilentArgumentParser(argparse.ArgumentParser):
+    def print_help(self, file=None) -> None:  # type: ignore[override]
+        return super().print_help(file=sys.stderr)
+
+    def print_usage(self, file=None) -> None:  # type: ignore[override]
+        return super().print_usage(file=sys.stderr)
+
     def error(self, message: str) -> None:
         raise SystemExit(2)
 
@@ -350,7 +356,9 @@ def cmd_generate() -> int:
     _add_generate_arguments(p, default_workflow=DEFAULT_WORKFLOW)
     try:
         args = p.parse_args()
-    except SystemExit:
+    except SystemExit as e:
+        if getattr(e, "code", 1) == 0:
+            return 0
         print(
             json.dumps(
                 {

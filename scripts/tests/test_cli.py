@@ -92,6 +92,13 @@ class TestComfyuiModule:
         assert r.returncode == 2
         assert "unknown" in r.stderr.lower() or "未知" in r.stderr
 
+    def test_generate_help_goes_to_stderr_and_does_not_print_json(self):
+        r = _run_module("generate", "--help")
+        assert r.returncode == 0
+        assert r.stdout.strip() == ""
+        assert "usage:" in r.stderr.lower()
+        assert "results/%Y%m%d/%H%M%S_{job_id}" in r.stderr
+
 
 class TestCLICheckMode:
     def test_check_flag_returns_json(self):
