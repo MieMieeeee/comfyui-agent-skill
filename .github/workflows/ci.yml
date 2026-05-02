@@ -49,6 +49,7 @@ jobs:
           COMFYUI_SKILL_USER_DATA_ROOT: ${{ github.workspace }}/.ci-user-data
         run: |
           uv pip install dist/*.whl
+          .venv/bin/comfyui-agent-skill-mie --help
           .venv/bin/comfyui-skill --help
           .venv/bin/comfyui-skill generate --preflight --workflow z_image_turbo --server http://127.0.0.1:59997
 
@@ -61,6 +62,7 @@ jobs:
         run: |
           uv pip install pipx
           .venv/bin/pipx install dist/*.whl --force
+          ${{ github.workspace }}/.pipx/bin/comfyui-agent-skill-mie --help
           ${{ github.workspace }}/.pipx/bin/comfyui-skill --help
 
       - name: uv tool install from wheel (Unix)
@@ -69,4 +71,5 @@ jobs:
           COMFYUI_SKILL_USER_DATA_ROOT: ${{ github.workspace }}/.ci-user-data
         run: |
           uv tool install dist/*.whl
+          comfyui-agent-skill-mie --help
           comfyui-skill --help

@@ -9,6 +9,7 @@ def test_readme_has_quickstart_troubleshooting_and_short_cli():
     assert "SERVER_UNAVAILABLE" in text
     assert "PREFLIGHT_MISSING_NODES" in text
     assert "NO_OUTPUT" in text
+    assert "comfyui-agent-skill-mie" in text
     assert "comfyui-skill" in text
 
 

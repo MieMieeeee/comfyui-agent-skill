@@ -3,9 +3,9 @@ requires = ["setuptools>=61"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "comfyui-skill"
+name = "comfyui-agent-skill-mie"
 version = "0.1.0"
-description = "ComfyUI workflow execution skill for agents (z_image_turbo, klein_edit, …)"
+description = "ComfyUI workflow execution skill for agents with packaged workflows and CLI tooling"
 requires-python = ">=3.10"
 dependencies = [
     "requests",
@@ -13,10 +13,16 @@ dependencies = [
 ]
 
 [project.scripts]
+comfyui-agent-skill-mie = "comfyui.cli:main_module"
 comfyui-skill = "comfyui.cli:main_module"
 
 [project.optional-dependencies]
 dev = ["pytest>=7.0"]
+
+[project.urls]
+Homepage = "https://github.com/MieMieeeee/comfyui-agent-skill"
+Repository = "https://github.com/MieMieeeee/comfyui-agent-skill"
+Issues = "https://github.com/MieMieeeee/comfyui-agent-skill/issues"
 
 # PEP 735 dependency groups — used by `uv sync` / `uv run` (see [tool.uv]).
 [dependency-groups]

@@ -16,3 +16,6 @@
 
 ### Reliability
 - CLI stdout JSON is ASCII-safe for stability across mixed terminal/codepage environments (notably Windows CI).
+
+### Packaging
+- Planned PyPI package name: `comfyui-agent-skill-mie` (keeps `comfyui-skill` as a short alias).

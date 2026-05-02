@@ -16,3 +16,6 @@
 
 ### 可靠性
 - CLI 的 stdout JSON 改为 ASCII-safe，以提升在混合终端/编码环境（尤其 Windows CI）中的解析稳定性。
+
+### 打包
+- 计划将 PyPI 包名调整为 `comfyui-agent-skill-mie`（同时保留短命令别名 `comfyui-skill`）。

@@ -51,17 +51,17 @@ uv run --no-sync comfyui-skill generate -p "a cute cat sitting on a windowsill a
 ### Option B: Install as a tool (no git clone)
 
 ```bash
-pipx install dist/comfyui_skill-*.whl
-comfyui-skill check
-comfyui-skill generate -p "a cute cat sitting on a windowsill at golden hour"
+pipx install dist/comfyui_agent_skill_mie-*.whl
+comfyui-agent-skill-mie check
+comfyui-agent-skill-mie generate -p "a cute cat sitting on a windowsill at golden hour"
 ```
 
 Or with uv:
 
 ```bash
-uv tool install dist/comfyui_skill-*.whl
-comfyui-skill check
-comfyui-skill generate -p "a cute cat sitting on a windowsill at golden hour"
+uv tool install dist/comfyui_agent_skill_mie-*.whl
+comfyui-agent-skill-mie check
+comfyui-agent-skill-mie generate -p "a cute cat sitting on a windowsill at golden hour"
 ```
 
 If you don't have a wheel yet, you can install from GitHub:
@@ -75,6 +75,8 @@ In tool-install mode, workflows/references are read from the installed package, 
 - Windows: `%APPDATA%\\comfyui-skill`
 - macOS: `~/Library/Application Support/comfyui-skill`
 - Linux: `$XDG_DATA_HOME/comfyui-skill` or `~/.local/share/comfyui-skill`
+
+Short alias also available: `comfyui-skill`
 
 ## Troubleshooting
 
