@@ -53,7 +53,23 @@ jobs:
           uv pip install dist/*.whl
           .venv/bin/comfyui-agent-skill-mie --help
           .venv/bin/comfyui-skill --help
-          .venv/bin/comfyui-skill generate --preflight --workflow z_image_turbo --server http://127.0.0.1:59997
+          set +e
+          OUT=$(.venv/bin/comfyui-skill generate --preflight --workflow z_image_turbo --server http://127.0.0.1:59997)
+          CODE=$?
+          set -e
+          echo "$OUT"
+          export OUT
+          .venv/bin/python - <<'PY'
+          import json
+          import os
+          out = os.environ.get("OUT", "").strip()
+          if not out:
+              raise SystemExit("expected JSON stdout from --preflight")
+          data = json.loads(out)
+          assert data["success"] is False
+          assert data["error"]["code"] == "PREFLIGHT_SERVER_UNREACHABLE"
+          PY
+          test "$CODE" -eq 1
 
       - name: pipx install from wheel (Unix)
         if: runner.os != 'Windows'
