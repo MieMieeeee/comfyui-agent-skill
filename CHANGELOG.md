@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.1 - 2026-05-02
+
+### Reliability
+- CLI stdout JSON is ASCII-safe for stability across mixed terminal/codepage environments (notably Windows CI).
+- Async poll snapshot contract is unified and transient polling errors are tracked.
+
+### Packaging
+- Prepare pipx/uv tool install support: packaged workflows/references + per-user writable directories.
+- PyPI package name is `comfyui-agent-skill-mie` (keeps `comfyui-skill` as a short alias).
+
 ## 0.1.0 - 2026-05-01
 
 ### Features
@@ -13,9 +23,3 @@
 - Workflow selection and prompt enhancement references
 
 ## Unreleased
-
-### Reliability
-- CLI stdout JSON is ASCII-safe for stability across mixed terminal/codepage environments (notably Windows CI).
-
-### Packaging
-- Planned PyPI package name: `comfyui-agent-skill-mie` (keeps `comfyui-skill` as a short alias).

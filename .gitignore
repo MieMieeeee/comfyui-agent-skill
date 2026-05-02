@@ -15,6 +15,8 @@ jobs.db
 # Build / tooling
 *.egg-info/
 .omc/
+build/
+dist/
 
 # Generated artifacts
 SKILL.pdf

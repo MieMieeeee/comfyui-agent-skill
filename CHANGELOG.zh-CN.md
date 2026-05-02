@@ -1,5 +1,15 @@
 # 更新日志
 
+## 0.1.1 - 2026-05-02
+
+### 可靠性
+- CLI 的 stdout JSON 改为 ASCII-safe，以提升在混合终端/编码环境（尤其 Windows CI）中的解析稳定性。
+- 异步 poll 输出契约收敛，并记录瞬态轮询错误以提升可观测性。
+
+### 打包
+- 为 pipx/uv tool install 做准备：工作流/参考文档打包进包内资源，用户可写数据落到用户目录。
+- PyPI 包名为 `comfyui-agent-skill-mie`（同时保留短命令别名 `comfyui-skill`）。
+
 ## 0.1.0 - 2026-05-01
 
 ### 新功能
@@ -13,9 +23,3 @@
 - 补充工作流选择与提示词增强参考文档
 
 ## 未发布
-
-### 可靠性
-- CLI 的 stdout JSON 改为 ASCII-safe，以提升在混合终端/编码环境（尤其 Windows CI）中的解析稳定性。
-
-### 打包
-- 计划将 PyPI 包名调整为 `comfyui-agent-skill-mie`（同时保留短命令别名 `comfyui-skill`）。
