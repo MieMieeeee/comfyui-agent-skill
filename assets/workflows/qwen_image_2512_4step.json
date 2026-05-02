@@ -71,16 +71,6 @@
       "title": "VAE Decode"
     }
   },
-  "37": {
-    "inputs": {
-      "unet_name": "Qwen_Image_2512\\qwen_image_2512_fp8_e4m3fn.safetensors",
-      "weight_dtype": "default"
-    },
-    "class_type": "UNETLoader",
-    "_meta": {
-      "title": "Load Diffusion Model"
-    }
-  },
   "38": {
     "inputs": {
       "clip_name": "Qwen\\qwen_2.5_vl_7b_fp8_scaled.safetensors",
@@ -140,7 +130,7 @@
   },
   "90": {
     "inputs": {
-      "unet_name": "Qwen\\qwen-image-2512-Q6_K.gguf"
+      "unet_name": "Qwen_Image\\qwen-image-2512-Q6_K.gguf"
     },
     "class_type": "UnetLoaderGGUF",
     "_meta": {
@@ -152,7 +142,7 @@
       "lora_name": "Qwen-Image\\Qwen-Image-2512-Lightning-4steps-V1.0-fp32.safetensors",
       "strength_model": 1,
       "model": [
-        "37",
+        "90",
         0
       ]
     },
