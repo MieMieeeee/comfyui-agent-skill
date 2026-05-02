@@ -97,7 +97,7 @@
   },
   "16": {
     "inputs": {
-      "unet_name": "Z-Image\\z_image_turbo_bf16.safetensors",
+      "unet_name": "Z-Image-Turbo\\z_image_turbo_bf16.safetensors",
       "weight_dtype": "default"
     },
     "class_type": "UNETLoader",
