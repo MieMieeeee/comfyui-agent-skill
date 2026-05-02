@@ -30,7 +30,8 @@ Do not use this skill when the user only wants prompt writing, brainstorming, or
 
 ## Hard Rules
 
-- Run all CLI commands from the skill root, the directory containing `SKILL.md` and `scripts/`.
+- Source mode: run CLI commands from the skill root (the directory containing `SKILL.md` and `scripts/`).
+- Tool-install mode: `comfyui-agent-skill-mie` / `comfyui-skill` can be run from any directory.
 - Use `uv run --no-sync python -m comfyui` for runtime calls. Do not use bare `python -m comfyui` in Agent instructions.
 - Use registered workflows only. Do not run arbitrary unreviewed ComfyUI workflow JSON.
 - If server health fails, stop generation and return/handle `SERVER_UNAVAILABLE`; do not search disk for ComfyUI installs or guess ports.
@@ -52,6 +53,13 @@ Initial setup from the skill root:
 ```bash
 uv sync
 uv run --no-sync python -m comfyui --help
+```
+
+Tool-install mode:
+
+```bash
+comfyui-agent-skill-mie --help
+comfyui-agent-skill-mie check
 ```
 
 ## Quick Workflow Choice

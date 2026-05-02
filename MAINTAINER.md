@@ -6,6 +6,20 @@ This file is for maintainers who update workflows, mappings, or runtime behavior
 
 Source of truth: [references/extension.md](references/extension.md)
 
+## Packaged Resources (Install Mode)
+
+Runtime packaging reads workflows and references from the Python package:
+
+- `scripts/comfyui/assets/workflows/*`
+- `scripts/comfyui/references/*`
+
+This repo also keeps top-level mirrors for convenient browsing:
+
+- `assets/workflows/*`
+- `references/*`
+
+Keep these in sync before release.
+
 ## Import a Workflow (Generate Template)
 
 Use the import command to copy a workflow JSON into `assets/workflows/` and generate a `*.config.template.json` for review:

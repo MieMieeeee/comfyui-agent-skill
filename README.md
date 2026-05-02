@@ -51,7 +51,7 @@ uv run --no-sync comfyui-skill generate -p "a cute cat sitting on a windowsill a
 ### Option B: Install as a tool (no git clone)
 
 ```bash
-pipx install dist/comfyui_agent_skill_mie-*.whl
+pipx install comfyui-agent-skill-mie
 comfyui-agent-skill-mie check
 comfyui-agent-skill-mie generate -p "a cute cat sitting on a windowsill at golden hour"
 ```
@@ -59,12 +59,18 @@ comfyui-agent-skill-mie generate -p "a cute cat sitting on a windowsill at golde
 Or with uv:
 
 ```bash
-uv tool install dist/comfyui_agent_skill_mie-*.whl
+uv tool install comfyui-agent-skill-mie
 comfyui-agent-skill-mie check
 comfyui-agent-skill-mie generate -p "a cute cat sitting on a windowsill at golden hour"
 ```
 
-If you don't have a wheel yet, you can install from GitHub:
+From a local wheel (for testing before PyPI publish):
+
+```bash
+pipx install dist/comfyui_agent_skill_mie-*.whl
+```
+
+Or install from GitHub:
 
 ```bash
 pipx install "git+https://github.com/MieMieeeee/comfyui-agent-skill.git"
