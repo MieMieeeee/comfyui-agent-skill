@@ -1,20 +1,17 @@
 ---
-name: comfyui
+name: comfyui-agent-skill-mie
 description: >
-  Unified ComfyUI workflow execution skill for Agents (Claude Code / OpenCode / Hermes).
-  Use when the user asks to generate images, edit images, create reference-guided images,
-  generate text-to-video or image-to-video clips, create music/audio, synthesize speech,
-  or check a ComfyUI server. Supports registered workflows only and requires a running
-  ComfyUI server (default http://127.0.0.1:8188).
+  Agent skill for running registered ComfyUI workflows through a stable CLI.
+  Supports image, video, music, and speech generation on a local or trusted self-hosted
+  ComfyUI server (default http://127.0.0.1:8188). Registered workflows only.
 ---
 
-# ComfyUI Skill
+# comfyui-agent-skill-mie
 
 ## Purpose
 
 Run registered ComfyUI workflows through a stable Agent-facing CLI, with prompt enhancement, fail-fast errors, and structured JSON results.
 
-## When to Use
 
 Use this skill when the user asks to:
 
@@ -42,6 +39,16 @@ Do not use this skill when the user only wants prompt writing, brainstorming, or
 - Analyzer-generated workflow configs require human review before activation.
 
 ## Setup
+
+Recommended install (tool-install mode):
+
+```bash
+pipx install comfyui-agent-skill-mie
+```
+
+- Install package: `comfyui-agent-skill-mie`
+- Main command: `comfyui-agent-skill-mie`
+- Short alias: `comfyui-skill`
 
 Prerequisites:
 

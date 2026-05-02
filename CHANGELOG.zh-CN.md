@@ -9,6 +9,8 @@
 ### 打包
 - 为 pipx/uv tool install 做准备：工作流/参考文档打包进包内资源，用户可写数据落到用户目录。
 - PyPI 包名为 `comfyui-agent-skill-mie`（同时保留短命令别名 `comfyui-skill`）。
+- 将 skill 元数据名称与已发布包名统一为 `comfyui-agent-skill-mie`。
+- 将 `pipx` 调整为文档中的首选安装方式，并补充主命令/短别名关系与“本地/自托管、非 hosted service”的说明。
 
 ## 0.1.0 - 2026-05-01
 

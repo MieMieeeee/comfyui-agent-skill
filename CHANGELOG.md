@@ -9,6 +9,8 @@
 ### Packaging
 - Prepare pipx/uv tool install support: packaged workflows/references + per-user writable directories.
 - PyPI package name is `comfyui-agent-skill-mie` (keeps `comfyui-skill` as a short alias).
+- Align skill metadata name with published package name: `comfyui-agent-skill-mie`.
+- Make `pipx` the primary recommended install path in docs and clarify command naming and self-hosted usage.
 
 ## 0.1.0 - 2026-05-01
 

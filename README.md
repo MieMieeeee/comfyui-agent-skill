@@ -5,6 +5,8 @@ This repository is an Agent Skill folder (Claude Code / Claude.ai / Agent Skills
 ## Status
 
 - Requires a local or trusted self-hosted ComfyUI server (this repo is not a hosted service).
+- Not a hosted generation service; this package does not provide a ComfyUI backend.
+- This package does not install ComfyUI itself.
 - Stable interface: registered workflows only + CLI with structured JSON output.
 - Recommended trust model: do not point this at an untrusted public ComfyUI endpoint.
 - PyPI package: `comfyui-agent-skill-mie` (includes `comfyui-skill` alias).
@@ -34,7 +36,27 @@ Use this when you want to run registered ComfyUI workflows via the CLI in this r
 
 ## Quick Start
 
-### Option A: Use from source (repo root)
+### Install (Recommended: pipx)
+
+```bash
+pipx install comfyui-agent-skill-mie
+comfyui-agent-skill-mie check
+comfyui-agent-skill-mie generate -p "a cute cat sitting on a windowsill at golden hour"
+comfyui-skill check
+comfyui-skill generate -p "a cute cat sitting on a windowsill at golden hour"
+```
+
+### Alternative: uv tool install
+
+```bash
+uv tool install comfyui-agent-skill-mie
+comfyui-agent-skill-mie check
+comfyui-agent-skill-mie generate -p "a cute cat sitting on a windowsill at golden hour"
+comfyui-skill check
+comfyui-skill generate -p "a cute cat sitting on a windowsill at golden hour"
+```
+
+### Source mode (for development / maintainers)
 
 ```bash
 uv sync
@@ -47,26 +69,6 @@ Optional short command (after `uv sync` installs the project):
 ```bash
 uv run --no-sync comfyui-skill check
 uv run --no-sync comfyui-skill generate -p "a cute cat sitting on a windowsill at golden hour"
-```
-
-### Option B: Install as a tool (no git clone)
-
-```bash
-pipx install comfyui-agent-skill-mie
-comfyui-agent-skill-mie check
-comfyui-agent-skill-mie generate -p "a cute cat sitting on a windowsill at golden hour"
-comfyui-skill check
-comfyui-skill generate -p "a cute cat sitting on a windowsill at golden hour"
-```
-
-Or with uv:
-
-```bash
-uv tool install comfyui-agent-skill-mie
-comfyui-agent-skill-mie check
-comfyui-agent-skill-mie generate -p "a cute cat sitting on a windowsill at golden hour"
-comfyui-skill check
-comfyui-skill generate -p "a cute cat sitting on a windowsill at golden hour"
 ```
 
 From a local wheel (for testing before PyPI publish):
