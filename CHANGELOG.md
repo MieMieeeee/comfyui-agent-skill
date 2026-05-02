@@ -11,3 +11,8 @@
 ### Documentation
 - User vs maintainer docs split (README.md / MAINTAINER.md)
 - Workflow selection and prompt enhancement references
+
+## Unreleased
+
+### Reliability
+- CLI stdout JSON is ASCII-safe for stability across mixed terminal/codepage environments (notably Windows CI).

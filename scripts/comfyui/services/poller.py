@@ -163,7 +163,72 @@ def poll_job(
     """
     job = store.get_job(job_id)
     if job is None:
-        return {"job_id": job_id, "status": "unknown", "error": _err("JOB_NOT_FOUND", f"Job '{job_id}' not found in store.")}
+        return {
+            "success": False,
+            "workflow_id": "unknown",
+            "status": "unknown",
+            "outputs": [],
+            "job_id": job_id,
+            "error": _err("JOB_NOT_FOUND", f"Job '{job_id}' not found in store."),
+            "metadata": {},
+        }
+
+    def _extract_text_metadata(raw_prompt: str, raw_text_inputs: str | None) -> dict[str, Any]:
+        md: dict[str, Any] = {}
+        if raw_prompt and str(raw_prompt).strip():
+            md["prompt"] = str(raw_prompt).strip()
+        if raw_text_inputs and str(raw_text_inputs).strip():
+            try:
+                obj = json.loads(str(raw_text_inputs))
+            except Exception:
+                obj = None
+            if isinstance(obj, dict):
+                for k in ("speech_text", "instruct"):
+                    v = obj.get(k)
+                    if isinstance(v, str) and v.strip():
+                        md[k] = v
+        return md
+
+    def _base_metadata() -> dict[str, Any]:
+        md = _extract_text_metadata(job.get("prompt") or "", job.get("text_inputs"))
+        if job.get("seed") is not None:
+            md["seed"] = job["seed"]
+        if job.get("width") is not None:
+            md["width"] = job["width"]
+        if job.get("height") is not None:
+            md["height"] = job["height"]
+        return md
+
+    def _snapshot(
+        *,
+        success: bool,
+        status: str,
+        outputs: list[dict[str, Any]] | None,
+        error: dict[str, str] | None,
+        metadata: dict[str, Any] | None = None,
+        phase: str | None = None,
+        node: str | None = None,
+        completed_at: str | None = None,
+        transient_error: bool | None = None,
+    ) -> dict[str, Any]:
+        payload: dict[str, Any] = {
+            "success": success,
+            "workflow_id": job["workflow_id"],
+            "status": status,
+            "outputs": outputs or [],
+            "job_id": job_id,
+            "error": error,
+            "metadata": metadata or {},
+        }
+        if transient_error is True:
+            payload["transient_error"] = True
+        if phase is not None:
+            payload["phase"] = phase
+        if node is not None:
+            payload["node"] = node
+        if completed_at is not None:
+            payload["completed_at"] = completed_at
+        return payload
 
     url = poll_server_url if poll_server_url is not None else job["server_url"]
 
@@ -172,8 +237,20 @@ def poll_job(
     try:
         api = ComfyApiWrapper(url)
     except Exception as e:
-        merged = {**job, "status": job["status"], "error": _err("SERVER_UNAVAILABLE", str(e))}
-        return merged
+        err_obj = _err("SERVER_UNAVAILABLE", str(e))
+        store.update_job(
+            job_id,
+            last_polled_at=_now_iso(),
+            last_error=json.dumps(err_obj),
+        )
+        return _snapshot(
+            success=False,
+            status=job["status"],
+            outputs=[],
+            error=err_obj,
+            metadata=_base_metadata(),
+            transient_error=True,
+        )
 
     ws_result = _sync_ws_poll(job_id, url, timeout=3.0)
     phase = None
@@ -185,14 +262,26 @@ def poll_job(
     try:
         history = api.get_history(job_id)
     except Exception as e:
-        merged = {
-            **job,
-            "status": job["status"],
-            "phase": phase or job.get("phase"),
-            "node": node or job.get("node"),
-            "error": _err("POLL_FAILED", f"Failed to poll ComfyUI: {e}"),
-        }
-        return merged
+        eff_phase = phase or job.get("phase")
+        eff_node = node or job.get("node")
+        err_obj = _err("POLL_FAILED", f"Failed to poll ComfyUI: {e}")
+        store.update_job(
+            job_id,
+            phase=eff_phase,
+            node=eff_node,
+            last_polled_at=_now_iso(),
+            last_error=json.dumps(err_obj),
+        )
+        return _snapshot(
+            success=False,
+            status=job["status"],
+            outputs=[],
+            error=err_obj,
+            metadata=_base_metadata(),
+            phase=eff_phase,
+            node=eff_node,
+            transient_error=True,
+        )
 
     history_entry = history.get(job_id, {})
 
@@ -206,8 +295,15 @@ def poll_job(
             phase=phase,
             node=node,
         )
-        merged = {**job, "status": "failed", "error": err_obj, "phase": phase, "node": node}
-        return merged
+        return _snapshot(
+            success=False,
+            status="failed",
+            outputs=[],
+            error=err_obj,
+            metadata=_base_metadata(),
+            phase=phase,
+            node=node,
+        )
 
     outputs = history_entry.get("outputs", {})
     if outputs:
@@ -216,7 +312,15 @@ def poll_job(
         if config is None:
             err_obj = _err("WORKFLOW_NOT_REGISTERED", f"Workflow '{wf_id}' is not registered.")
             store.update_job(job_id, status="failed", error=json.dumps(err_obj))
-            return {**job, "status": "failed", "error": err_obj}
+            return _snapshot(
+                success=False,
+                status="failed",
+                outputs=[],
+                error=err_obj,
+                metadata=_base_metadata(),
+                phase=phase,
+                node=node,
+            )
 
         if results_dir is not None:
             out_dir = results_dir
@@ -251,20 +355,18 @@ def poll_job(
             phase=phase,
             node=node,
         )
-        metadata = {
-            "workflow_id": wf_id,
-            "prompt": job["prompt"],
-            "comfyui_outputs": raw_outputs,
-        }
-        return {
-            **job,
-            "status": "completed",
-            "outputs": artifacts,
-            "completed_at": completed_at,
-            "phase": phase,
-            "node": node,
-            "metadata": metadata,
-        }
+        metadata = _base_metadata()
+        metadata["comfyui_outputs"] = raw_outputs
+        return _snapshot(
+            success=True,
+            status="completed",
+            outputs=artifacts,
+            error=None,
+            metadata=metadata,
+            phase=phase,
+            node=node,
+            completed_at=completed_at,
+        )
 
     # No HTTP outputs yet — merge WS hints without falsely marking completed
     if phase == "finished":
@@ -287,14 +389,16 @@ def poll_job(
         update_fields["node"] = eff_node
 
     store.update_job(job_id, **update_fields)
-
-    merged = {
-        **job,
-        "status": new_status,
-        "phase": eff_phase or job.get("phase"),
-        "node": eff_node if eff_node is not None else job.get("node"),
-    }
-    return merged
+    return _snapshot(
+        success=False,
+        status=new_status,
+        outputs=[],
+        error=None,
+        metadata=_base_metadata(),
+        phase=eff_phase or job.get("phase"),
+        node=eff_node if eff_node is not None else job.get("node"),
+        completed_at=job.get("completed_at"),
+    )
 
 
 def poll_all_jobs(

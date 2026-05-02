@@ -13,6 +13,8 @@ jobs:
         os: [ubuntu-latest, windows-latest]
         python-version: ["3.10", "3.11"]
     runs-on: ${{ matrix.os }}
+    env:
+      PYTHONUTF8: "1"
     steps:
       - uses: actions/checkout@v4
 
@@ -31,7 +33,7 @@ jobs:
 
       - name: Run tests (Windows)
         if: runner.os == 'Windows'
-        run: .\.venv\Scripts\python -m pytest -q scripts/tests
+        run: .\.venv\Scripts\python.exe -m pytest -q scripts/tests
 
       - name: Run tests (Unix)
         if: runner.os != 'Windows'

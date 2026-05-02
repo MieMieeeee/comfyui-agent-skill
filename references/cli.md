@@ -147,6 +147,8 @@ Poll all pending:
 uv run --no-sync python -m comfyui generate --poll-all
 ```
 
+Poll errors (`SERVER_UNAVAILABLE`, `POLL_FAILED`) are treated as transient. The JSON payload includes `transient_error: true` and the job store records `last_error` and `last_polled_at`.
+
 ## JSON Output
 
 CLI writes one structured JSON object to stdout for success or failure.

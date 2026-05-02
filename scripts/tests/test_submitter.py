@@ -448,7 +448,7 @@ class TestSubmitWorkflowServerUnavailable:
 
 
 class TestSubmitQwen3TTS:
-    def test_stores_json_prompt_for_audio_workflow(self, tmp_path):
+    def test_stores_text_inputs_for_tts_workflow(self, tmp_path):
         from comfyui.services.submitter import submit_workflow
 
         store_path = tmp_path / "jobs.db"
@@ -467,6 +467,7 @@ class TestSubmitQwen3TTS:
 
         assert result["submitted"] is True
         row = JobStore(store_path).get_job("tts-job-1")
-        parsed = json.loads(row["prompt"])
+        assert row["text_inputs"] is not None
+        parsed = json.loads(row["text_inputs"])
         assert parsed["speech_text"] == "你好"
         assert parsed["instruct"] == "女声"

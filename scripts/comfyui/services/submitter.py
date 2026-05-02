@@ -164,15 +164,15 @@ def submit_workflow(
         except Exception as e:
             return {"submitted": False, "error": _err("SUBMISSION_FAILED", f"Failed to submit workflow: {e}")}
 
-        if getattr(config, "output_kind", "image") == "audio":
-            prompt_store = json.dumps(texts, ensure_ascii=False)
-        else:
-            prompt_store = texts.get("prompt", prompt.strip())
+        prompt_store = texts.get("prompt", prompt.strip())
+        extra_texts = {k: v for k, v in texts.items() if k != "prompt"}
+        text_inputs_store = json.dumps(extra_texts, ensure_ascii=True) if extra_texts else None
 
         store.save_job(
             job_id=job_id,
             workflow_id=workflow_id,
             prompt=prompt_store,
+            text_inputs=text_inputs_store,
             input_images=json.dumps({k: str(v) for k, v in input_images.items()}) if input_images else None,
             width=w,
             height=h,

@@ -20,6 +20,8 @@ Stable (reviewed configs in `assets/workflows/*.config.json`):
 - `ace_step_15_music` (music/audio)
 - `qwen_image_2512_4step` (text-to-image)
 
+Source of truth: the runtime registry is derived from `assets/workflows/*.config.json` (and the corresponding `assets/workflows/*.json` workflow files). If this list drifts, trust the configs and `python -m comfyui generate --help` output.
+
 ## For Skill Users (Generate / Edit / Video / Audio)
 
 Use this when you want to run registered ComfyUI workflows via the CLI in this repo.

@@ -16,6 +16,8 @@ class TestPollJobNotFound:
         from comfyui.services.poller import poll_job
         store = JobStore(tmp_path / "jobs.db")
         result = poll_job("nonexistent", store, "http://127.0.0.1:8188")
+        assert result["success"] is False
+        assert result["workflow_id"] == "unknown"
         assert result["job_id"] == "nonexistent"
         assert result["status"] == "unknown"
         assert result["error"]["code"] == "JOB_NOT_FOUND"
@@ -31,6 +33,9 @@ class TestPollJobSubmitted:
             prompt="test",
             server_url="http://127.0.0.1:8188",
             status="submitted",
+            seed=123,
+            width=832,
+            height=1280,
         )
         # No history yet (HTTP fallback)
         with patch("comfyui.services.poller.ComfyApiWrapper") as mock_cls:
@@ -40,8 +45,14 @@ class TestPollJobSubmitted:
 
             result = poll_job("job-sub-1", store, "http://127.0.0.1:8188")
 
+        assert result["success"] is False
         assert result["job_id"] == "job-sub-1"
+        assert result["workflow_id"] == "z_image_turbo"
         assert result["status"] == "submitted"
+        assert result["metadata"]["seed"] == 123
+        assert result["metadata"]["width"] == 832
+        assert result["metadata"]["height"] == 1280
+        assert result["metadata"]["prompt"] == "test"
 
 
 class TestPollJobCompleted:
@@ -54,6 +65,9 @@ class TestPollJobCompleted:
             prompt="test",
             server_url="http://127.0.0.1:8188",
             status="submitted",
+            seed=42,
+            width=832,
+            height=1280,
         )
 
         with patch("comfyui.services.poller.ComfyApiWrapper") as mock_cls:
@@ -80,12 +94,60 @@ class TestPollJobCompleted:
                 results_dir=tmp_path / "done_out",
             )
 
+        assert result["success"] is True
+        assert result["workflow_id"] == "z_image_turbo"
+        assert result["job_id"] == "job-done-1"
         assert result["status"] == "completed"
-        assert "outputs" in result
+        assert isinstance(result["outputs"], list) and result["outputs"]
+        assert result["error"] is None
+        assert result["metadata"]["seed"] == 42
+        assert result["metadata"]["width"] == 832
+        assert result["metadata"]["height"] == 1280
+        assert result["metadata"]["prompt"] == "test"
         # Store should be updated
         row = store.get_job("job-done-1")
         assert row["status"] == "completed"
         assert row["outputs"] is not None
+
+    def test_completed_extracts_text_inputs_from_text_inputs_column(self, tmp_path):
+        from comfyui.services.poller import poll_job
+        store = JobStore(tmp_path / "jobs.db")
+        store.save_job(
+            job_id="job-audio-1",
+            workflow_id="z_image_turbo",
+            prompt="x",
+            text_inputs=json.dumps({"speech_text": "hello", "instruct": "soft"}, ensure_ascii=True),
+            server_url="http://127.0.0.1:8188",
+            status="submitted",
+        )
+
+        with patch("comfyui.services.poller.ComfyApiWrapper") as mock_cls:
+            mock_inst = MagicMock()
+            mock_inst.get_history.return_value = {
+                "job-audio-1": {
+                    "outputs": {
+                        "9": {
+                            "images": [
+                                {"filename": "img_00001.png", "subfolder": "", "type": "output"}
+                            ]
+                        }
+                    }
+                }
+            }
+            mock_inst.get_image.return_value = b"bytes"
+            mock_cls.return_value = mock_inst
+
+            result = poll_job(
+                "job-audio-1",
+                store,
+                "http://127.0.0.1:8188",
+                skill_root=SKILL_ROOT,
+                results_dir=tmp_path / "audio_out",
+            )
+
+        assert result["metadata"]["prompt"] == "x"
+        assert result["metadata"]["speech_text"] == "hello"
+        assert result["metadata"]["instruct"] == "soft"
 
     def test_execution_error_marks_failed(self, tmp_path):
         from comfyui.services.poller import poll_job
@@ -134,6 +196,7 @@ class TestPollJobExecuting:
 
             result = poll_job("job-exec-1", store, "http://127.0.0.1:8188")
 
+        assert result["success"] is False
         assert result["status"] == "executing"
 
 
@@ -258,6 +321,7 @@ class TestPollAllJobs:
             server_url="http://127.0.0.1:8188",
             status="executing",
         )
+
         store.save_job(
             job_id="job-done",
             workflow_id="z_image_turbo",
@@ -312,6 +376,54 @@ class TestPollAllJobs:
         store = JobStore(tmp_path / "jobs.db")
         results = poll_all_jobs(store, poll_server_url="http://127.0.0.1:8188")
         assert results == []
+
+
+class TestPollJobTransientErrors:
+    def test_server_unavailable_sets_last_error_and_is_transient(self, tmp_path):
+        from comfyui.services.poller import poll_job
+
+        store = JobStore(tmp_path / "jobs.db")
+        store.save_job(
+            job_id="job-transient-1",
+            workflow_id="z_image_turbo",
+            prompt="test",
+            server_url="http://127.0.0.1:8188",
+            status="submitted",
+        )
+
+        with patch("comfyui.services.poller.ComfyApiWrapper", side_effect=Exception("no route")):
+            result = poll_job("job-transient-1", store, "http://127.0.0.1:8188")
+
+        assert result["error"]["code"] == "SERVER_UNAVAILABLE"
+        assert result["transient_error"] is True
+        row = store.get_job("job-transient-1")
+        assert row["last_error"] is not None
+        assert row["last_polled_at"] is not None
+
+    def test_poll_failed_sets_last_error_and_is_transient(self, tmp_path):
+        from comfyui.services.poller import poll_job
+
+        store = JobStore(tmp_path / "jobs.db")
+        store.save_job(
+            job_id="job-transient-2",
+            workflow_id="z_image_turbo",
+            prompt="test",
+            server_url="http://127.0.0.1:8188",
+            status="submitted",
+        )
+
+        with patch("comfyui.services.poller.ComfyApiWrapper") as mock_cls:
+            mock_inst = MagicMock()
+            mock_inst.get_history.side_effect = Exception("timeout")
+            mock_cls.return_value = mock_inst
+
+            result = poll_job("job-transient-2", store, "http://127.0.0.1:8188")
+
+        assert result["error"]["code"] == "POLL_FAILED"
+        assert result["transient_error"] is True
+        row = store.get_job("job-transient-2")
+        assert row["last_error"] is not None
+        assert row["last_polled_at"] is not None
 
 
 class TestPollJobOutputs:

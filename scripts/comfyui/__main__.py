@@ -15,13 +15,19 @@ if not os.environ.get("UV") and os.path.exists(".venv"):
 try:
     from comfyui.cli import main_module
 except ImportError as e:
-    print(json.dumps({
-        "success": False,
-        "error": {
-            "code": "DEPENDENCY_UNAVAILABLE",
-            "message": f"Missing dependency: {e}. Run 'uv sync' from the skill root directory.",
-        },
-    }))
+    print(
+        json.dumps(
+            {
+                "success": False,
+                "error": {
+                    "code": "DEPENDENCY_UNAVAILABLE",
+                    "message": f"Missing dependency: {e}. Run 'uv sync' from the skill root directory.",
+                },
+            },
+            ensure_ascii=True,
+            indent=2,
+        )
+    )
     sys.exit(1)
 
 if __name__ == "__main__":

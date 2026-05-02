@@ -14,6 +14,7 @@ class JobStore:
         job_id       TEXT PRIMARY KEY,
         workflow_id  TEXT NOT NULL,
         prompt       TEXT NOT NULL,
+        text_inputs  TEXT,
         input_images TEXT,
         width        INTEGER,
         height       INTEGER,
@@ -26,23 +27,39 @@ class JobStore:
         error        TEXT,
         seed         INTEGER,
         count        INTEGER,
-        completed_at  TEXT
+        completed_at  TEXT,
+        last_polled_at TEXT,
+        last_error     TEXT
     );
     CREATE INDEX IF NOT EXISTS idx_jobs_status ON jobs(status);
     CREATE INDEX IF NOT EXISTS idx_jobs_created_at ON jobs(created_at);
     """
 
     _FIELDS = (
-        "job_id", "workflow_id", "prompt", "input_images", "width", "height",
+        "job_id", "workflow_id", "prompt", "text_inputs", "input_images", "width", "height",
         "server_url", "created_at", "status", "phase", "node", "outputs",
-        "error", "seed", "count", "completed_at",
+        "error", "seed", "count", "completed_at", "last_polled_at", "last_error",
     )
 
     def __init__(self, db_path: Path) -> None:
         db_path.parent.mkdir(parents=True, exist_ok=True)
         self.db = sqlite3.connect(str(db_path), check_same_thread=False)
         self.db.executescript(self._SCHEMA)
+        self._ensure_columns()
         self.db.row_factory = sqlite3.Row
+
+    def _ensure_columns(self) -> None:
+        cols = [r[1] for r in self.db.execute("PRAGMA table_info(jobs)").fetchall()]
+        migrations: list[tuple[str, str]] = [
+            ("text_inputs", "TEXT"),
+            ("last_polled_at", "TEXT"),
+            ("last_error", "TEXT"),
+        ]
+        for name, sql_type in migrations:
+            if name in cols:
+                continue
+            self.db.execute(f"ALTER TABLE jobs ADD COLUMN {name} {sql_type}")
+        self.db.commit()
 
     def _row_to_dict(self, row: sqlite3.Row) -> dict[str, Any]:
         return dict(row)

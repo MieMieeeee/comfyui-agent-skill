@@ -31,6 +31,11 @@ class TestJobStoreInit:
         assert "idx_jobs_status" in index_names
         assert "idx_jobs_created_at" in index_names
 
+    def test_schema_has_text_inputs_column(self, tmp_path):
+        store = JobStore(tmp_path / "jobs.db")
+        cols = [r[1] for r in store.db.execute("PRAGMA table_info(jobs)").fetchall()]
+        assert "text_inputs" in cols
+
 
 class TestJobStoreSave:
     def test_save_job_stores_all_fields(self, tmp_path):
