@@ -41,7 +41,9 @@ jobs:
 
       - name: Build wheel (Unix)
         if: runner.os != 'Windows'
-        run: uv pip install wheel && uv pip wheel . -w dist
+        run: |
+          uv pip install build wheel setuptools
+          .venv/bin/python -m build --wheel --no-isolation
 
       - name: Install wheel + smoke CLI (Unix)
         if: runner.os != 'Windows'
