@@ -5,6 +5,7 @@ __pycache__/
 venv/
 ENV/
 results/
+.tmp/
 .claude/
 config.local.json
 review/

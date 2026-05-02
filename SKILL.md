@@ -32,7 +32,8 @@ Do not use this skill when the user only wants prompt writing, brainstorming, or
 
 - Source mode: run CLI commands from the skill root (the directory containing `SKILL.md` and `scripts/`).
 - Tool-install mode: `comfyui-agent-skill-mie` / `comfyui-skill` can be run from any directory.
-- Use `uv run --no-sync python -m comfyui` for runtime calls. Do not use bare `python -m comfyui` in Agent instructions.
+- Source mode: use `uv run --no-sync python -m comfyui` (or `uv run --no-sync comfyui-skill`) for runtime calls.
+- Tool-install mode: use `comfyui-skill` (or `comfyui-agent-skill-mie`) directly; do not wrap with `uv run`.
 - Use registered workflows only. Do not run arbitrary unreviewed ComfyUI workflow JSON.
 - If server health fails, stop generation and return/handle `SERVER_UNAVAILABLE`; do not search disk for ComfyUI installs or guess ports.
 - Do not create or edit `config.local.json` unless the user explicitly wants a persistent server URL. For one-off runs, use `--server` or `COMFYUI_URL`.
@@ -45,7 +46,8 @@ Do not use this skill when the user only wants prompt writing, brainstorming, or
 Prerequisites:
 
 - ComfyUI server with `GET /system_stats` available.
-- Python 3.10+ and `uv`.
+- Python 3.10+.
+- Source mode only: `uv`.
 - Required ComfyUI models/custom nodes for the selected workflow.
 
 Initial setup from the skill root:
@@ -60,6 +62,8 @@ Tool-install mode:
 ```bash
 comfyui-agent-skill-mie --help
 comfyui-agent-skill-mie check
+comfyui-skill --help
+comfyui-skill check
 ```
 
 ## Quick Workflow Choice
@@ -93,10 +97,22 @@ Health check:
 uv run --no-sync python -m comfyui check
 ```
 
+Tool-install mode:
+
+```bash
+comfyui-skill check
+```
+
 Generate an image:
 
 ```bash
 uv run --no-sync python -m comfyui generate -p "a cute cat sitting on a windowsill at golden hour"
+```
+
+Tool-install mode:
+
+```bash
+comfyui-skill generate -p "a cute cat sitting on a windowsill at golden hour"
 ```
 
 Generate with a specific workflow and server:

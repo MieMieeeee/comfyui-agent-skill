@@ -7,6 +7,7 @@ This repository is an Agent Skill folder (Claude Code / Claude.ai / Agent Skills
 - Requires a local or trusted self-hosted ComfyUI server (this repo is not a hosted service).
 - Stable interface: registered workflows only + CLI with structured JSON output.
 - Recommended trust model: do not point this at an untrusted public ComfyUI endpoint.
+- PyPI package: `comfyui-agent-skill-mie` (includes `comfyui-skill` alias).
 
 ## Registered Workflows
 
@@ -54,6 +55,8 @@ uv run --no-sync comfyui-skill generate -p "a cute cat sitting on a windowsill a
 pipx install comfyui-agent-skill-mie
 comfyui-agent-skill-mie check
 comfyui-agent-skill-mie generate -p "a cute cat sitting on a windowsill at golden hour"
+comfyui-skill check
+comfyui-skill generate -p "a cute cat sitting on a windowsill at golden hour"
 ```
 
 Or with uv:
@@ -62,6 +65,8 @@ Or with uv:
 uv tool install comfyui-agent-skill-mie
 comfyui-agent-skill-mie check
 comfyui-agent-skill-mie generate -p "a cute cat sitting on a windowsill at golden hour"
+comfyui-skill check
+comfyui-skill generate -p "a cute cat sitting on a windowsill at golden hour"
 ```
 
 From a local wheel (for testing before PyPI publish):
@@ -83,6 +88,20 @@ In tool-install mode, workflows/references are read from the installed package, 
 - Linux: `$XDG_DATA_HOME/comfyui-skill` or `~/.local/share/comfyui-skill`
 
 Short alias also available: `comfyui-skill`
+
+## Upgrade
+
+If you installed via pipx:
+
+```bash
+pipx upgrade comfyui-agent-skill-mie
+```
+
+If you installed via uv tool:
+
+```bash
+uv tool upgrade comfyui-agent-skill-mie
+```
 
 ## Troubleshooting
 
