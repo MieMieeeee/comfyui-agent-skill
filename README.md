@@ -33,7 +33,7 @@ Use this when you want to run registered ComfyUI workflows via the CLI in this r
 
 ## Quick Start
 
-From the repo root:
+### Option A: Use from source (repo root)
 
 ```bash
 uv sync
@@ -47,6 +47,28 @@ Optional short command (after `uv sync` installs the project):
 uv run --no-sync comfyui-skill check
 uv run --no-sync comfyui-skill generate -p "a cute cat sitting on a windowsill at golden hour"
 ```
+
+### Option B: Install as a tool (no git clone)
+
+```bash
+pipx install comfyui-skill
+comfyui-skill check
+comfyui-skill generate -p "a cute cat sitting on a windowsill at golden hour"
+```
+
+Or with uv:
+
+```bash
+uv tool install comfyui-skill
+comfyui-skill check
+comfyui-skill generate -p "a cute cat sitting on a windowsill at golden hour"
+```
+
+In tool-install mode, workflows/references are read from the installed package, while writable data goes to a per-user directory:
+
+- Windows: `%APPDATA%\\comfyui-skill`
+- macOS: `~/Library/Application Support/comfyui-skill`
+- Linux: `$XDG_DATA_HOME/comfyui-skill` or `~/.local/share/comfyui-skill`
 
 ## Troubleshooting
 
