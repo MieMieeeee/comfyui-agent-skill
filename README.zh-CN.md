@@ -38,6 +38,24 @@
 
 ![z_image_turbo 输出](assets/examples/z_image_turbo.png)
 
+### 参考生图（`z_image_turbo`）
+
+参考图片：
+
+![参考输入](assets/input/person.png)
+
+用户输入：
+```
+生成类似人物在跑步的图
+```
+
+增强后的提示词（Agent 视觉分析参考图后生成）：
+```
+Photorealistic, ultra-detailed portrait of a young woman with a short messy dark brown bob, wearing a chunky oatmeal-colored ribbed-knit scarf and an oversized cardigan with bold horizontal stripes in navy blue, mustard yellow, and teal green. She is running through a sunlit park path, dynamic motion, hair flowing with movement, soft golden hour light, shallow depth of field, 85mm f/2.0, natural and energetic expression
+```
+
+<!-- 首次 validate 运行后补充输出图片 -->
+
 ### 文字海报（`qwen_image_2512_4step`）
 
 提示词：
@@ -67,7 +85,7 @@ A watercolor style poster. Centered large Chinese characters: 五一节快乐. C
 一只猫懒洋洋地打哈欠，轻微镜头推近，柔和光线，真实自然运动，稳定画面
 ```
 
-<video controls src="assets/examples/ltx-23-t2v.mp4"></video>
+[ltx-23-t2v 输出（MP4）](assets/examples/ltx-23-t2v.mp4)
 
 ### 图生视频（`ltx-23-i2v`）
 
@@ -80,7 +98,7 @@ A watercolor style poster. Centered large Chinese characters: 五一节快乐. C
 A cinematic close-up portrait of a young woman with a tousled chin-length bob, wearing a chunky-knit taupe scarf and an oversized striped cardigan. She gazes upward with a melancholic, contemplative expression, soft diffused twilight light illuminating her face from the upper left. Gentle breeze moves her hair. The camera slowly drifts laterally with subtle breathing motion. Shallow depth of field, atmospheric film grain, quiet and emotional mood.
 ```
 
-<video controls src="assets/examples/ltx-23-i2v.mp4"></video>
+[ltx-23-i2v 输出（MP4）](assets/examples/ltx-23-i2v.mp4)
 
 ### 音乐生成（`ace_step_15_music`）
 
@@ -94,7 +112,7 @@ A cinematic close-up portrait of a young woman with a tousled chin-length bob, w
 gentle piano ambient, soft warm pads, slow tempo, night writing mood, calm, quiet, slightly healing, minimal, smooth reverb
 ```
 
-<audio controls src="assets/examples/ace_step_15_music.mp3"></audio>
+[ace_step_15_music 输出（MP3）](assets/examples/ace_step_15_music.mp3)
 
 ### 语音合成（`qwen3_tts`）
 
@@ -108,7 +126,7 @@ CLI 调用：
 comfyui-skill generate --workflow qwen3_tts --speech-text "谢谢你一直陪伴我到现在。" --instruct "模拟御姐角色：成熟自信、略带温柔，吐字清晰，语速适中，情绪真诚克制。"
 ```
 
-<audio controls src="assets/examples/qwen3_tts.mp3"></audio>
+[qwen3_tts 输出（MP3）](assets/examples/qwen3_tts.mp3)
 
 ## 给 Skill 使用者（生成 / 编辑 / 视频 / 音频）
 

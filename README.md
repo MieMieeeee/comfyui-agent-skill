@@ -38,6 +38,24 @@ Prompt:
 
 ![z_image_turbo output](assets/examples/z_image_turbo.png)
 
+### Reference to Image (`z_image_turbo`)
+
+Reference image:
+
+![reference input](assets/input/person.png)
+
+User input:
+```
+生成类似人物在跑步的图
+```
+
+Enhanced prompt (Agent vision analyzes the reference and generates):
+```
+Photorealistic, ultra-detailed portrait of a young woman with a short messy dark brown bob, wearing a chunky oatmeal-colored ribbed-knit scarf and an oversized cardigan with bold horizontal stripes in navy blue, mustard yellow, and teal green. She is running through a sunlit park path, dynamic motion, hair flowing with movement, soft golden hour light, shallow depth of field, 85mm f/2.0, natural and energetic expression
+```
+
+<!-- Output will be added after first validate run -->
+
 ### Text Poster (`qwen_image_2512_4step`)
 
 Prompt:
@@ -67,7 +85,7 @@ Prompt:
 一只猫懒洋洋地打哈欠，轻微镜头推近，柔和光线，真实自然运动，稳定画面
 ```
 
-<video controls src="assets/examples/ltx-23-t2v.mp4"></video>
+[ltx-23-t2v output (MP4)](assets/examples/ltx-23-t2v.mp4)
 
 ### Image to Video (`ltx-23-i2v`)
 
@@ -80,7 +98,7 @@ Prompt:
 A cinematic close-up portrait of a young woman with a tousled chin-length bob, wearing a chunky-knit taupe scarf and an oversized striped cardigan. She gazes upward with a melancholic, contemplative expression, soft diffused twilight light illuminating her face from the upper left. Gentle breeze moves her hair. The camera slowly drifts laterally with subtle breathing motion. Shallow depth of field, atmospheric film grain, quiet and emotional mood.
 ```
 
-<video controls src="assets/examples/ltx-23-i2v.mp4"></video>
+[ltx-23-i2v output (MP4)](assets/examples/ltx-23-i2v.mp4)
 
 ### Text to Music (`ace_step_15_music`)
 
@@ -94,7 +112,7 @@ Enhanced prompt sent to workflow:
 gentle piano ambient, soft warm pads, slow tempo, night writing mood, calm, quiet, slightly healing, minimal, smooth reverb
 ```
 
-<audio controls src="assets/examples/ace_step_15_music.mp3"></audio>
+[ace_step_15_music output (MP3)](assets/examples/ace_step_15_music.mp3)
 
 ### Text to Speech (`qwen3_tts`)
 
@@ -108,7 +126,7 @@ CLI call:
 comfyui-skill generate --workflow qwen3_tts --speech-text "谢谢你一直陪伴我到现在。" --instruct "模拟御姐角色：成熟自信、略带温柔，吐字清晰，语速适中，情绪真诚克制。"
 ```
 
-<audio controls src="assets/examples/qwen3_tts.mp3"></audio>
+[qwen3_tts output (MP3)](assets/examples/qwen3_tts.mp3)
 
 ## For Skill Users (Generate / Edit / Video / Audio)
 

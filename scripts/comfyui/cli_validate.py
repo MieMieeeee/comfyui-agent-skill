@@ -30,6 +30,12 @@ def _cases() -> dict[str, ValidateCase]:
             text_inputs={},
             input_images={},
         ),
+        "z_image_turbo_reference": ValidateCase(
+            workflow_id="z_image_turbo",
+            prompt="Photorealistic, ultra-detailed portrait of a young woman with a short messy dark brown bob, wearing a chunky oatmeal-colored ribbed-knit scarf and an oversized cardigan with bold horizontal stripes in navy blue, mustard yellow, and teal green. She is running through a sunlit park path, dynamic motion, hair flowing with movement, soft golden hour light, shallow depth of field, 85mm f/2.0, natural and energetic expression",
+            text_inputs={},
+            input_images={},
+        ),
         "qwen_image_2512_4step": ValidateCase(
             workflow_id="qwen_image_2512_4step",
             prompt="A watercolor style poster. Centered large Chinese characters: 五一节快乐. Clean composition, soft colors, textured paper, high quality.",
