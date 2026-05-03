@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.5 - 2026-05-03
+
+### Documentation
+- Restructure README: install/commands/upgrade sections, networking notes, references index.
+- Add reference_to_image example with generated output.
+- Update docs test to match restructured README.
+
 ## 0.1.4 - 2026-05-03
 
 ### Documentation
