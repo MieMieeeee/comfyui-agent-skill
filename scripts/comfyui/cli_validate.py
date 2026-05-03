@@ -32,7 +32,7 @@ def _cases() -> dict[str, ValidateCase]:
         ),
         "z_image_turbo_reference": ValidateCase(
             workflow_id="z_image_turbo",
-            prompt="Photorealistic, ultra-detailed portrait of a young woman with a short messy dark brown bob, wearing a chunky oatmeal-colored ribbed-knit scarf and an oversized cardigan with bold horizontal stripes in navy blue, mustard yellow, and teal green. She is sitting comfortably on a plush sofa, holding a ceramic coffee mug with both hands, steam rising gently, warm indoor ambient light, relaxed and content expression, shallow depth of field, 85mm f/2.0, cozy atmosphere",
+            prompt="Photorealistic, ultra-detailed portrait of a young woman with a short messy dark brown bob, wearing a chunky oatmeal-colored ribbed-knit scarf and an oversized cardigan with bold horizontal stripes in navy blue, mustard yellow, and teal green. She is sitting at a cozy cafe table, eating a small cake with a fork, warm cafe interior with soft ambient lighting, relaxed and happy expression, shallow depth of field, 85mm f/2.0, cozy atmosphere",
             text_inputs={},
             input_images={},
         ),
