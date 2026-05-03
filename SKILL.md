@@ -57,6 +57,11 @@ Prerequisites:
 - Source mode only: `uv`.
 - Required ComfyUI models/custom nodes for the selected workflow.
 
+Networking note:
+
+- Default local examples use `http://127.0.0.1:8188` for same-environment setups.
+- If the agent runs inside WSL/container/sandbox while ComfyUI runs on the host OS, `127.0.0.1` may refer to the runtime itself. Try `--server http://localhost:8188` or the host machine IP (and optionally persist it via `save-server`).
+
 Initial setup from the skill root:
 
 ```bash

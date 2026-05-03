@@ -111,6 +111,7 @@ uv tool upgrade comfyui-agent-skill-mie
   - `comfyui-skill doctor` (recommended)
   - `comfyui-agent-skill-mie doctor`
   - `uv run --no-sync python -m comfyui doctor` (source mode)
+- If the agent/skill runs inside WSL/container/sandbox while ComfyUI runs on the host OS, `127.0.0.1` may point to the runtime itself instead of the host. Try `--server http://localhost:8188` or the host machine IP (and optionally persist it via `save-server`).
 - `SERVER_UNAVAILABLE`: ComfyUI is not reachable at the target URL. Start ComfyUI or re-run with `--server http://<ip>:8188`.
 - `PREFLIGHT_MISSING_NODES`: install/enable required custom nodes on the ComfyUI server.
 - `PREFLIGHT_MISSING_MODELS`: download required model files on the ComfyUI server.

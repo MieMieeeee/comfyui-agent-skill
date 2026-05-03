@@ -139,6 +139,8 @@ def check_server(url: str | None = None) -> dict:
         err = str(e)
         hint = (
             f"Hint / 提示: Make sure ComfyUI is running and the IP/port is correct (current: {server_url}). "
+            f"If running inside WSL/container/sandbox while ComfyUI runs on the host, try --server http://localhost:8188 or the host machine IP. "
             f"请确认 ComfyUI 已启动，且可访问 {server_url}（检查 IP/端口、防火墙与是否在同一台机器上）。"
+            f"如果当前运行在 WSL/容器/沙箱中，而 ComfyUI 在宿主机上，请尝试 --server http://localhost:8188 或宿主机 IP。"
         )
         return {"available": False, "url": server_url, "error": err, "hint": hint}

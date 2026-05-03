@@ -63,6 +63,8 @@ Priority:
 
 Do not create or edit `config.local.json` unless the user explicitly wants a persistent server URL. For one-off calls, use `--server` or `COMFYUI_URL`.
 
+If the agent/skill runs inside WSL/container/sandbox while ComfyUI runs on the host OS, `127.0.0.1` may refer to the runtime itself instead of the host. Try `--server http://localhost:8188` or the host machine IP.
+
 Tests may override the config path with `COMFYUI_CONFIG_FILE`.
 
 ## Generate Options

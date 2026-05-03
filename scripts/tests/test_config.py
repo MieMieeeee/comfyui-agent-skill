@@ -71,6 +71,8 @@ class TestCheckServer:
         assert "error" in result
         assert "hint" in result
         assert "ComfyUI" in result["hint"] or "8188" in result["hint"] or "端口" in result["hint"]
+        assert "localhost" in result["hint"]
+        assert "WSL" in result["hint"]
 
     def test_unavailable_when_system_stats_not_json(self):
         class Handler(BaseHTTPRequestHandler):
