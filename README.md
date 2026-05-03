@@ -2,6 +2,8 @@
 
 This repository is an Agent Skill folder (Claude Code / Claude.ai / Agent Skills). The only required file is [SKILL.md](SKILL.md).
 
+- 中文文档: [README.zh-CN.md](README.zh-CN.md)
+
 ## Status
 
 - Requires a local or trusted self-hosted ComfyUI server (this repo is not a hosted service).
