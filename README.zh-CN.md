@@ -6,12 +6,100 @@
 
 ## 状态
 
-- 需要本地或可信的自托管 ComfyUI 服务（本仓库不是 hosted service）。
-- 这不是托管式生成服务；本包不提供 ComfyUI 后端。
-- 本包也不会帮你安装 ComfyUI 本体。
 - 稳定接口：仅支持已注册工作流 + CLI 结构化 JSON 输出。
-- 安全建议：不要把该 skill 指向不可信的公网 ComfyUI。
 - PyPI 包名：`comfyui-agent-skill-mie`（同时提供短别名 `comfyui-skill`）。
+
+## 安装
+
+本包是已注册 ComfyUI 工作流的本地/自托管客户端。
+
+- **需要本地或可信的自托管 ComfyUI 服务器**
+- **不是**托管式生成服务
+- **不会**帮你安装 ComfyUI 本体
+
+### 推荐：使用 pipx 安装
+
+```bash
+pipx install comfyui-agent-skill-mie
+```
+
+### 备选：使用 uv tool 安装
+
+```bash
+uv tool install comfyui-agent-skill-mie
+```
+
+### 开发 / 维护模式（源码克隆）
+
+```bash
+git clone https://github.com/MieMieeeee/comfyui-agent-skill.git
+cd comfyui-agent-skill
+uv sync
+uv run --no-sync python -m comfyui check
+```
+
+## 命令
+
+### 推荐命令
+
+安装后使用主命令：
+
+```bash
+comfyui-agent-skill-mie check
+comfyui-agent-skill-mie generate -p "a cute cat sitting on a windowsill at golden hour"
+```
+
+### 短别名
+
+也可使用更短的兼容别名：
+
+```bash
+comfyui-skill check
+comfyui-skill generate -p "a cute cat sitting on a windowsill at golden hour"
+```
+
+## 升级
+
+### pipx
+
+```bash
+pipx upgrade comfyui-agent-skill-mie
+```
+
+### uv tool
+
+```bash
+uv tool upgrade comfyui-agent-skill-mie
+```
+
+## 默认服务器地址与网络说明
+
+默认本地地址：
+
+```text
+http://127.0.0.1:8188
+```
+
+当 CLI/Agent 与 ComfyUI 运行在**同一环境**时，这是最可靠的默认值。
+
+如果 Agent 运行在 **WSL、容器或沙箱**中，而 ComfyUI 运行在**宿主机**，`127.0.0.1` 可能指向运行时自身而非宿主机。此时请尝试：
+
+```bash
+comfyui-agent-skill-mie check --server http://localhost:8188
+comfyui-agent-skill-mie check --server http://<宿主机IP>:8188
+```
+
+如需持久化非默认服务器地址：
+
+```bash
+comfyui-agent-skill-mie save-server http://localhost:8188
+```
+
+在 tool-install 模式下，工作流与参考文档来自已安装的包内资源，可写数据会落到每用户目录：
+
+- Windows：`%APPDATA%\comfyui-skill`
+- macOS：`~/Library/Application Support/comfyui-skill`
+- Linux：`$XDG_DATA_HOME/comfyui-skill` 或 `~/.local/share/comfyui-skill`
 
 ## 已注册工作流
 
@@ -25,7 +113,7 @@
 - `ace_step_15_music`（音乐/音频）
 - `qwen_image_2512_4step`（文生图，适合海报、含文字的图片）
 
-说明：运行时 registry 来自 `assets/workflows/*.config.json`（以及对应的 `assets/workflows/*.json`）。如果列表与文档不一致，以 configs 与 `python -m comfyui generate --help` 输出为准。
+说明：运行时 registry 来自 `assets/workflows/*.config.json`（以及对应的 `assets/workflows/*.json`）。如果列表与文档不一致，以 configs 与 `comfyui-agent-skill-mie generate --help` 输出为准。
 
 ## 示例
 
@@ -128,85 +216,13 @@ comfyui-skill generate --workflow qwen3_tts --speech-text "谢谢你一直陪伴
 
 [qwen3_tts 输出（MP3）](assets/examples/qwen3_tts.mp3)
 
-## 给 Skill 使用者（生成 / 编辑 / 视频 / 音频）
+## 参考文档
 
-当你希望通过本项目 CLI 运行“已注册的 ComfyUI 工作流”时使用：
-
-- 主入口：[SKILL.md](SKILL.md)
-- 工作流选择与尺寸说明：[references/workflows.md](references/workflows.md)
-- CLI 完整契约（输出目录、submit/poll、JSON schema、错误码）：[references/cli.md](references/cli.md)
-- 提示词增强参考：[references/prompt_enhancement/](references/prompt_enhancement/)
-
-## 快速开始
-
-### 安装（推荐：pipx）
-
-```bash
-pipx install comfyui-agent-skill-mie
-comfyui-agent-skill-mie check
-comfyui-agent-skill-mie generate -p "a cute cat sitting on a windowsill at golden hour"
-comfyui-skill check
-comfyui-skill generate -p "a cute cat sitting on a windowsill at golden hour"
-```
-
-### 备选：uv tool install
-
-```bash
-uv tool install comfyui-agent-skill-mie
-comfyui-agent-skill-mie check
-comfyui-agent-skill-mie generate -p "a cute cat sitting on a windowsill at golden hour"
-comfyui-skill check
-comfyui-skill generate -p "a cute cat sitting on a windowsill at golden hour"
-```
-
-### 源码模式（仅用于开发 / 维护）
-
-```bash
-uv sync
-uv run --no-sync python -m comfyui check
-uv run --no-sync python -m comfyui generate -p "a cute cat sitting on a windowsill at golden hour"
-```
-
-可选短命令（`uv sync` 安装项目后）：
-
-```bash
-uv run --no-sync comfyui-skill check
-uv run --no-sync comfyui-skill generate -p "a cute cat sitting on a windowsill at golden hour"
-```
-
-从本地 wheel 安装（用于发布前自测）：
-
-```bash
-pipx install dist/comfyui_agent_skill_mie-*.whl
-```
-
-或从 GitHub 安装：
-
-```bash
-pipx install "git+https://github.com/MieMieeeee/comfyui-agent-skill.git"
-```
-
-在 tool-install 模式下：工作流与参考文档来自已安装的包内资源；可写数据会落到每用户目录：
-
-- Windows：`%APPDATA%\\comfyui-skill`
-- macOS：`~/Library/Application Support/comfyui-skill`
-- Linux：`$XDG_DATA_HOME/comfyui-skill` 或 `~/.local/share/comfyui-skill`
-
-短别名：`comfyui-skill`
-
-## 升级
-
-如果你使用 pipx 安装：
-
-```bash
-pipx upgrade comfyui-agent-skill-mie
-```
-
-如果你使用 uv tool 安装：
-
-```bash
-uv tool upgrade comfyui-agent-skill-mie
-```
+- [SKILL.md](SKILL.md) — Agent 使用主入口
+- [references/workflows.md](references/workflows.md) — 工作流选择、尺寸说明与示例
+- [references/cli.md](references/cli.md) — CLI 完整契约、异步任务、输出路径、JSON schema、错误码
+- [references/prompt_enhancement/](references/prompt_enhancement/) — 提示词增强参考
+- [references/workflow_nodes.md](references/workflow_nodes.md) — 模型与节点依赖说明
 
 ## 故障排查
 

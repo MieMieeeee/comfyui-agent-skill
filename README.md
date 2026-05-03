@@ -6,12 +6,100 @@ This repository is an Agent Skill folder (Claude Code / Claude.ai / Agent Skills
 
 ## Status
 
-- Requires a local or trusted self-hosted ComfyUI server (this repo is not a hosted service).
-- Not a hosted generation service; this package does not provide a ComfyUI backend.
-- This package does not install ComfyUI itself.
 - Stable interface: registered workflows only + CLI with structured JSON output.
-- Recommended trust model: do not point this at an untrusted public ComfyUI endpoint.
 - PyPI package: `comfyui-agent-skill-mie` (includes `comfyui-skill` alias).
+
+## Install
+
+This package is a local/self-hosted client for registered ComfyUI workflows.
+
+- It **requires a local or trusted self-hosted ComfyUI server**
+- It is **not** a hosted generation service
+- It **does not** install ComfyUI itself
+
+### Recommended: install with pipx
+
+```bash
+pipx install comfyui-agent-skill-mie
+```
+
+### Alternative: install with uv tool
+
+```bash
+uv tool install comfyui-agent-skill-mie
+```
+
+### Development / maintainer mode (source checkout)
+
+```bash
+git clone https://github.com/MieMieeeee/comfyui-agent-skill.git
+cd comfyui-agent-skill
+uv sync
+uv run --no-sync python -m comfyui check
+```
+
+## Commands
+
+### Recommended command
+
+After installation, use the main command:
+
+```bash
+comfyui-agent-skill-mie check
+comfyui-agent-skill-mie generate -p "a cute cat sitting on a windowsill at golden hour"
+```
+
+### Short alias
+
+A shorter compatibility alias is also available:
+
+```bash
+comfyui-skill check
+comfyui-skill generate -p "a cute cat sitting on a windowsill at golden hour"
+```
+
+## Upgrade
+
+### pipx
+
+```bash
+pipx upgrade comfyui-agent-skill-mie
+```
+
+### uv tool
+
+```bash
+uv tool upgrade comfyui-agent-skill-mie
+```
+
+## Default server URL and networking notes
+
+Default local examples use:
+
+```text
+http://127.0.0.1:8188
+```
+
+This is the most predictable default when the CLI/agent and ComfyUI run in the **same environment**.
+
+If the agent runs inside **WSL, a container, or another sandbox** while ComfyUI runs on the **host OS**, `127.0.0.1` may refer to the runtime itself rather than the host machine. In that case, try one of the following:
+
+```bash
+comfyui-agent-skill-mie check --server http://localhost:8188
+comfyui-agent-skill-mie check --server http://<host-ip>:8188
+```
+
+If you want to persist a non-default server URL:
+
+```bash
+comfyui-agent-skill-mie save-server http://localhost:8188
+```
+
+In tool-install mode, workflows and references are read from the installed package, while writable data goes to a per-user directory:
+
+- Windows: `%APPDATA%\comfyui-skill`
+- macOS: `~/Library/Application Support/comfyui-skill`
+- Linux: `$XDG_DATA_HOME/comfyui-skill` or `~/.local/share/comfyui-skill`
 
 ## Registered Workflows
 
@@ -25,7 +113,7 @@ Stable (reviewed configs in `assets/workflows/*.config.json`):
 - `ace_step_15_music` (music/audio)
 - `qwen_image_2512_4step` (text-to-image, excels at posters and images with embedded text)
 
-Source of truth: the runtime registry is derived from `assets/workflows/*.config.json` (and the corresponding `assets/workflows/*.json` workflow files). If this list drifts, trust the configs and `python -m comfyui generate --help` output.
+Source of truth: the runtime registry is derived from `assets/workflows/*.config.json` (and the corresponding `assets/workflows/*.json` workflow files). If this list drifts, trust the configs and `comfyui-agent-skill-mie generate --help` output.
 
 ## Examples
 
@@ -128,85 +216,13 @@ comfyui-skill generate --workflow qwen3_tts --speech-text "谢谢你一直陪伴
 
 [qwen3_tts output (MP3)](assets/examples/qwen3_tts.mp3)
 
-## For Skill Users (Generate / Edit / Video / Audio)
+## References
 
-Use this when you want to run registered ComfyUI workflows via the CLI in this repo.
-
-- Primary entry: [SKILL.md](SKILL.md)
-- Workflow selection and sizing: [references/workflows.md](references/workflows.md)
-- Full CLI contract (output paths, async submit/poll, JSON schemas, error codes): [references/cli.md](references/cli.md)
-- Prompt enhancement playbooks: [references/prompt_enhancement/](references/prompt_enhancement/)
-
-## Quick Start
-
-### Install (Recommended: pipx)
-
-```bash
-pipx install comfyui-agent-skill-mie
-comfyui-agent-skill-mie check
-comfyui-agent-skill-mie generate -p "a cute cat sitting on a windowsill at golden hour"
-comfyui-skill check
-comfyui-skill generate -p "a cute cat sitting on a windowsill at golden hour"
-```
-
-### Alternative: uv tool install
-
-```bash
-uv tool install comfyui-agent-skill-mie
-comfyui-agent-skill-mie check
-comfyui-agent-skill-mie generate -p "a cute cat sitting on a windowsill at golden hour"
-comfyui-skill check
-comfyui-skill generate -p "a cute cat sitting on a windowsill at golden hour"
-```
-
-### Source mode (for development / maintainers)
-
-```bash
-uv sync
-uv run --no-sync python -m comfyui check
-uv run --no-sync python -m comfyui generate -p "a cute cat sitting on a windowsill at golden hour"
-```
-
-Optional short command (after `uv sync` installs the project):
-
-```bash
-uv run --no-sync comfyui-skill check
-uv run --no-sync comfyui-skill generate -p "a cute cat sitting on a windowsill at golden hour"
-```
-
-From a local wheel (for testing before PyPI publish):
-
-```bash
-pipx install dist/comfyui_agent_skill_mie-*.whl
-```
-
-Or install from GitHub:
-
-```bash
-pipx install "git+https://github.com/MieMieeeee/comfyui-agent-skill.git"
-```
-
-In tool-install mode, workflows/references are read from the installed package, while writable data goes to a per-user directory:
-
-- Windows: `%APPDATA%\\comfyui-skill`
-- macOS: `~/Library/Application Support/comfyui-skill`
-- Linux: `$XDG_DATA_HOME/comfyui-skill` or `~/.local/share/comfyui-skill`
-
-Short alias also available: `comfyui-skill`
-
-## Upgrade
-
-If you installed via pipx:
-
-```bash
-pipx upgrade comfyui-agent-skill-mie
-```
-
-If you installed via uv tool:
-
-```bash
-uv tool upgrade comfyui-agent-skill-mie
-```
+- [SKILL.md](SKILL.md) — primary entry for Agent usage
+- [references/workflows.md](references/workflows.md) — workflow selection, sizing, and examples
+- [references/cli.md](references/cli.md) — CLI contract, async jobs, output paths, JSON schemas, error codes
+- [references/prompt_enhancement/](references/prompt_enhancement/) — prompt enhancement playbooks
+- [references/workflow_nodes.md](references/workflow_nodes.md) — model and node requirements
 
 ## Troubleshooting
 
