@@ -67,7 +67,7 @@ Prompt:
 一只猫懒洋洋地打哈欠，轻微镜头推近，柔和光线，真实自然运动，稳定画面
 ```
 
-[ltx-23-t2v output (MP4)](assets/examples/ltx-23-t2v.mp4)
+<video src="assets/examples/ltx-23-t2v.mp4" controls width="600"></video>
 
 ### Image to Video (`ltx-23-i2v`)
 
@@ -80,7 +80,7 @@ Prompt:
 A cinematic close-up portrait of a young woman with a tousled chin-length bob, wearing a chunky-knit taupe scarf and an oversized striped cardigan. She gazes upward with a melancholic, contemplative expression, soft diffused twilight light illuminating her face from the upper left. Gentle breeze moves her hair. The camera slowly drifts laterally with subtle breathing motion. Shallow depth of field, atmospheric film grain, quiet and emotional mood.
 ```
 
-[ltx-23-i2v output (MP4)](assets/examples/ltx-23-i2v.mp4)
+<video src="assets/examples/ltx-23-i2v.mp4" controls width="600"></video>
 
 ### Text to Music (`ace_step_15_music`)
 
@@ -94,7 +94,7 @@ Enhanced prompt sent to workflow:
 gentle piano ambient, soft warm pads, slow tempo, night writing mood, calm, quiet, slightly healing, minimal, smooth reverb
 ```
 
-[ace_step_15_music output (MP3)](assets/examples/ace_step_15_music.mp3)
+<audio src="assets/examples/ace_step_15_music.mp3" controls></audio>
 
 ### Text to Speech (`qwen3_tts`)
 
@@ -108,7 +108,7 @@ CLI call:
 comfyui-skill generate --workflow qwen3_tts --speech-text "谢谢你一直陪伴我到现在。" --instruct "模拟御姐角色：成熟自信、略带温柔，吐字清晰，语速适中，情绪真诚克制。"
 ```
 
-[qwen3_tts output (MP3)](assets/examples/qwen3_tts.mp3)
+<audio src="assets/examples/qwen3_tts.mp3" controls></audio>
 
 ## For Skill Users (Generate / Edit / Video / Audio)
 
