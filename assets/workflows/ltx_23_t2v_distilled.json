@@ -498,15 +498,6 @@
       "title": "LTXV Audio VAE Decode"
     }
   },
-  "159": {
-    "inputs": {
-      "ckpt_name": "LTX-2.3\\ltx-2.3-22b-dev-fp8.safetensors"
-    },
-    "class_type": "CheckpointLoaderSimple",
-    "_meta": {
-      "title": "Load Checkpoint"
-    }
-  },
   "160": {
     "inputs": {
       "ckpt_name": "LTX-2.3\\ltx-2.3-22b-dev-fp8.safetensors"
@@ -514,28 +505,6 @@
     "class_type": "LTXVAudioVAELoader",
     "_meta": {
       "title": "LTXV Audio VAE Loader"
-    }
-  },
-  "161": {
-    "inputs": {
-      "text_encoder": "LTX-2\\gemma_3_12B_it_fp8_scaled.safetensors",
-      "ckpt_name": "LTX-2.3\\ltx-2.3-22b-dev-fp8.safetensors",
-      "device": "default"
-    },
-    "class_type": "LTXAVTextEncoderLoader",
-    "_meta": {
-      "title": "LTXV Audio Text Encoder Loader"
-    }
-  },
-  "171": {
-    "inputs": {
-      "vae_name": "LTX-2.3\\LTX23_audio_vae_bf16.safetensors",
-      "device": "main_device",
-      "weight_dtype": "bf16"
-    },
-    "class_type": "VAELoaderKJ",
-    "_meta": {
-      "title": "VAELoader KJ"
     }
   },
   "174": {

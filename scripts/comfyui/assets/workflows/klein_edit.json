@@ -37,16 +37,6 @@
       "title": "VAE Decode"
     }
   },
-  "106": {
-    "inputs": {
-      "unet_name": "Flux\\Flux.2-Klein\\flux-2-klein-9b-fp8.safetensors",
-      "weight_dtype": "default"
-    },
-    "class_type": "UNETLoader",
-    "_meta": {
-      "title": "Load Diffusion Model"
-    }
-  },
   "107": {
     "inputs": {
       "clip_name": "Flux.2-Klein\\qwen_3_8b_fp8mixed.safetensors",
@@ -179,7 +169,7 @@
       "scheduler": "simple",
       "denoise": 1,
       "model": [
-        "106",
+        "163",
         0
       ],
       "positive": [

@@ -225,14 +225,14 @@ class TestCLIWidthHeight:
         """T2V maps dimensions to EmptyImage — CLI must allow `--width` / `--height`."""
         result = _run_module(
             "--server", "http://127.0.0.1:59999",
-            "--workflow", "ltx_23_t2v_distill",
+            "--workflow", "ltx_23_t2v_distilled",
             "-p", "camera pan",
             "--width", "1280",
             "--height", "704",
         )
         data = json.loads(result.stdout)
         assert data["error"]["code"] != "INVALID_PARAM"
-        assert data["workflow_id"] == "ltx_23_t2v_distill"
+        assert data["workflow_id"] == "ltx_23_t2v_distilled"
         assert data["error"]["code"] == "SERVER_UNAVAILABLE"
 
     def test_ltx_i2v_rejects_width_height(self):

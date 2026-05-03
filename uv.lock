@@ -126,8 +126,8 @@ wheels = [
 ]
 
 [[package]]
-name = "comfyui-skill"
-version = "0.1.0"
+name = "comfyui-agent-skill-mie"
+version = "0.1.2"
 source = { editable = "." }
 dependencies = [
     { name = "requests" },

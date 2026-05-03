@@ -45,12 +45,35 @@ WF_MODEL_BAD = {
     },
 }
 
+WF_LORA_OK = {
+    "16": {
+        "class_type": "LoraLoaderModelOnly",
+        "inputs": {"lora_name": "LTX-2/lora_example.safetensors", "strength_model": 1},
+    },
+}
+
+WF_LORA_BAD = {
+    "16": {
+        "class_type": "LoraLoaderModelOnly",
+        "inputs": {"lora_name": "ghost/nope_lora_missing.safetensors", "strength_model": 1},
+    },
+}
+
+WF_DUALCLIP_OK = {
+    "16": {
+        "class_type": "DualCLIPLoader",
+        "inputs": {"clip_name1": "LTX-2/clip1_example.safetensors", "clip_name2": "LTX-2/clip2_example.safetensors"},
+    },
+}
+
 
 def _make_object_info(include_missing: bool = True) -> dict:
     """KSampler always present; Fake missing node only when include_missing."""
     base = {
         "KSampler": {"input": {}, "output": [], "name": "KSampler"},
         "UNETLoader": {"input": {}, "output": [], "name": "UNETLoader"},
+        "LoraLoaderModelOnly": {"input": {}, "output": [], "name": "LoraLoaderModelOnly"},
+        "DualCLIPLoader": {"input": {}, "output": [], "name": "DualCLIPLoader"},
     }
     if include_missing:
         base["DefinitelyMissingNodeClass_XYZ"] = {"input": {}, "output": [], "name": "DefinitelyMissingNodeClass_XYZ"}
@@ -74,7 +97,14 @@ class _PreflightMockHandler(BaseHTTPRequestHandler):
             if self.scenario == "red_missing_model":
                 body = json.dumps([]).encode()
             else:
-                body = json.dumps(["unet_example.safetensors"]).encode()
+                body = json.dumps(
+                    [
+                        "unet_example.safetensors",
+                        "lora_example.safetensors",
+                        "clip1_example.safetensors",
+                        "clip2_example.safetensors",
+                    ]
+                ).encode()
         elif self.path == "/system_stats":
             body = json.dumps({"system": {"ram_total": 1}}).encode()
         else:
@@ -125,6 +155,26 @@ class TestPreflightMockGreen:
         finally:
             srv.shutdown()
 
+    def test_lora_model_present_in_models_api(self):
+        url, srv = _run_mock_server("green_models")
+        try:
+            r = validate_workflow_resources(url, WF_LORA_OK)
+            assert r.ok is True
+            assert r.missing_models == []
+            assert r.error is None
+        finally:
+            srv.shutdown()
+
+    def test_dualclip_models_present_in_models_api(self):
+        url, srv = _run_mock_server("green_models")
+        try:
+            r = validate_workflow_resources(url, WF_DUALCLIP_OK)
+            assert r.ok is True
+            assert r.missing_models == []
+            assert r.error is None
+        finally:
+            srv.shutdown()
+
 
 # ----- Mocked: RED -----
 class TestPreflightMockRed:
@@ -151,6 +201,16 @@ class TestPreflightMockRed:
         finally:
             srv.shutdown()
 
+    def test_missing_lora_model_file_listing(self):
+        url, srv = _run_mock_server("red_missing_model")
+        try:
+            r = validate_workflow_resources(url, WF_LORA_BAD)
+            assert r.ok is False
+            assert r.missing_models
+            assert r.error == "missing_models"
+        finally:
+            srv.shutdown()
+
     def test_dead_server_not_reachable(self):
         r = validate_workflow_resources("http://127.0.0.1:59998", WF_NODE_OK)
         assert r.ok is False
@@ -168,6 +228,15 @@ class TestPreflightHelpers:
         wf = WF_MODEL_OK
         refs = extract_model_references(wf)
         assert "models/unet_example.safetensors" in refs
+
+    def test_extract_model_references_lora_model_only(self):
+        refs = extract_model_references(WF_LORA_OK)
+        assert "LTX-2/lora_example.safetensors" in refs
+
+    def test_extract_model_references_dualclip(self):
+        refs = extract_model_references(WF_DUALCLIP_OK)
+        assert "LTX-2/clip1_example.safetensors" in refs
+        assert "LTX-2/clip2_example.safetensors" in refs
 
 
 # ----- Live (skip when Comfy down): GREEN vs RED -----

@@ -33,3 +33,14 @@ def test_references_mirrored_into_package():
     for src, dst in _pairs(src_root, dst_root, "*.md"):
         assert dst.exists()
         assert src.read_bytes() == dst.read_bytes()
+
+
+def test_assets_input_mirrored_into_package():
+    src_root = SKILL_ROOT / "assets" / "input"
+    dst_root = PACKAGE_ROOT / "assets" / "input"
+    assert src_root.is_dir()
+    assert dst_root.is_dir()
+
+    for src, dst in _pairs(src_root, dst_root, "*.*"):
+        assert dst.exists()
+        assert src.read_bytes() == dst.read_bytes()

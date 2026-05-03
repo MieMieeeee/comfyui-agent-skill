@@ -20,7 +20,7 @@ Stable (reviewed configs in `assets/workflows/*.config.json`):
 - `z_image_turbo` (text-to-image)
 - `klein_edit` (image edit)
 - `qwen3_tts` (text-to-speech)
-- `ltx_23_t2v_distill` (text-to-video)
+- `ltx_23_t2v_distilled` (text-to-video)
 - `ltx_23_i2v_distilled` (image-to-video)
 - `ace_step_15_music` (music/audio)
 - `qwen_image_2512_4step` (text-to-image)

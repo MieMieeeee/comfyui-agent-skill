@@ -64,6 +64,8 @@ _LOADER_MODEL_KEYS: dict[str, tuple[str, ...]] = {
     "CLIPLoader": ("clip_name",),
     "CheckpointLoaderSimple": ("ckpt_name",),
     "CLIPVisionLoader": ("clip_name",),
+    "DualCLIPLoader": ("clip_name1", "clip_name2"),
+    "LoraLoaderModelOnly": ("lora_name",),
 }
 
 

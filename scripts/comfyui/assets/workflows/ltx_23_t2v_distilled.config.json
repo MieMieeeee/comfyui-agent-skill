@@ -1,6 +1,6 @@
 {
-  "workflow_id": "ltx_23_t2v_distill",
-  "workflow_file": "ltx_23_t2v_distill.json",
+  "workflow_id": "ltx_23_t2v_distilled",
+  "workflow_file": "ltx_23_t2v_distilled.json",
   "output_node_title": "Video Combine (Primary MP4)",
   "capability": "text_to_video",
   "description": "LTX 2.3 distilled text-to-video (primary Video Combine branch)",

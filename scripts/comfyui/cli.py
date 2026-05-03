@@ -6,15 +6,17 @@ import sys
 
 from comfyui.cli_admin import cmd_check, cmd_doctor, cmd_import_workflow, cmd_save_server
 from comfyui.cli_generate import cmd_generate
+from comfyui.cli_validate import cmd_validate
 
 
 def main_module() -> None:
-    """`python -m comfyui` subcommands: check | doctor | save-server | import-workflow | generate"""
+    """`python -m comfyui` subcommands: check | doctor | validate | save-server | import-workflow | generate"""
     if len(sys.argv) >= 2 and sys.argv[1] in ("-h", "--help"):
         print(
             "Usage:\n"
             "  python -m comfyui check\n"
             "  python -m comfyui doctor\n"
+            "  python -m comfyui validate\n"
             "  python -m comfyui save-server URL\n"
             "  python -m comfyui import-workflow PATH\n"
             "  python -m comfyui generate [options]\n"
@@ -34,12 +36,14 @@ def main_module() -> None:
     sub = sys.argv[1]
 
     # Route subcommands FIRST (before any flag checks)
-    if sub in ("check", "doctor", "save-server", "generate", "import-workflow"):
+    if sub in ("check", "doctor", "validate", "save-server", "generate", "import-workflow"):
         sys.argv = [sys.argv[0]] + sys.argv[2:]
         if sub == "check":
             sys.exit(cmd_check())
         if sub == "doctor":
             sys.exit(cmd_doctor())
+        if sub == "validate":
+            sys.exit(cmd_validate())
         if sub == "save-server":
             sys.exit(cmd_save_server())
         if sub == "import-workflow":
@@ -65,5 +69,5 @@ def main_module() -> None:
     if sub.startswith("-"):
         sys.exit(cmd_generate())
 
-    print(f"Unknown subcommand: {sub}. Use: check | doctor | save-server | import-workflow | generate", file=sys.stderr)
+    print(f"Unknown subcommand: {sub}. Use: check | doctor | validate | save-server | import-workflow | generate", file=sys.stderr)
     sys.exit(2)

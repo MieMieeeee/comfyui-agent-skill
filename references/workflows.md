@@ -19,7 +19,7 @@ This file is the workflow-selection reference for Agents using the ComfyUI skill
 | Generate an image with Qwen Image 2512 lightning | `qwen_image_2512_4step` | `text_to_image` | Supports `--width` and `--height`; default `512x768`; good HD preset is `704x1280`. |
 | Create a similar image from a reference picture | `z_image_turbo` after Agent vision | `reference_to_image` | Reference image is not uploaded to ComfyUI; Agent turns image + user intent into one English prompt. |
 | Edit a provided image | `klein_edit` | `image_to_image` | Upload image with `--image input_image=path`; do not pass `--width`/`--height`. |
-| Text prompt to MP4 video | `ltx_23_t2v_distill` | `text_to_video` | Supports paired `--width`/`--height`; default `768x512`; output is MP4. |
+| Text prompt to MP4 video | `ltx_23_t2v_distilled` | `text_to_video` | Supports paired `--width`/`--height`; default `768x512`; output is MP4. |
 | Image + prompt to MP4 video | `ltx_23_i2v_distilled` | `image_to_video` | Requires one valid raster input image; output resolution follows uploaded image; do not pass CLI width/height. |
 | Music / instrumental / song-style MP3 | `ace_step_15_music` | `text_to_music` | Use `--prompt` / `-p` as tags; do not use TTS flags. |
 | Spoken voice synthesis | `qwen3_tts` | `text_to_speech` | Use `--speech-text` and `--instruct`; do not pass positional prompt. |
@@ -32,7 +32,7 @@ This file is the workflow-selection reference for Agents using the ComfyUI skill
 
 `image_to_image` uploads the user's local image to ComfyUI and binds it to the configured image node. Use it when the user asks to edit, preserve structure, change clothing/background/style, or otherwise operate on the actual provided pixels.
 
-`text_to_video` uses `ltx_23_t2v_distill`. Width and height, when provided, are mapped to the workflow's `EmptyImage` node and drive the LTX latent size through `GetImageSize`.
+`text_to_video` uses `ltx_23_t2v_distilled`. Width and height, when provided, are mapped to the workflow's `EmptyImage` node and drive the LTX latent size through `GetImageSize`.
 
 `image_to_video` uses `ltx_23_i2v_distilled`. The workflow reads uploaded image size with `GetImageSize`; export resolution follows that uploaded image. If the user wants a different output size, change the input image or workflow, not CLI width/height.
 
@@ -66,7 +66,7 @@ Registered defaults:
 |----------|-----------------------|
 | `z_image_turbo` | `832x1280` unless overridden with paired width/height |
 | `qwen_image_2512_4step` | `512x768` unless overridden with paired width/height |
-| `ltx_23_t2v_distill` | `768x512` unless overridden with paired width/height |
+| `ltx_23_t2v_distilled` | `768x512` unless overridden with paired width/height |
 | `klein_edit` | `workflow_managed`; no CLI dimensions |
 | `ltx_23_i2v_distilled` | Upload image size; no CLI dimensions |
 | Audio workflows | No image dimensions |
@@ -96,7 +96,7 @@ uv run --no-sync python -m comfyui generate --workflow klein_edit --image input_
 Text-to-video:
 
 ```bash
-uv run --no-sync python -m comfyui generate --workflow ltx_23_t2v_distill --width 1280 --height 704 -p "Cinematic shot of waves at sunset, slow pan, natural motion"
+uv run --no-sync python -m comfyui generate --workflow ltx_23_t2v_distilled --width 1280 --height 704 -p "Cinematic shot of waves at sunset, slow pan, natural motion"
 ```
 
 Image-to-video:

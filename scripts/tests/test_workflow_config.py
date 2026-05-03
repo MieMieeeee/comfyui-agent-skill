@@ -114,7 +114,7 @@ class TestJsonConfig:
         assert cfg.node_mapping["instruct"]["param"] == "instruct"
 
     def test_ltx_t2v_cli_dimensions_and_presets(self, skill_root):
-        cfg = WORKFLOW_REGISTRY["ltx_23_t2v_distill"]
+        cfg = WORKFLOW_REGISTRY["ltx_23_t2v_distilled"]
         assert cfg.size_strategy != "workflow_managed"
         assert cfg.node_mapping["width"]["node_title"] == "EmptyImage"
         assert cfg.node_mapping["width"]["default"] == 768
@@ -166,8 +166,8 @@ class TestJsonConfig:
         assert "default_resolution" not in data
 
     def test_from_json_presets_survive_load(self, skill_root):
-        cfg = WORKFLOW_REGISTRY["ltx_23_t2v_distill"]
-        path = skill_root / "assets" / "workflows" / "ltx_23_t2v_distill.config.json"
+        cfg = WORKFLOW_REGISTRY["ltx_23_t2v_distilled"]
+        path = skill_root / "assets" / "workflows" / "ltx_23_t2v_distilled.config.json"
         loaded = WorkflowConfig.from_json_file(path)
         assert loaded.resolution_presets["landscape_hd"]["width"] == 1280
         assert loaded.default_resolution == "landscape_fast"

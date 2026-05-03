@@ -20,7 +20,7 @@
 - `z_image_turbo`（文生图）
 - `klein_edit`（图像编辑）
 - `qwen3_tts`（文本转语音）
-- `ltx_23_t2v_distill`（文生视频）
+- `ltx_23_t2v_distilled`（文生视频）
 - `ltx_23_i2v_distilled`（图生视频）
 - `ace_step_15_music`（音乐/音频）
 - `qwen_image_2512_4step`（文生图）
