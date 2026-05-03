@@ -4,7 +4,7 @@ from pathlib import Path
 def test_readme_has_quickstart_troubleshooting_and_short_cli():
     root = Path(__file__).resolve().parent.parent.parent
     text = (root / "README.md").read_text(encoding="utf-8")
-    assert "Quick Start" in text or "Quickstart" in text
+    assert "## Install" in text
     assert "Troubleshooting" in text
     assert "SERVER_UNAVAILABLE" in text
     assert "PREFLIGHT_MISSING_NODES" in text
