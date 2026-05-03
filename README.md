@@ -27,6 +27,89 @@ Stable (reviewed configs in `assets/workflows/*.config.json`):
 
 Source of truth: the runtime registry is derived from `assets/workflows/*.config.json` (and the corresponding `assets/workflows/*.json` workflow files). If this list drifts, trust the configs and `python -m comfyui generate --help` output.
 
+## Examples
+
+### Text to Image (`z_image_turbo`)
+
+Prompt:
+```
+年轻女生撑着透明伞，坐在草地上，肖像构图，柔和自然光，细节清晰，写实摄影风格
+```
+
+![z_image_turbo output](assets/examples/z_image_turbo.png)
+
+### Text Poster (`qwen_image_2512_4step`)
+
+Prompt:
+```
+A watercolor style poster. Centered large Chinese characters: 五一节快乐. Clean composition, soft colors, textured paper, high quality.
+```
+
+![qwen_image_2512_4step output](assets/examples/qwen_image_2512_4step.png)
+
+### Image Edit (`klein_edit`)
+
+Input:
+
+![klein_edit input](assets/input/person.png)
+
+Prompt:
+```
+只把人物的衣服换成连衣裙，保持脸部、发型、姿势、背景、光照与构图不变，真实自然
+```
+
+![klein_edit output](assets/examples/klein_edit.png)
+
+### Text to Video (`ltx-23-t2v`)
+
+Prompt:
+```
+一只猫懒洋洋地打哈欠，轻微镜头推近，柔和光线，真实自然运动，稳定画面
+```
+
+[ltx-23-t2v output (MP4)](assets/examples/ltx-23-t2v.mp4)
+
+### Image to Video (`ltx-23-i2v`)
+
+Input:
+
+![ltx-23-i2v input](assets/input/person.png)
+
+Prompt:
+```
+A cinematic close-up portrait of a young woman with a tousled chin-length bob, wearing a chunky-knit taupe scarf and an oversized striped cardigan. She gazes upward with a melancholic, contemplative expression, soft diffused twilight light illuminating her face from the upper left. Gentle breeze moves her hair. The camera slowly drifts laterally with subtle breathing motion. Shallow depth of field, atmospheric film grain, quiet and emotional mood.
+```
+
+[ltx-23-i2v output (MP4)](assets/examples/ltx-23-i2v.mp4)
+
+### Text to Music (`ace_step_15_music`)
+
+User input:
+```
+生成一段轻柔的钢琴氛围音乐
+```
+
+Enhanced prompt sent to workflow:
+```
+gentle piano ambient, soft warm pads, slow tempo, night writing mood, calm, quiet, slightly healing, minimal, smooth reverb
+```
+
+[ace_step_15_music output (MP3)](assets/examples/ace_step_15_music.mp3)
+
+### Text to Speech (`qwen3_tts`)
+
+User input:
+```
+生成御姐语音："谢谢你一直陪伴我到现在。"
+```
+
+CLI call:
+```bash
+comfyui-skill generate --workflow qwen3_tts --speech-text "谢谢你一直陪伴我到现在。" --instruct "模拟御姐角色：成熟自信、略带温柔，吐字清晰，语速适中，情绪真诚克制。"
+```
+
+[qwen3_tts output (MP3)](assets/examples/qwen3_tts.mp3)
+
 ## For Skill Users (Generate / Edit / Video / Audio)
 
 Use this when you want to run registered ComfyUI workflows via the CLI in this repo.

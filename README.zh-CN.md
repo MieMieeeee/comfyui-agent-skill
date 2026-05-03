@@ -27,6 +27,89 @@
 
 说明：运行时 registry 来自 `assets/workflows/*.config.json`（以及对应的 `assets/workflows/*.json`）。如果列表与文档不一致，以 configs 与 `python -m comfyui generate --help` 输出为准。
 
+## 示例
+
+### 文生图（`z_image_turbo`）
+
+提示词：
+```
+年轻女生撑着透明伞，坐在草地上，肖像构图，柔和自然光，细节清晰，写实摄影风格
+```
+
+![z_image_turbo 输出](assets/examples/z_image_turbo.png)
+
+### 文字海报（`qwen_image_2512_4step`）
+
+提示词：
+```
+A watercolor style poster. Centered large Chinese characters: 五一节快乐. Clean composition, soft colors, textured paper, high quality.
+```
+
+![qwen_image_2512_4step 输出](assets/examples/qwen_image_2512_4step.png)
+
+### 图像编辑（`klein_edit`）
+
+输入：
+
+![klein_edit 输入](assets/input/person.png)
+
+提示词：
+```
+只把人物的衣服换成连衣裙，保持脸部、发型、姿势、背景、光照与构图不变，真实自然
+```
+
+![klein_edit 输出](assets/examples/klein_edit.png)
+
+### 文生视频（`ltx-23-t2v`）
+
+提示词：
+```
+一只猫懒洋洋地打哈欠，轻微镜头推近，柔和光线，真实自然运动，稳定画面
+```
+
+[ltx-23-t2v 输出（MP4）](assets/examples/ltx-23-t2v.mp4)
+
+### 图生视频（`ltx-23-i2v`）
+
+输入：
+
+![ltx-23-i2v 输入](assets/input/person.png)
+
+提示词：
+```
+A cinematic close-up portrait of a young woman with a tousled chin-length bob, wearing a chunky-knit taupe scarf and an oversized striped cardigan. She gazes upward with a melancholic, contemplative expression, soft diffused twilight light illuminating her face from the upper left. Gentle breeze moves her hair. The camera slowly drifts laterally with subtle breathing motion. Shallow depth of field, atmospheric film grain, quiet and emotional mood.
+```
+
+[ltx-23-i2v 输出（MP4）](assets/examples/ltx-23-i2v.mp4)
+
+### 音乐生成（`ace_step_15_music`）
+
+用户输入：
+```
+生成一段轻柔的钢琴氛围音乐
+```
+
+增强后的提示词（发送给工作流）：
+```
+gentle piano ambient, soft warm pads, slow tempo, night writing mood, calm, quiet, slightly healing, minimal, smooth reverb
+```
+
+[ace_step_15_music 输出（MP3）](assets/examples/ace_step_15_music.mp3)
+
+### 语音合成（`qwen3_tts`）
+
+用户输入：
+```
+生成御姐语音："谢谢你一直陪伴我到现在。"
+```
+
+CLI 调用：
+```bash
+comfyui-skill generate --workflow qwen3_tts --speech-text "谢谢你一直陪伴我到现在。" --instruct "模拟御姐角色：成熟自信、略带温柔，吐字清晰，语速适中，情绪真诚克制。"
+```
+
+[qwen3_tts 输出（MP3）](assets/examples/qwen3_tts.mp3)
+
 ## 给 Skill 使用者（生成 / 编辑 / 视频 / 音频）
 
 当你希望通过本项目 CLI 运行“已注册的 ComfyUI 工作流”时使用：

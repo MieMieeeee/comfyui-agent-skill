@@ -18,6 +18,7 @@ PACKAGE_ROOT = REPO_ROOT / "scripts" / "comfyui"
 SYNC_TRIPLETS: list[tuple[str, str, str]] = [
     ("assets/workflows", "assets/workflows", "*.json"),
     ("assets/input", "assets/input", "*.*"),
+    ("assets/examples", "assets/examples", "*.*"),
     ("references", "references", "*.md"),
     ("references/prompt_enhancement", "references/prompt_enhancement", "*.md"),
 ]

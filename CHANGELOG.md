@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.4 - 2026-05-03
+
+### Documentation
+- Add examples section to README with user input and output for all registered workflows.
+- Show input images directly in README for image-edit and image-to-video workflows.
+- Reframe music and TTS examples from user's natural language perspective.
+
 ## 0.1.2 - 2026-05-02
 
 ### Features
