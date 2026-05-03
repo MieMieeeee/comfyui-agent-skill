@@ -37,7 +37,7 @@
   "102": {
     "inputs": {
       "positive": [
-        "199",
+        "180",
         0
       ],
       "negative": [
@@ -58,7 +58,7 @@
     "inputs": {
       "cfg": 1,
       "model": [
-        "208",
+        "133",
         0
       ],
       "positive": [
@@ -113,7 +113,7 @@
       ],
       "batch_size": 1,
       "audio_vae": [
-        "171",
+        "160",
         0
       ]
     },
@@ -166,7 +166,7 @@
   "109": {
     "inputs": {
       "video_latent": [
-        "181",
+        "108",
         0
       ],
       "audio_latent": [
@@ -183,25 +183,19 @@
     "inputs": {
       "text": "blurry, low quality, still frame, frames, watermark, overlay, titles, has blurbox, has subtitles",
       "clip": [
-        "204",
+        "161",
         0
       ]
     },
     "class_type": "CLIPTextEncode",
     "_meta": {
-      "title": "CLIP Text Encode (Negative Prompt)"
+      "title": "CLIP Text Encode (Prompt)"
     }
   },
   "111": {
     "inputs": {
-      "width": [
-        "210",
-        0
-      ],
-      "height": [
-        "210",
-        1
-      ],
+      "width": 1920,
+      "height": 1088,
       "batch_size": 1,
       "color": 0
     },
@@ -234,7 +228,7 @@
         0
       ],
       "sigmas": [
-        "238",
+        "98",
         0
       ],
       "latent_image": [
@@ -249,7 +243,7 @@
   },
   "114": {
     "inputs": {
-      "noise_seed": 0
+      "noise_seed": 264268753975380
     },
     "class_type": "RandomNoise",
     "_meta": {
@@ -258,7 +252,7 @@
   },
   "115": {
     "inputs": {
-      "noise_seed": 77
+      "noise_seed": 908448883057544
     },
     "class_type": "RandomNoise",
     "_meta": {
@@ -280,7 +274,7 @@
   "117": {
     "inputs": {
       "video_latent": [
-        "183",
+        "118",
         0
       ],
       "audio_latent": [
@@ -304,7 +298,7 @@
         0
       ],
       "vae": [
-        "199",
+        "180",
         1
       ]
     },
@@ -343,9 +337,9 @@
   },
   "121": {
     "inputs": {
-      "text": "The ceiling fan blades rotate clockwise at a constant and steady speed; the camera remains completely static, focusing solely on the smooth and consistent rotation of the blades.",
+      "text": "EXT. CITY SIDEWALK - AFTERNOON. A cinematic, realistic medium shot captures a young woman with a messy bun and a green trench coat pausing near a brick wall, bathed in warm afternoon sunlight. She lifts a vintage film camera to her eye, framing the street across from her. She presses the shutter button, resulting in a crisp, mechanical click. Lowering the camera slowly, she looks at the scene with a satisfied nod and says clearly, \"The lighting here is absolutely perfect today.\" She smiles faintly, adjusts a dial on the camera with a soft ratcheting sound, and continues walking. Background audio features the rhythmic scuffing of footsteps, the low rumble of passing cars, and distant chatter.",
       "clip": [
-        "204",
+        "161",
         0
       ]
     },
@@ -377,7 +371,7 @@
         0
       ],
       "vae": [
-        "199",
+        "180",
         1
       ]
     },
@@ -393,7 +387,7 @@
         1
       ],
       "audio_vae": [
-        "171",
+        "160",
         0
       ]
     },
@@ -404,13 +398,13 @@
   },
   "128": {
     "inputs": {
-      "cfg": 1,
+      "cfg": 4,
       "model": [
-        "134",
+        "159",
         0
       ],
       "positive": [
-        "199",
+        "180",
         0
       ],
       "negative": [
@@ -432,12 +426,26 @@
       "title": "Frame Rate(int)"
     }
   },
-  "134": {
+  "132": {
     "inputs": {
-      "lora_name": "LTX-2.3\\Ltx2.3-Licon-VBVR-I2V-96000-R32.safetensors",
+      "lora_name": "LTX-2.3\\ltx-2.3-22b-distilled-lora-384.safetensors",
+      "strength_model": 0.6,
+      "model": [
+        "159",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "Load LoRA"
+    }
+  },
+  "133": {
+    "inputs": {
+      "lora_name": "LTX-2\\ltx-2-19b-ic-lora-detailer.safetensors",
       "strength_model": 1,
       "model": [
-        "144",
+        "132",
         0
       ]
     },
@@ -448,20 +456,20 @@
   },
   "135": {
     "inputs": {
-      "sampler_name": "euler_ancestral_cfg_pp"
+      "sampler_name": "res_2s"
     },
     "class_type": "KSamplerSelect",
     "_meta": {
-      "title": "KSamplerSelect-p1"
+      "title": "KSamplerSelect"
     }
   },
   "136": {
     "inputs": {
-      "sampler_name": "euler_cfg_pp"
+      "sampler_name": "res_2s"
     },
     "class_type": "KSamplerSelect",
     "_meta": {
-      "title": "KSamplerSelect-p2"
+      "title": "KSamplerSelect"
     }
   },
   "142": {
@@ -476,23 +484,95 @@
       "title": "IntToFloat"
     }
   },
-  "144": {
+  "151": {
     "inputs": {
-      "unet_name": "LTX-2.3\\LTX-2.3-22B-distilled-1.1-Q6_K.gguf"
+      "tile_size": 512,
+      "overlap": 64,
+      "temporal_size": 64,
+      "temporal_overlap": 16,
+      "samples": [
+        "116",
+        0
+      ],
+      "vae": [
+        "180",
+        1
+      ]
     },
-    "class_type": "UnetLoaderGGUF",
+    "class_type": "VAEDecodeTiled",
     "_meta": {
-      "title": "Unet Loader (GGUF)"
+      "title": "VAE Decode (Tiled)"
     }
   },
-  "150": {
+  "152": {
+    "inputs": {
+      "samples": [
+        "116",
+        1
+      ],
+      "audio_vae": [
+        "160",
+        0
+      ]
+    },
+    "class_type": "LTXVAudioVAEDecode",
+    "_meta": {
+      "title": "LTXV Audio VAE Decode"
+    }
+  },
+  "159": {
+    "inputs": {
+      "ckpt_name": "LTX-2.3\\ltx-2.3-22b-dev-fp8.safetensors"
+    },
+    "class_type": "CheckpointLoaderSimple",
+    "_meta": {
+      "title": "Load Checkpoint"
+    }
+  },
+  "160": {
+    "inputs": {
+      "ckpt_name": "LTX-2.3\\ltx-2.3-22b-dev-fp8.safetensors"
+    },
+    "class_type": "LTXVAudioVAELoader",
+    "_meta": {
+      "title": "LTXV Audio VAE Loader"
+    }
+  },
+  "161": {
+    "inputs": {
+      "text_encoder": "LTX-2\\gemma_3_12B_it_fp8_scaled.safetensors",
+      "ckpt_name": "LTX-2.3\\ltx-2.3-22b-dev-fp8.safetensors",
+      "device": "default"
+    },
+    "class_type": "LTXAVTextEncoderLoader",
+    "_meta": {
+      "title": "LTXV Audio Text Encoder Loader"
+    }
+  },
+  "180": {
+    "inputs": {
+      "signal": [
+        "107",
+        0
+      ],
+      "value": [
+        "159",
+        2
+      ]
+    },
+    "class_type": "ImpactExecutionOrderController",
+    "_meta": {
+      "title": "Execution Order Controller"
+    }
+  },
+  "186": {
     "inputs": {
       "frame_rate": [
         "142",
         0
       ],
       "loop_count": 0,
-      "filename_prefix": "ltx-2.3/i2v",
+      "filename_prefix": "ltx-2.3/t2v",
       "format": "video/h264-mp4",
       "pix_fmt": "yuv420p",
       "crf": 19,
@@ -511,199 +591,17 @@
     },
     "class_type": "VHS_VideoCombine",
     "_meta": {
-      "title": "Video Combine (Preview No Save)"
+      "title": "Video Combine 🎥🅥🅗🅢"
     }
   },
-  "151": {
-    "inputs": {
-      "tile_size": 512,
-      "overlap": 64,
-      "temporal_size": 64,
-      "temporal_overlap": 16,
-      "samples": [
-        "116",
-        0
-      ],
-      "vae": [
-        "199",
-        1
-      ]
-    },
-    "class_type": "VAEDecodeTiled",
-    "_meta": {
-      "title": "VAE Decode (Tiled)"
-    }
-  },
-  "152": {
-    "inputs": {
-      "samples": [
-        "116",
-        1
-      ],
-      "audio_vae": [
-        "171",
-        0
-      ]
-    },
-    "class_type": "LTXVAudioVAEDecode",
-    "_meta": {
-      "title": "LTXV Audio VAE Decode"
-    }
-  },
-  "180": {
-    "inputs": {
-      "image": "Flux2-Klein-Edit_00085_.png"
-    },
-    "class_type": "LoadImage",
-    "_meta": {
-      "title": "Load Image"
-    }
-  },
-  "181": {
-    "inputs": {
-      "strength": 1,
-      "bypass": false,
-      "vae": [
-        "199",
-        1
-      ],
-      "image": [
-        "185",
-        0
-      ],
-      "latent": [
-        "108",
-        0
-      ]
-    },
-    "class_type": "LTXVImgToVideoInplace",
-    "_meta": {
-      "title": "LTXVImgToVideoInplace"
-    }
-  },
-  "183": {
-    "inputs": {
-      "strength": 1,
-      "bypass": false,
-      "vae": [
-        "199",
-        1
-      ],
-      "image": [
-        "185",
-        0
-      ],
-      "latent": [
-        "118",
-        0
-      ]
-    },
-    "class_type": "LTXVImgToVideoInplace",
-    "_meta": {
-      "title": "LTXVImgToVideoInplace"
-    }
-  },
-  "185": {
-    "inputs": {
-      "img_compression": 33,
-      "image": [
-        "189",
-        0
-      ]
-    },
-    "class_type": "LTXVPreprocess",
-    "_meta": {
-      "title": "LTXVPreprocess"
-    }
-  },
-  "189": {
-    "inputs": {
-      "width": [
-        "210",
-        0
-      ],
-      "height": [
-        "210",
-        1
-      ],
-      "upscale_method": "area",
-      "keep_proportion": "crop",
-      "pad_color": "0, 0, 0",
-      "crop_position": "center",
-      "divisible_by": 2,
-      "device": "cpu",
-      "image": [
-        "180",
-        0
-      ]
-    },
-    "class_type": "ImageResizeKJv2",
-    "_meta": {
-      "title": "Resize Image v2"
-    }
-  },
-  "210": {
-    "inputs": {
-      "image": [
-        "180",
-        0
-      ]
-    },
-    "class_type": "GetImageSize",
-    "_meta": {
-      "title": "Get Image Size (upload)"
-    }
-  },
-  "199": {
-    "inputs": {
-      "signal": [
-        "107",
-        0
-      ],
-      "value": [
-        "174",
-        0
-      ]
-    },
-    "class_type": "ImpactExecutionOrderController",
-    "_meta": {
-      "title": "Execution Order Controller"
-    }
-  },
-  "204": {
-    "inputs": {
-      "clip_name1": "LTX-2\\gemma_3_12B_it_fp8_scaled.safetensors",
-      "clip_name2": "LTX-2.3\\ltx-2.3_text_projection_bf16.safetensors",
-      "type": "ltxv",
-      "device": "default"
-    },
-    "class_type": "DualCLIPLoader",
-    "_meta": {
-      "title": "DualCLIPLoader"
-    }
-  },
-  "208": {
-    "inputs": {
-      "lora_name": "LTX-2\\ltx-2-19b-ic-lora-detailer.safetensors",
-      "strength_model": 1,
-      "model": [
-        "144",
-        0
-      ]
-    },
-    "class_type": "LoraLoaderModelOnly",
-    "_meta": {
-      "title": "Load LoRA"
-    }
-  },
-  "209": {
+  "187": {
     "inputs": {
       "frame_rate": [
         "142",
         0
       ],
       "loop_count": 0,
-      "filename_prefix": "ltx-2.3/i2v",
+      "filename_prefix": "ltx-2.3/t2v",
       "format": "video/h264-mp4",
       "pix_fmt": "yuv420p",
       "crf": 19,
@@ -722,16 +620,7 @@
     },
     "class_type": "VHS_VideoCombine",
     "_meta": {
-      "title": "Video Combine (Output Final)"
-    }
-  },
-  "238": {
-    "inputs": {
-      "sigmas": "1.0, 0.99375, 0.9875, 0.98125, 0.975, 0.909375, 0.725, 0.421875, 0.0"
-    },
-    "class_type": "ManualSigmas",
-    "_meta": {
-      "title": "ManualSigmas"
+      "title": "Video Combine (Primary MP4)"
     }
   }
 }

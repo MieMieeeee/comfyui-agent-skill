@@ -42,15 +42,15 @@ def _cases() -> dict[str, ValidateCase]:
             text_inputs={},
             input_images={"input_image": "assets/input/person.png"},
         ),
-        "ltx_23_t2v_distilled": ValidateCase(
-            workflow_id="ltx_23_t2v_distilled",
+        "ltx-23-t2v": ValidateCase(
+            workflow_id="ltx-23-t2v",
             prompt="一只猫懒洋洋地打哈欠，轻微镜头推近，柔和光线，真实自然运动，稳定画面",
             text_inputs={},
             input_images={},
         ),
-        "ltx_23_i2v_distilled": ValidateCase(
-            workflow_id="ltx_23_i2v_distilled",
-            prompt="表达出角色的悲伤情绪，眼神低落，轻微呼吸与细小动作，镜头微微漂移，真实自然",
+        "ltx-23-i2v": ValidateCase(
+            workflow_id="ltx-23-i2v",
+            prompt="A cinematic close-up portrait of a young woman with a tousled chin-length bob, wearing a chunky-knit taupe scarf and an oversized striped cardigan in navy, teal, and mustard. She gazes upward with a melancholic, contemplative expression, soft diffused twilight light illuminating her face from the upper left. Gentle breeze moves her hair. The camera slowly drifts laterally with subtle breathing motion. Background is a soft bokeh of deep blue evening sky and distant hazy hills. Shallow depth of field, atmospheric film grain, quiet and emotional mood.",
             text_inputs={},
             input_images={"input_image": "assets/input/person.png"},
         ),
@@ -201,7 +201,8 @@ def cmd_validate() -> int:
         {node for payload in workflows.values() for node in (payload.get("preflight", {}).get("missing_node_types") or []) if isinstance(node, str)}
     )
     missing_models = sorted(
-        {model for payload in workflows.values() for model in (payload.get("preflight", {}).get("missing_models") or []) if isinstance(model, str)}
+        {m["path"]: m for payload in workflows.values() for m in (payload.get("preflight", {}).get("missing_models") or []) if isinstance(m, dict)}.values(),
+        key=lambda m: m.get("path", ""),
     )
 
     success = bool(server.get("available")) and len(failed_workflows) == 0

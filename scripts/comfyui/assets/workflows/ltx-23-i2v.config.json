@@ -1,9 +1,9 @@
 {
-  "workflow_id": "ltx_23_i2v_distilled",
-  "workflow_file": "ltx_23_i2v_distilled.json",
-  "output_node_title": "Video Combine (Output Final)",
+  "workflow_id": "ltx-23-i2v",
+  "workflow_file": "ltx-23-i2v.json",
+  "output_node_title": "Video Combine (Primary MP4)",
   "capability": "image_to_video",
-  "description": "LTX 2.3 distilled image-to-video：导出分辨率随上传图像尺寸（工作流内 GetImageSize→EmptyImage/ImageResize）。不要使用 CLI --width/--height。",
+  "description": "LTX-2.3 dev image-to-video: output resolution follows uploaded image. Do NOT use CLI --width/--height.",
   "output_kind": "video",
   "resolution_presets": {},
   "default_resolution": "",
@@ -22,7 +22,7 @@
       "required": true
     },
     "negative_prompt": {
-      "node_title": "CLIP Text Encode (Negative Prompt)",
+      "node_title": "CLIP Text Encode (Prompt)",
       "param": "text",
       "value_type": "string"
     }

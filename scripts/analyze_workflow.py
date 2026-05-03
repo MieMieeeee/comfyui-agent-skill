@@ -13,7 +13,7 @@ import json
 import sys
 from pathlib import Path
 
-from comfyui.tools.analyze_workflow import analyze_workflow
+from comfyui.tools.analyze_workflow import analyze_workflow, detect_custom_plugins
 
 
 def main() -> None:
@@ -33,6 +33,19 @@ def main() -> None:
 
     config = analyze_workflow(workflow_path)
 
+    # Try to detect third-party plugins via /object_info
+    try:
+        from comfyui.preflight import http_get_json
+        from comfyui.config import get_comfyui_url
+        server_url = get_comfyui_url()
+        obj, obj_err = http_get_json(server_url, "/object_info")
+        if not obj_err and isinstance(obj, dict):
+            plugins = detect_custom_plugins(obj, config["_discovered_nodes"])
+            if plugins:
+                config["_required_plugins"] = plugins
+    except Exception:
+        pass  # server unavailable — skip plugin detection
+
     config_path = workflow_path.parent / f"{workflow_path.stem}.config.json"
     template_path = workflow_path.parent / f"{workflow_path.stem}.config.template.json"
 
@@ -46,6 +59,10 @@ def main() -> None:
     out_path.write_text(json.dumps(config, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"Generated: {out_path}")
     print(f"Discovered {len(config['_discovered_nodes'])} nodes, {len(config['node_mapping'])} mapped params")
+    if config.get("_required_plugins"):
+        print(f"Required third-party plugins: {config['_required_plugins']}")
+    if config.get("_required_models"):
+        print(f"Required models: {len(config['_required_models'])} files")
     if not force:
         print(f"Review the template, then rename to {config_path.name} when ready.")
     else:

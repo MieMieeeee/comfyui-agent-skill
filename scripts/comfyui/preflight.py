@@ -18,9 +18,37 @@ class PreflightResult:
     ok: bool
     server_reachable: bool
     missing_node_types: list[str] = field(default_factory=list)
-    missing_models: list[str] = field(default_factory=list)
+    missing_plugins: list[str] = field(default_factory=list)
+    required_plugins: list[str] = field(default_factory=list)
+    missing_models: list[dict[str, str]] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
     error: str | None = None
+
+
+@dataclass
+class ModelRef:
+    """A model file reference extracted from a workflow loader node."""
+    path: str
+    model_type: str   # e.g. "diffusion_model", "vae", "clip"
+    loader: str       # class_type of the loader node
+    folder: str       # expected ComfyUI models subdirectory
+
+
+# Loader class_type -> (model_type, default_folder)
+_LOADER_MODEL_CATEGORIES: dict[str, tuple[str, str]] = {
+    "UNETLoader": ("diffusion_model", "diffusion_models"),
+    "UnetLoaderGGUF": ("diffusion_model", "diffusion_models"),
+    "VAELoader": ("vae", "vae"),
+    "VAELoaderKJ": ("vae", "vae"),
+    "CLIPLoader": ("clip", "clip"),
+    "CheckpointLoaderSimple": ("checkpoint", "checkpoints"),
+    "CLIPVisionLoader": ("clip_vision", "clip_vision"),
+    "DualCLIPLoader": ("clip", "clip"),
+    "LoraLoaderModelOnly": ("lora", "loras"),
+    "LatentUpscaleModelLoader": ("upscale_model", "upscale_models"),
+    "LTXVAudioVAELoader": ("audio_vae", "vae"),
+    "LTXAVTextEncoderLoader": ("text_encoder", "clip"),
+}
 
 
 def http_get_json(server_url: str, path: str, *, timeout: float = 8.0) -> tuple[Any | None, str | None]:
@@ -60,18 +88,27 @@ def collect_class_types(workflow: dict[str, Any]) -> set[str]:
 # (class_type -> inputs key that holds model filename/path string)
 _LOADER_MODEL_KEYS: dict[str, tuple[str, ...]] = {
     "UNETLoader": ("unet_name",),
+    "UnetLoaderGGUF": ("unet_name",),
     "VAELoader": ("vae_name",),
+    "VAELoaderKJ": ("vae_name",),
     "CLIPLoader": ("clip_name",),
     "CheckpointLoaderSimple": ("ckpt_name",),
     "CLIPVisionLoader": ("clip_name",),
     "DualCLIPLoader": ("clip_name1", "clip_name2"),
     "LoraLoaderModelOnly": ("lora_name",),
+    "LatentUpscaleModelLoader": ("model_name",),
+    "LTXVAudioVAELoader": ("ckpt_name",),
+    "LTXAVTextEncoderLoader": ("text_encoder", "ckpt_name"),
 }
 
 
-def extract_model_references(workflow: dict[str, Any]) -> list[str]:
-    """Collect model path strings from loader nodes."""
-    refs: list[str] = []
+def extract_model_references(workflow: dict[str, Any]) -> list[ModelRef]:
+    """Collect model references from loader nodes.
+
+    Each reference includes the file path, model type (e.g. "diffusion_model"),
+    loader node class_type, and expected ComfyUI models subdirectory.
+    """
+    refs: list[ModelRef] = []
     for node in workflow.values():
         if not isinstance(node, dict):
             continue
@@ -81,11 +118,47 @@ def extract_model_references(workflow: dict[str, Any]) -> list[str]:
         inputs = node.get("inputs") or {}
         if not isinstance(inputs, dict):
             continue
+        cat_type, cat_folder = _LOADER_MODEL_CATEGORIES.get(ct, ("unknown", "models"))
         for key in _LOADER_MODEL_KEYS[ct]:
             val = inputs.get(key)
             if isinstance(val, str) and val.strip():
-                refs.append(val.strip())
+                refs.append(ModelRef(
+                    path=val.strip(),
+                    model_type=cat_type,
+                    loader=ct,
+                    folder=cat_folder,
+                ))
     return refs
+
+
+def detect_custom_plugins(
+    object_info: dict[str, Any],
+    needed_class_types: set[str],
+) -> tuple[list[str], list[str]]:
+    """Detect third-party custom node plugins required by a workflow.
+
+    Uses the ``python_module`` field from ``/object_info`` to distinguish
+    built-in nodes (``nodes``, ``comfy_extras.*``) from third-party
+    plugins (``custom_nodes.*``).
+
+    Returns ``(required_plugins, missing_plugins)`` where each entry is
+    a plugin package name (e.g. ``"ComfyUI-GGUF"``).
+    """
+    required: set[str] = set()
+    missing: list[str] = []
+
+    for ct in needed_class_types:
+        info = object_info.get(ct)
+        if not info:
+            continue
+        module = info.get("python_module", "")
+        if not module.startswith("custom_nodes."):
+            continue
+        parts = module.split(".")
+        plugin_name = parts[1] if len(parts) >= 2 else module
+        required.add(plugin_name)
+
+    return sorted(required), sorted(missing)
 
 
 def _normalize_ref(ref: str) -> str:
@@ -123,8 +196,8 @@ def build_model_availability_index(server_url: str) -> tuple[set[str], list[str]
     return flat, warnings
 
 
-def _model_ref_is_available(ref: str, flat: set[str]) -> bool:
-    n = _normalize_ref(ref)
+def _model_ref_is_available(ref: ModelRef, flat: set[str]) -> bool:
+    n = _normalize_ref(ref.path)
     if n in flat:
         return True
     base = n.split("/")[-1]
@@ -138,7 +211,7 @@ def _model_ref_is_available(ref: str, flat: set[str]) -> bool:
 
 
 def validate_workflow_resources(server_url: str, workflow: dict[str, Any]) -> PreflightResult:
-    """Check node registration via /object_info and model files via /models."""
+    """Check node registration, plugin dependencies, and model files."""
     obj, err = http_get_json(server_url, "/object_info")
     if err or not isinstance(obj, dict):
         return PreflightResult(
@@ -149,27 +222,44 @@ def validate_workflow_resources(server_url: str, workflow: dict[str, Any]) -> Pr
 
     needed = collect_class_types(workflow)
     missing_nodes = sorted(ct for ct in needed if ct not in obj)
-    if missing_nodes:
-        return PreflightResult(
-            ok=False,
-            server_reachable=True,
-            missing_node_types=missing_nodes,
-            error="missing_node_types",
-        )
 
+    required_plugins, _ = detect_custom_plugins(obj, needed)
+
+    warnings: list[str] = []
+    missing_models: list[dict[str, str]] = []
     refs = extract_model_references(workflow)
-    if not refs:
-        return PreflightResult(ok=True, server_reachable=True)
+    if refs:
+        flat, model_warnings = build_model_availability_index(server_url)
+        warnings.extend(model_warnings)
+        seen: set[str] = set()
+        for ref in refs:
+            norm = _normalize_ref(ref.path)
+            if norm in seen:
+                continue
+            if not _model_ref_is_available(ref, flat):
+                seen.add(norm)
+                missing_models.append({
+                    "path": norm,
+                    "type": ref.model_type,
+                    "folder": ref.folder,
+                })
+        missing_models.sort(key=lambda m: m["path"])
 
-    flat, warnings = build_model_availability_index(server_url)
-    missing_models = [r for r in refs if not _model_ref_is_available(r, flat)]
-    ok = len(missing_models) == 0
+    has_errors = bool(missing_nodes or missing_models)
+    error = None
+    if missing_nodes:
+        error = "missing_node_types"
+    elif missing_models:
+        error = "missing_models"
+
     return PreflightResult(
-        ok=ok,
+        ok=not has_errors,
         server_reachable=True,
-        missing_models=sorted(set(_normalize_ref(m) for m in missing_models)),
+        missing_node_types=missing_nodes,
+        required_plugins=required_plugins,
+        missing_models=missing_models,
         warnings=warnings,
-        error=None if ok else "missing_models",
+        error=error,
     )
 
 
@@ -196,9 +286,13 @@ def build_preflight_cli_payload(workflow_id: str, result: PreflightResult) -> di
         elif result.missing_node_types:
             code = "PREFLIGHT_MISSING_NODES"
             msg = f"Node types not registered on server: {result.missing_node_types}"
+        elif result.missing_plugins:
+            code = "PREFLIGHT_MISSING_PLUGINS"
+            msg = f"Third-party plugins not installed: {result.missing_plugins}"
         elif result.missing_models:
             code = "PREFLIGHT_MISSING_MODELS"
-            msg = f"Model files not listed under GET /models: {result.missing_models}"
+            details = [f"{m['path']} (type={m['type']}, folder={m['folder']})" for m in result.missing_models]
+            msg = f"Model files not found: {details}"
         else:
             code = "PREFLIGHT_FAILED"
             msg = result.error or "Preflight failed"
@@ -209,6 +303,8 @@ def build_preflight_cli_payload(workflow_id: str, result: PreflightResult) -> di
         "preflight": {
             "server_reachable": result.server_reachable,
             "missing_node_types": result.missing_node_types,
+            "required_plugins": result.required_plugins,
+            "missing_plugins": result.missing_plugins,
             "missing_models": result.missing_models,
             "warnings": result.warnings,
         },

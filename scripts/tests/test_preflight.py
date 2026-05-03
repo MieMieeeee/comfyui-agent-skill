@@ -227,16 +227,26 @@ class TestPreflightHelpers:
     def test_extract_model_references_unet(self):
         wf = WF_MODEL_OK
         refs = extract_model_references(wf)
-        assert "models/unet_example.safetensors" in refs
+        paths = [r.path for r in refs]
+        assert "models/unet_example.safetensors" in paths
+        ref = next(r for r in refs if r.path == "models/unet_example.safetensors")
+        assert ref.model_type == "diffusion_model"
+        assert ref.folder == "diffusion_models"
 
     def test_extract_model_references_lora_model_only(self):
         refs = extract_model_references(WF_LORA_OK)
-        assert "LTX-2/lora_example.safetensors" in refs
+        paths = [r.path for r in refs]
+        assert "LTX-2/lora_example.safetensors" in paths
+        ref = refs[0]
+        assert ref.model_type == "lora"
+        assert ref.folder == "loras"
 
     def test_extract_model_references_dualclip(self):
         refs = extract_model_references(WF_DUALCLIP_OK)
-        assert "LTX-2/clip1_example.safetensors" in refs
-        assert "LTX-2/clip2_example.safetensors" in refs
+        paths = [r.path for r in refs]
+        assert "LTX-2/clip1_example.safetensors" in paths
+        assert "LTX-2/clip2_example.safetensors" in paths
+        assert all(r.model_type == "clip" for r in refs)
 
 
 # ----- Live (skip when Comfy down): GREEN vs RED -----

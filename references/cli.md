@@ -113,7 +113,7 @@ The workflow/ComfyUI node determines filenames. Always trust returned JSON paths
 For long jobs, use:
 
 ```bash
-uv run --no-sync python -m comfyui generate --workflow ltx_23_t2v_distilled -p "prompt" --progress
+uv run --no-sync python -m comfyui generate --workflow ltx-23-t2v -p "prompt" --progress
 ```
 
 Progress events are JSON lines on stderr. Stdout remains reserved for the final structured result.
@@ -141,7 +141,7 @@ uv run --no-sync python -m comfyui generate --submit --workflow qwen3_tts --spee
 Submit video:
 
 ```bash
-uv run --no-sync python -m comfyui generate --submit --workflow ltx_23_t2v_distilled -p "Cinematic shot, slow camera move"
+uv run --no-sync python -m comfyui generate --submit --workflow ltx-23-t2v -p "Cinematic shot, slow camera move"
 ```
 
 Poll one:

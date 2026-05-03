@@ -60,6 +60,8 @@ class TestAnalyzerRoundtrip:
         config = analyze_workflow(workflow_path)
 
         config.pop("_discovered_nodes", None)
+        config.pop("_required_models", None)
+        config.pop("_required_plugins", None)
         config["capability"] = "text_to_image"
         config["description"] = "Test"
 

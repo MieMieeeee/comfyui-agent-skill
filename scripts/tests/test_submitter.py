@@ -349,7 +349,7 @@ class TestSubmitWorkflowDimensions:
 
         with patch("comfyui.services.submitter.ComfyApiWrapper", return_value=mock_api):
             result = submit_workflow(
-                workflow_id="ltx_23_t2v_distilled",
+                workflow_id="ltx-23-t2v",
                 prompt="pan shot",
                 skill_root=SKILL_ROOT,
                 job_store_path=store_path,
@@ -374,7 +374,7 @@ class TestSubmitWorkflowDimensions:
 
         with patch("comfyui.services.submitter.ComfyApiWrapper", return_value=mock_api):
             result = submit_workflow(
-                workflow_id="ltx_23_t2v_distilled",
+                workflow_id="ltx-23-t2v",
                 prompt="motion",
                 skill_root=SKILL_ROOT,
                 job_store_path=store_path,
@@ -406,7 +406,7 @@ class TestSubmitWorkflowDimensions:
         try:
             with patch("comfyui.services.submitter.ComfyApiWrapper", return_value=mock_api):
                 result = submit_workflow(
-                    workflow_id="ltx_23_i2v_distilled",
+                    workflow_id="ltx-23-i2v",
                     prompt="animate",
                     skill_root=SKILL_ROOT,
                     job_store_path=store_path,

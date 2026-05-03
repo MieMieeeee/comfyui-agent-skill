@@ -225,38 +225,38 @@ class TestCLIWidthHeight:
         """T2V maps dimensions to EmptyImage — CLI must allow `--width` / `--height`."""
         result = _run_module(
             "--server", "http://127.0.0.1:59999",
-            "--workflow", "ltx_23_t2v_distilled",
+            "--workflow", "ltx-23-t2v",
             "-p", "camera pan",
             "--width", "1280",
             "--height", "704",
         )
         data = json.loads(result.stdout)
         assert data["error"]["code"] != "INVALID_PARAM"
-        assert data["workflow_id"] == "ltx_23_t2v_distilled"
+        assert data["workflow_id"] == "ltx-23-t2v"
         assert data["error"]["code"] == "SERVER_UNAVAILABLE"
 
     def test_ltx_i2v_rejects_width_height(self):
         """I2V resolution follows uploaded image / workflow wiring — CLI dimensions are invalid."""
         result = _run_module(
             "--server", "http://127.0.0.1:59999",
-            "--workflow", "ltx_23_i2v_distilled",
+            "--workflow", "ltx-23-i2v",
             "-p", "motion",
             "--width", "1920",
             "--height", "1088",
         )
         data = json.loads(result.stdout)
         assert data["error"]["code"] == "INVALID_PARAM"
-        assert "ltx_23_i2v_distilled" in data["error"]["message"]
+        assert "ltx-23-i2v" in data["error"]["message"]
 
     def test_ltx_i2v_without_dims_reaches_server(self):
         result = _run_module(
             "--server", "http://127.0.0.1:59999",
-            "--workflow", "ltx_23_i2v_distilled",
+            "--workflow", "ltx-23-i2v",
             "-p", "motion",
         )
         data = json.loads(result.stdout)
         assert data["error"]["code"] == "SERVER_UNAVAILABLE"
-        assert data["workflow_id"] == "ltx_23_i2v_distilled"
+        assert data["workflow_id"] == "ltx-23-i2v"
 
     def test_ace_music_rejects_width_height(self):
         """Audio output_kind rejects pixel dimensions."""

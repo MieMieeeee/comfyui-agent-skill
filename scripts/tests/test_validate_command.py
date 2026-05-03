@@ -47,7 +47,7 @@ def test_validate_aggregates_preflight_results(monkeypatch: pytest.MonkeyPatch, 
 
     def _fake_preflight(server_url: str, workflow_path: Path) -> PreflightResult:
         if workflow_path.name == "wf_bad.json":
-            return PreflightResult(ok=False, server_reachable=True, missing_models=["models/a.safetensors"], error="missing_models")
+            return PreflightResult(ok=False, server_reachable=True, missing_models=[{"path": "models/a.safetensors", "type": "diffusion_model", "folder": "diffusion_models"}], error="missing_models")
         return PreflightResult(ok=True, server_reachable=True)
 
     monkeypatch.setattr(preflight, "preflight_registered_workflow", _fake_preflight)
@@ -66,7 +66,8 @@ def test_validate_aggregates_preflight_results(monkeypatch: pytest.MonkeyPatch, 
     assert set(payload["workflows_checked"]) == {"wf_ok", "wf_bad"}
     assert payload["workflows"]["wf_ok"]["success"] is True
     assert payload["workflows"]["wf_bad"]["success"] is False
-    assert payload["summary"]["missing_models"] == ["models/a.safetensors"]
+    assert len(payload["summary"]["missing_models"]) == 1
+    assert payload["summary"]["missing_models"][0]["path"] == "models/a.safetensors"
     assert "example" in payload["workflows"]["wf_ok"]
 
 

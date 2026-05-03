@@ -90,12 +90,8 @@ def cmd_doctor() -> int:
         }
     )
     missing_models = sorted(
-        {
-            model
-            for payload in workflows.values()
-            for model in (payload.get("preflight", {}).get("missing_models") or [])
-            if isinstance(model, str)
-        }
+        {m["path"]: m for payload in workflows.values() for m in (payload.get("preflight", {}).get("missing_models") or []) if isinstance(m, dict)}.values(),
+        key=lambda m: m.get("path", ""),
     )
 
     success = bool(server.get("available")) and len(failed_workflows) == 0
