@@ -20,10 +20,10 @@ Stable (reviewed configs in `assets/workflows/*.config.json`):
 - `z_image_turbo` (text-to-image)
 - `klein_edit` (image edit)
 - `qwen3_tts` (text-to-speech)
-- `ltx_23_t2v_distilled` (text-to-video)
-- `ltx_23_i2v_distilled` (image-to-video)
+- `ltx-23-t2v` (text-to-video)
+- `ltx-23-i2v` (image-to-video)
 - `ace_step_15_music` (music/audio)
-- `qwen_image_2512_4step` (text-to-image)
+- `qwen_image_2512_4step` (text-to-image, excels at posters and images with embedded text)
 
 Source of truth: the runtime registry is derived from `assets/workflows/*.config.json` (and the corresponding `assets/workflows/*.json` workflow files). If this list drifts, trust the configs and `python -m comfyui generate --help` output.
 

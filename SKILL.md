@@ -83,19 +83,20 @@ comfyui-skill check
 Minimal decision tree:
 
 - User gives text only → `generate -p "..."` (defaults to `z_image_turbo`)
+- User wants a poster or image with embedded text (e.g. Chinese characters) → `generate --workflow qwen_image_2512_4step -p "..."`
 - User gives a reference image and wants a new similar image → vision → `reference_to_image` prompt → run `z_image_turbo`
 - User gives an input image and wants edits → `generate --workflow klein_edit --image input_image=... -p "..."`
 - User wants TTS / voice audio → `generate --workflow qwen3_tts --speech-text "..." --instruct "..."`
-- User wants video → `ltx_23_t2v_distilled` (text→video) or `ltx_23_i2v_distilled` (image→video)
+- User wants video → `ltx-23-t2v` (text→video) or `ltx-23-i2v` (image→video)
 
 | User intent | Workflow / mode | Required command shape |
 |-------------|-----------------|------------------------|
 | Text to image | `z_image_turbo` default | `generate -p "prompt"` |
-| Qwen Image 2512 | `qwen_image_2512_4step` | `generate --workflow qwen_image_2512_4step -p "prompt"` |
+| Text poster / image with text | `qwen_image_2512_4step` | `generate --workflow qwen_image_2512_4step -p "prompt"` |
 | Similar image from reference | Agent vision + T2I | Read reference image, create English prompt, then T2I |
 | Edit image | `klein_edit` | `generate --workflow klein_edit --image input_image=photo.png -p "edit prompt"` |
-| Text to video | `ltx_23_t2v_distilled` | `generate --workflow ltx_23_t2v_distilled -p "shot prompt"` |
-| Image to video | `ltx_23_i2v_distilled` | `generate --workflow ltx_23_i2v_distilled --image input_image=photo.png -p "motion prompt"` |
+| Text to video | `ltx-23-t2v` | `generate --workflow ltx-23-t2v -p "shot prompt"` |
+| Image to video | `ltx-23-i2v` | `generate --workflow ltx-23-i2v --image input_image=photo.png -p "motion prompt"` |
 | Text to music | `ace_step_15_music` | `generate --workflow ace_step_15_music -p "music tags"` |
 | Text to speech | `qwen3_tts` | `generate --workflow qwen3_tts --speech-text "..." --instruct "..."` |
 
@@ -164,7 +165,7 @@ uv run --no-sync python -m comfyui generate --workflow qwen_image_2512_4step --p
 Show progress for long jobs:
 
 ```bash
-uv run --no-sync python -m comfyui generate --workflow ltx_23_t2v_distilled -p "cinematic waves at sunset, slow pan" --progress
+uv run --no-sync python -m comfyui generate --workflow ltx-23-t2v -p "cinematic waves at sunset, slow pan" --progress
 ```
 
 Full CLI options, output path behavior, async submit/poll, and error code details are in [references/cli.md](references/cli.md).

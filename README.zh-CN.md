@@ -20,10 +20,10 @@
 - `z_image_turbo`（文生图）
 - `klein_edit`（图像编辑）
 - `qwen3_tts`（文本转语音）
-- `ltx_23_t2v_distilled`（文生视频）
-- `ltx_23_i2v_distilled`（图生视频）
+- `ltx-23-t2v`（文生视频）
+- `ltx-23-i2v`（图生视频）
 - `ace_step_15_music`（音乐/音频）
-- `qwen_image_2512_4step`（文生图）
+- `qwen_image_2512_4step`（文生图，适合海报、含文字的图片）
 
 说明：运行时 registry 来自 `assets/workflows/*.config.json`（以及对应的 `assets/workflows/*.json`）。如果列表与文档不一致，以 configs 与 `python -m comfyui generate --help` 输出为准。
 
