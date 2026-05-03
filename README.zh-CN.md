@@ -54,7 +54,7 @@
 Photorealistic, ultra-detailed portrait of a young woman with a short messy dark brown bob, wearing a chunky oatmeal-colored ribbed-knit scarf and an oversized cardigan with bold horizontal stripes in navy blue, mustard yellow, and teal green. She is running through a sunlit park path, dynamic motion, hair flowing with movement, soft golden hour light, shallow depth of field, 85mm f/2.0, natural and energetic expression
 ```
 
-<!-- 首次 validate 运行后补充输出图片 -->
+![参考生图输出](assets/examples/reference_to_image.png)
 
 ### 文字海报（`qwen_image_2512_4step`）
 
