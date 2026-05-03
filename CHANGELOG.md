@@ -32,4 +32,22 @@
 - User vs maintainer docs split (README.md / MAINTAINER.md)
 - Workflow selection and prompt enhancement references
 
+## 0.1.3 - 2026-05-03
+
+### Features
+- Expand workflow analyzer and preflight loader detection: UNETLoader, DualCLIPLoader, VAELoaderKJ, LoraLoaderModelOnly, LatentUpscaleModelLoader, LTXVAudioVAELoader, LTXAVTextEncoderLoader, CLIPVisionLoader.
+- Structured `ModelRef` output for missing models (model type and target ComfyUI subfolder).
+- Third-party custom plugin detection via `/object_info` `python_module` field.
+- Handle duplicate node titles in analyzer with `#N` suffix (e.g. `Load LoRA#2`).
+- Add `ltx-23-t2v` and `ltx-23-i2v` workflows replacing the previous distilled variants.
+- Add `scripts/sync_package_assets.py` to keep package-internal assets in sync with repo root.
+
+### Fixes
+- Fix `ltx-23-i2v` config mapping prompt to negative prompt node instead of positive prompt node.
+- Enhance `ltx-23-i2v` validate case prompt to simulate agent vision-based prompt enhancement.
+
+### Documentation
+- Clarify `qwen_image_2512_4step` is optimized for posters and images with embedded text.
+- Replace all `ltx_23_*_distilled` references with `ltx-23-t2v` / `ltx-23-i2v` across docs and tests.
+
 ## Unreleased

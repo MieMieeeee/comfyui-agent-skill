@@ -32,4 +32,22 @@
 - 区分使用者与维护者入口（README.md / MAINTAINER.md）
 - 补充工作流选择与提示词增强参考文档
 
+## 0.1.3 - 2026-05-03
+
+### 新功能
+- 扩展工作流分析器与 preflight 的 loader 节点检测：UNETLoader、DualCLIPLoader、VAELoaderKJ、LoraLoaderModelOnly、LatentUpscaleModelLoader、LTXVAudioVAELoader、LTXAVTextEncoderLoader、CLIPVisionLoader。
+- 缺失模型输出结构化 `ModelRef`（模型类型与 ComfyUI 目标子目录）。
+- 通过 `/object_info` 的 `python_module` 字段检测第三方自定义插件。
+- 分析器处理重复节点标题，使用 `#N` 后缀（如 `Load LoRA#2`）。
+- 新增 `ltx-23-t2v` 和 `ltx-23-i2v` 工作流，替换旧版 distilled 变体。
+- 新增 `scripts/sync_package_assets.py` 脚本，保持包内资源与仓库根目录同步。
+
+### 修复
+- 修复 `ltx-23-i2v` 配置将 prompt 映射到负面提示词节点而非正面提示词节点。
+- 增强 `ltx-23-i2v` validate 用例提示词，模拟 agent 视觉分析后的提示词增强。
+
+### 文档
+- 明确 `qwen_image_2512_4step` 适合海报和含文字的图片。
+- 全局替换 `ltx_23_*_distilled` 引用为 `ltx-23-t2v` / `ltx-23-i2v`。
+
 ## 未发布
