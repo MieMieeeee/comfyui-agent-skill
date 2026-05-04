@@ -54,10 +54,13 @@ class TestImportWorkflow:
         assert data["success"] is True
         assert data["workflow_id"] == "my_workflow"
 
-        dst_json = tmp_path / "assets" / "workflows" / "my_workflow.json"
-        dst_tpl = tmp_path / "assets" / "workflows" / "my_workflow.config.template.json"
+        dst_json = tmp_path / "custom_workflows" / "my_workflow" / "workflow.json"
+        dst_tpl = tmp_path / "custom_workflows" / "my_workflow" / "workflow.config.template.json"
         assert dst_json.exists()
         assert dst_tpl.exists()
+        tpl = json.loads(dst_tpl.read_text(encoding="utf-8"))
+        assert tpl["workflow_id"] == "my_workflow"
+        assert tpl["workflow_file"] == "my_workflow/workflow.json"
 
     def test_import_refuses_overwrite_without_force(self, tmp_path: Path):
         src = tmp_path / "wf.json"
@@ -99,3 +102,20 @@ class TestImportWorkflow:
         data = json.loads(r.stdout)
         assert data["success"] is False
         assert data["error"]["code"] == "INVALID_WORKFLOW_ID"
+
+    def test_import_rejects_builtin_id_conflict(self, tmp_path: Path):
+        src = tmp_path / "wf.json"
+        _write_min_workflow(src)
+
+        r = _run_module(
+            "import-workflow",
+            str(src),
+            "--id",
+            "z_image_turbo",
+            "--skill-root",
+            str(tmp_path),
+        )
+        assert r.returncode != 0
+        data = json.loads(r.stdout)
+        assert data["success"] is False
+        assert data["error"]["code"] == "WORKFLOW_ID_CONFLICTS_WITH_BUILTIN"

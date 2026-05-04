@@ -151,37 +151,32 @@ comfyui-skill generate \
 
 ## Adding Your Own Workflow (User Extension Example)
 
-If you want to add your own ComfyUI workflow and make it available as a registered workflow, treat it as “connecting a proven ComfyUI graph as a new capability”:
+If you want to add your own ComfyUI workflow and make it available to the skill, treat it as “connecting a proven ComfyUI graph as a reviewed capability”.
 
-### 1) Create a local workflow registry directory
+### 1) Export a working workflow from ComfyUI
 
-Choose a directory for your local workflow registrations:
+First make sure the workflow runs inside ComfyUI, then export it as API-format JSON.
 
-```text
-D:\comfyui-skill-custom\
-  assets\
-    workflows\
-```
+### 2) Import into your per-user workflow registry
 
-### 2) Import an exported ComfyUI workflow JSON
-
-First make sure the workflow works inside ComfyUI, then export it as API-format JSON. After that, run:
+Run:
 
 ```powershell
-$env:COMFYUI_SKILL_ROOT="D:\comfyui-skill-custom"
 python -m comfyui import-workflow .\my_workflow.json --id my_custom_workflow
 ```
 
-This creates:
+This writes files under your per-user skill data directory (not the packaged built-in workflow registry), for example:
 
 ```text
-assets/workflows/my_custom_workflow.json
-assets/workflows/my_custom_workflow.config.template.json
+<user_data_root>/custom_workflows/my_custom_workflow/
+  workflow.json
+  workflow.source.json
+  workflow.config.template.json
 ```
 
 ### 3) Review and activate the config
 
-- Open `assets/workflows/my_custom_workflow.config.template.json`
+- Open `workflow.config.template.json`
 - Confirm the minimal required fields:
   - `description`, `capability`, `output_kind`, and the exposed inputs in `node_mapping`
 - Optional: improve agent choice by adding selection metadata:
@@ -189,21 +184,20 @@ assets/workflows/my_custom_workflow.config.template.json
 - Rename the reviewed file to:
 
 ```text
-assets/workflows/my_custom_workflow.config.json
+workflow.config.json
 ```
 
-Only `*.config.json` files are treated as registered workflows.
+Only `workflow.config.json` is treated as an activated registered workflow. The template is not loaded.
 
-### 4) Run using your custom registry
+User-added workflows are stored in the per-user skill data directory, not in the packaged built-in workflow registry, so upgrading the skill will not overwrite them.
 
-Point runtime resources at your custom registry directory:
+### 4) Run using your custom workflow
 
 ```powershell
-$env:COMFYUI_SKILL_RESOURCE_ROOT="D:\comfyui-skill-custom"
 comfyui-skill generate --workflow my_custom_workflow -p "test prompt"
 ```
 
-If you omit `--workflow`, the CLI may apply low-risk fallback selection (for example, poster-like keywords) but it will not attempt to fully “understand” your workflow. Agent-first selection remains the intended model.
+If you omit `--workflow`, the CLI may apply low-risk fallback selection (for example, poster-like keywords) but it will not attempt to fully “understand” arbitrary user workflows. Agent-first selection remains the intended model.
 
 ## Upgrade
 

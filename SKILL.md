@@ -46,6 +46,14 @@ Do not use this skill when the user only wants prompt writing, brainstorming, or
 - Any automatic workflow selection in the CLI is only a low-risk fallback when no explicit workflow has been chosen.
 - If multiple workflows appear suitable and the user’s preference is ambiguous, ask a brief clarifying question.
 
+## User-Added Workflows
+
+- Users may add custom workflows that were first validated in ComfyUI, then imported into the skill as reviewed registered capabilities.
+- Do not execute arbitrary raw workflow JSON directly.
+- Import the workflow, generate/review the config template, and activate it only after a reviewed `workflow.config.json` exists.
+- User-added workflows must be stored in the per-user workflow registry so skill upgrades do not overwrite them.
+- Once activated, user-added workflows may be selected like other registered workflows when they are a stronger semantic match and required inputs are available.
+
 ## Setup
 
 Recommended install (tool-install mode):

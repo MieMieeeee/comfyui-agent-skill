@@ -27,10 +27,20 @@ This repo supports two paths:
    uv run --no-sync python -m comfyui import-workflow path/to/new_workflow.json --id new_workflow
    ```
 
-3. Review `assets/workflows/new_workflow.config.template.json`:
+3. Review the generated template under the per-user registry:
+
+   ```text
+   <user_data_root>/custom_workflows/new_workflow/workflow.config.template.json
+   ```
+
    - Confirm the minimal required fields: `description`, `capability`, `output_kind`, and exposed inputs in `node_mapping`.
    - Optional: add selection metadata (`intent_categories`, `priority`, `keywords_any`, `selection_guidance`) so Agents can prefer your workflow.
-4. Rename the reviewed template to `new_workflow.config.json` to activate the registration.
+4. Rename the reviewed template to activate it:
+
+   ```text
+   workflow.config.json
+   ```
+
 5. Optional preflight:
 
    ```bash
@@ -39,19 +49,22 @@ This repo supports two paths:
 
 ### Maintainer Path
 
+- Maintainers may import into the built-in workflow registry (packaged assets) explicitly:
+
+  ```bash
+  uv run --no-sync python -m comfyui import-workflow path/to/new_workflow.json --id new_workflow --into-project
+  ```
+
 - After activating a workflow registration, also update docs and tests when needed (executor, CLI validation, config loading, output handling).
 
-The workflow becomes available only after a reviewed `*.config.json` exists under `assets/workflows/`.
+The workflow becomes available only after a reviewed config exists:
+
+- User registry: `<user_data_root>/custom_workflows/<id>/workflow.config.json`
+- Built-in registry (maintainer): `assets/workflows/<id>.config.json`
 
 ## Analyzer Safety
 
-`scripts/analyze_workflow.py` is a maintainer helper, not an activation tool. By default it writes:
-
-```text
-assets/workflows/<workflow>.config.template.json
-```
-
-This avoids auto-registering heuristic analyzer output. Use `--force` only when you intentionally want to overwrite or activate a `*.config.json` directly.
+The import/analyze step generates a template. The template is not an activation artifact.
 
 Never treat analyzer output as reviewed. It guesses node roles from workflow structure and names; human review is required before activation.
 
@@ -62,7 +75,7 @@ Common top-level fields:
 | Field | Purpose |
 |-------|---------|
 | `workflow_id` | Stable id used by `--workflow` |
-| `workflow_file` | Workflow JSON path/name under `assets/workflows/` |
+| `workflow_file` | Workflow JSON path/name under the workflow registry root |
 | `capability` | Agent-facing capability such as `text_to_image`, `image_to_video`, `text_to_speech` |
 | `description` | Short human/Agent summary |
 | `node_mapping` | Role-to-node mapping used by executor |

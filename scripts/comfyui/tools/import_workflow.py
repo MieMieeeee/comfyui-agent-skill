@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import datetime as _dt
 import json
 import re
 from pathlib import Path
 from typing import Any
 
+from comfyui.config import SKILL_ROOT, get_user_data_root, get_workflows_dir
+from comfyui.services.workflow_config import Z_IMAGE_TURBO, load_configs_from_dir
 from comfyui.tools.analyze_workflow import analyze_workflow
 
 
@@ -21,9 +24,11 @@ def validate_workflow_id(raw: str) -> str:
 def import_workflow(
     *,
     src_path: Path,
-    skill_root: Path,
     workflow_id: str | None,
     force: bool,
+    into_project: bool,
+    user_data_root: Path | None = None,
+    project_root: Path | None = None,
 ) -> dict[str, Any]:
     if not src_path.exists():
         raise FileNotFoundError(f"workflow json not found: {src_path}")
@@ -34,18 +39,54 @@ def import_workflow(
         raise ValueError(f"invalid workflow json: {e}") from e
 
     wid = validate_workflow_id(workflow_id or src_path.stem)
-    workflows_dir = skill_root / "assets" / "workflows"
-    workflows_dir.mkdir(parents=True, exist_ok=True)
 
-    dst_json = workflows_dir / f"{wid}.json"
-    dst_tpl = workflows_dir / f"{wid}.config.template.json"
+    builtin_ids = set(load_configs_from_dir(get_workflows_dir()).keys())
+    builtin_ids.add(Z_IMAGE_TURBO.workflow_id)
+    if wid in builtin_ids:
+        if into_project:
+            if not force:
+                raise ValueError(
+                    f"workflow_id conflicts with an existing built-in workflow_id: {wid} (use --force to overwrite)"
+                )
+        else:
+            raise ValueError(f"workflow_id conflicts with built-in workflow_id: {wid}")
 
-    if not force and (dst_json.exists() or dst_tpl.exists()):
-        raise FileExistsError(f"workflow already exists: {wid}")
-
-    dst_json.write_bytes(src_path.read_bytes())
-    config = analyze_workflow(dst_json)
-    dst_tpl.write_text(json.dumps(config, ensure_ascii=False, indent=2), encoding="utf-8")
+    if into_project:
+        root = (project_root or SKILL_ROOT).resolve()
+        workflows_dir = root / "assets" / "workflows"
+        workflows_dir.mkdir(parents=True, exist_ok=True)
+        dst_json = workflows_dir / f"{wid}.json"
+        dst_tpl = workflows_dir / f"{wid}.config.template.json"
+        if not force and (dst_json.exists() or dst_tpl.exists()):
+            raise FileExistsError(f"workflow already exists: {wid}")
+        dst_json.write_bytes(src_path.read_bytes())
+        config = analyze_workflow(dst_json)
+        config["workflow_id"] = wid
+        config["workflow_file"] = f"{wid}.json"
+        dst_tpl.write_text(json.dumps(config, ensure_ascii=False, indent=2), encoding="utf-8")
+    else:
+        data_root = (user_data_root or get_user_data_root()).resolve()
+        custom_root = (data_root / "custom_workflows").resolve()
+        wf_dir = custom_root / wid
+        wf_dir.mkdir(parents=True, exist_ok=True)
+        dst_json = wf_dir / "workflow.json"
+        dst_src = wf_dir / "workflow.source.json"
+        dst_tpl = wf_dir / "workflow.config.template.json"
+        if not force and (dst_json.exists() or dst_tpl.exists() or (wf_dir / "workflow.config.json").exists()):
+            raise FileExistsError(f"workflow already exists: {wid}")
+        payload_bytes = src_path.read_bytes()
+        dst_src.write_bytes(payload_bytes)
+        dst_json.write_bytes(payload_bytes)
+        config = analyze_workflow(dst_json)
+        config["schema_version"] = 1
+        config["workflow_id"] = wid
+        config["workflow_file"] = f"{wid}/workflow.json"
+        config["source"] = {
+            "kind": "user_imported",
+            "imported_at": _dt.datetime.now(tz=_dt.timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z"),
+            "origin_file": str(src_path.resolve()),
+        }
+        dst_tpl.write_text(json.dumps(config, ensure_ascii=False, indent=2), encoding="utf-8")
 
     return {
         "success": True,
@@ -53,9 +94,13 @@ def import_workflow(
         "workflow_path": str(dst_json),
         "template_path": str(dst_tpl),
         "next_steps": [
-            f"Review {dst_tpl.name} and confirm the minimal required fields (description/capability/output_kind + exposed inputs in node_mapping).",
-            f"Optionally add selection metadata (intent_categories/priority/keywords_any/selection_guidance) to help Agents choose the workflow.",
-            f"Rename the reviewed template to {wid}.config.json to register it.",
-            f"Optional preflight (runs automatically before execution unless skipped): uv run --no-sync python -m comfyui generate --workflow {wid} --preflight",
+            f"Review {Path(dst_tpl).name} and confirm the minimal required fields (description/capability/output_kind + exposed inputs in node_mapping).",
+            "Optionally add selection metadata (intent_categories/priority/keywords_any/selection_guidance) to help Agents choose the workflow.",
+            (
+                f"Rename the reviewed template to workflow.config.json to activate it."
+                if not into_project
+                else f"Rename the reviewed template to {wid}.config.json to register it."
+            ),
+            f"Optional preflight: uv run --no-sync python -m comfyui generate --workflow {wid} --preflight",
         ],
     }

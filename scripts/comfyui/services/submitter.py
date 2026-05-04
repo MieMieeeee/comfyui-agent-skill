@@ -73,7 +73,12 @@ def submit_workflow(
     if job_store_path is None:
         job_store_path = default_job_store_path()
     job_store_path = Path(job_store_path)
-    store = JobStore(job_store_path)
+    store: JobStore | None = None
+    store_warning: dict[str, str] | None = None
+    try:
+        store = JobStore(job_store_path)
+    except Exception as e:
+        store_warning = _err("JOB_STORE_UNAVAILABLE", f"Cannot open job store at {job_store_path}: {e}")
 
     wf_dir = workflows_dir
     if wf_dir is None:
@@ -173,20 +178,28 @@ def submit_workflow(
         extra_texts = {k: v for k, v in texts.items() if k != "prompt"}
         text_inputs_store = json.dumps(extra_texts, ensure_ascii=True) if extra_texts else None
 
-        store.save_job(
-            job_id=job_id,
-            workflow_id=workflow_id,
-            prompt=prompt_store,
-            text_inputs=text_inputs_store,
-            input_images=json.dumps({k: str(v) for k, v in input_images.items()}) if input_images else None,
-            width=w,
-            height=h,
-            server_url=server_url,
-            status="submitted",
-            seed=actual_seed,
-            count=count,
-        )
+        if store is not None:
+            try:
+                store.save_job(
+                    job_id=job_id,
+                    workflow_id=workflow_id,
+                    prompt=prompt_store,
+                    text_inputs=text_inputs_store,
+                    input_images=json.dumps({k: str(v) for k, v in input_images.items()}) if input_images else None,
+                    width=w,
+                    height=h,
+                    server_url=server_url,
+                    status="submitted",
+                    seed=actual_seed,
+                    count=count,
+                )
+            except Exception as e:
+                store_warning = _err("JOB_STORE_UNAVAILABLE", f"Cannot write to job store at {job_store_path}: {e}")
+                store = None
 
         job_ids.append(job_id)
 
-    return {"submitted": True, "job_ids": job_ids}
+    payload: dict[str, Any] = {"submitted": True, "job_ids": job_ids}
+    if store_warning is not None:
+        payload["warning"] = store_warning
+    return payload

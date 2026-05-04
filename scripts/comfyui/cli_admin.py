@@ -146,19 +146,28 @@ def cmd_save_server() -> int:
 
 def cmd_import_workflow() -> int:
     p = argparse.ArgumentParser(
-        description="Import a ComfyUI workflow JSON into assets/workflows and generate a config template."
+        description="Import a ComfyUI API workflow JSON into the per-user registry and generate a config template."
     )
     p.add_argument("path", help="Path to an exported ComfyUI workflow JSON (API format).")
     p.add_argument("--id", default=None, help="Optional workflow_id override (default: file stem).")
     p.add_argument("--force", action="store_true", help="Overwrite existing imported files.")
     p.add_argument(
+        "--into-project",
+        action="store_true",
+        help="Maintainer mode: import into the packaged project assets/workflows instead of the per-user registry.",
+    )
+    p.add_argument(
         "--skill-root",
         default=None,
-        help="Override skill root directory (advanced; defaults to detected SKILL_ROOT).",
+        help="Advanced override. With --into-project: override project root. Otherwise: override user data root.",
+    )
+    p.add_argument(
+        "--user-data-root",
+        default=None,
+        help="Override user data root directory (advanced). Default follows OS conventions.",
     )
     args = p.parse_args()
 
-    skill_root = Path(args.skill_root or os.environ.get("COMFYUI_SKILL_ROOT") or SKILL_ROOT).resolve()
     raw_id = args.id
     derived_id = (raw_id if raw_id is not None else Path(args.path).stem or "").strip()
     try:
@@ -180,9 +189,11 @@ def cmd_import_workflow() -> int:
     try:
         payload = import_workflow(
             src_path=Path(args.path),
-            skill_root=skill_root,
             workflow_id=wid,
             force=bool(args.force),
+            into_project=bool(args.into_project),
+            user_data_root=Path(args.user_data_root or args.skill_root).resolve() if not args.into_project and (args.user_data_root or args.skill_root) else None,
+            project_root=Path(args.skill_root or os.environ.get("COMFYUI_SKILL_ROOT") or SKILL_ROOT).resolve() if args.into_project else None,
         )
     except FileNotFoundError as e:
         err = {"code": "WORKFLOW_FILE_NOT_FOUND", "message": str(e)}
@@ -193,7 +204,11 @@ def cmd_import_workflow() -> int:
         print(json.dumps({"success": False, "workflow_id": wid, "error": err}, ensure_ascii=True, indent=2))
         return 1
     except ValueError as e:
-        err = {"code": "WORKFLOW_JSON_INVALID", "message": str(e)}
+        msg = str(e)
+        code = "WORKFLOW_JSON_INVALID"
+        if "conflicts with built-in" in msg:
+            code = "WORKFLOW_ID_CONFLICTS_WITH_BUILTIN"
+        err = {"code": code, "message": msg}
         print(json.dumps({"success": False, "workflow_id": wid, "error": err}, ensure_ascii=True, indent=2))
         return 1
 

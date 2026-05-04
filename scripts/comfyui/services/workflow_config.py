@@ -5,12 +5,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from comfyui.config import get_workflows_dir
-
-
-class ConfigError(Exception):
-    """Raised when a workflow config file is invalid."""
-
+from comfyui.config import get_custom_workflows_dir, get_workflows_dir
+from comfyui.services.errors import ConfigError
 
 @dataclass
 class WorkflowConfig:
@@ -32,9 +28,20 @@ class WorkflowConfig:
     # Optional: human/Agent reference only unless tooling consumes them
     resolution_presets: dict[str, Any] = field(default_factory=dict)
     default_resolution: str = ""
+    config_path: Path | None = field(default=None, repr=False, compare=False)
 
     def resolve_workflow_path(self, workflows_dir: Path) -> Path:
-        return workflows_dir / self.workflow_file
+        p = Path(self.workflow_file)
+        if p.is_absolute():
+            return p
+        primary = workflows_dir / self.workflow_file
+        if primary.exists():
+            return primary
+        if self.config_path is not None:
+            candidate = self.config_path.parent / self.workflow_file
+            if candidate.exists():
+                return candidate
+        return get_custom_workflows_dir() / self.workflow_file
 
     def to_json(self) -> str:
         payload = {
@@ -90,6 +97,7 @@ class WorkflowConfig:
             selection_guidance=data.get("selection_guidance") or {},
             resolution_presets=data.get("resolution_presets") or {},
             default_resolution=data.get("default_resolution") or "",
+            config_path=path,
         )
 
 
@@ -102,6 +110,57 @@ def load_configs_from_dir(workflows_dir: Path) -> dict[str, WorkflowConfig]:
             raise
         registry[cfg.workflow_id] = cfg
     return registry
+
+
+def _iter_user_workflow_config_files(custom_dir: Path) -> list[Path]:
+    files: list[Path] = []
+    files.extend(sorted(custom_dir.glob("*.config.json")))
+    for p in sorted(custom_dir.glob("*/workflow.config.json")):
+        files.append(p)
+    return files
+
+
+def load_user_configs_from_dir(
+    custom_dir: Path,
+    *,
+    builtin_ids: set[str],
+) -> tuple[dict[str, WorkflowConfig], list[dict[str, Any]]]:
+    registry: dict[str, WorkflowConfig] = {}
+    errors: list[dict[str, Any]] = []
+    for config_file in _iter_user_workflow_config_files(custom_dir):
+        try:
+            cfg = WorkflowConfig.from_json_file(config_file)
+        except ConfigError as e:
+            errors.append(
+                {
+                    "code": "USER_WORKFLOW_CONFIG_INVALID",
+                    "message": str(e),
+                    "path": str(config_file),
+                }
+            )
+            continue
+        if cfg.workflow_id in builtin_ids:
+            errors.append(
+                {
+                    "code": "USER_WORKFLOW_ID_CONFLICTS_WITH_BUILTIN",
+                    "message": f"User workflow_id '{cfg.workflow_id}' conflicts with a built-in workflow. Rename it to activate.",
+                    "path": str(config_file),
+                    "workflow_id": cfg.workflow_id,
+                }
+            )
+            continue
+        if cfg.workflow_id in registry:
+            errors.append(
+                {
+                    "code": "USER_WORKFLOW_ID_DUPLICATE",
+                    "message": f"Duplicate user workflow_id '{cfg.workflow_id}' found. Only the first one is loaded.",
+                    "path": str(config_file),
+                    "workflow_id": cfg.workflow_id,
+                }
+            )
+            continue
+        registry[cfg.workflow_id] = cfg
+    return registry, errors
 
 
 # Built-in fallback (used when JSON configs aren't available)
@@ -160,12 +219,21 @@ Z_IMAGE_TURBO = WorkflowConfig(
     },
 )
 
+WORKFLOW_REGISTRY_ERRORS: list[dict[str, Any]] = []
+
 # Registry: workflow_id → WorkflowConfig. Prefer JSON configs; fall back to built-in.
 def _build_registry() -> dict[str, WorkflowConfig]:
     registry: dict[str, WorkflowConfig] = {}
     workflows_dir = get_workflows_dir()
     if workflows_dir.is_dir():
         registry.update(load_configs_from_dir(workflows_dir))
+
+    builtin_ids = set(registry.keys())
+    custom_dir = get_custom_workflows_dir()
+    if custom_dir.is_dir():
+        user_registry, errors = load_user_configs_from_dir(custom_dir, builtin_ids=builtin_ids)
+        registry.update(user_registry)
+        WORKFLOW_REGISTRY_ERRORS.extend(errors)
     # Built-in fallbacks (only if JSON config didn't load them)
     for wid, cfg in [("z_image_turbo", Z_IMAGE_TURBO)]:
         if wid not in registry:

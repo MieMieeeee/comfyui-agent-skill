@@ -41,8 +41,6 @@ def get_user_data_root() -> Path:
     override = os.environ.get("COMFYUI_SKILL_USER_DATA_ROOT")
     if override:
         return Path(override).expanduser().resolve()
-    if _looks_like_skill_root(SKILL_ROOT):
-        return SKILL_ROOT
     if sys.platform.startswith("win"):
         base = os.environ.get("APPDATA") or os.environ.get("LOCALAPPDATA")
         if base:
@@ -58,6 +56,10 @@ def get_user_data_root() -> Path:
 
 def get_results_dir() -> Path:
     return get_user_data_root() / "results"
+
+
+def get_custom_workflows_dir() -> Path:
+    return get_user_data_root() / "custom_workflows"
 
 
 def job_store_path() -> Path:

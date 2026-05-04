@@ -85,9 +85,8 @@ class TestAnalyzerBasic:
     def test_analyze_includes_template_field_groups(self, skill_root):
         workflow_path = skill_root / "assets" / "workflows" / "z_image_turbo.json"
         config = analyze_workflow(workflow_path)
-        assert "_template" in config
-        assert "required_fields" in config["_template"]
-        assert "optional_fields" in config["_template"]
+        assert "_required_fields" in config
+        assert "_optional_fields" in config
 
 
 class TestAnalyzerRoundtrip:
