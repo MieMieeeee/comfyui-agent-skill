@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.1.6 - 2026-05-04
+
+### Features
+- Add workflow selection MVP for agent-driven workflow routing.
+- Add ClawHub bundle builder.
+
+### Documentation
+- Add agent-first workflow selection guidance.
+- Add end-to-end workflow selection example.
+- Add workflow extension example.
+- Add decision tree flowchart (SVG/PNG/HTML) for project architecture visualization.
+
 ## 0.1.5 - 2026-05-03
 
 ### Documentation
