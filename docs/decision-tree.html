@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>comfyui-agent-skill-mie 决策树</title>
+<style>
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #0d1117;
+    color: #c9d1d9;
+    margin: 0;
+    padding: 24px;
+  }
+  h1 { text-align: center; color: #58a6ff; margin-bottom: 8px; }
+  p.sub { text-align: center; color: #8b949e; margin-bottom: 32px; }
+  .diagram { display: flex; flex-direction: column; align-items: center; gap: 48px; }
+  .section-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #79c0ff;
+    border-bottom: 1px solid #30363d;
+    padding-bottom: 8px;
+    margin-bottom: 12px;
+    width: 100%;
+    max-width: 1100px;
+  }
+  .mermaid { background: #161b22; border-radius: 12px; padding: 24px; max-width: 100%; overflow-x: auto; }
+</style>
+</head>
+<body>
+
+<h1>comfyui-agent-skill-mie</h1>
+<p class="sub">Agent Skill 决策树 / Decision Tree</p>
+
+<div class="diagram">
+
+<!-- ==================== 1. 总入口决策 ==================== -->
+<div class="section-title">1. Agent 总入口决策 — 用户意图 → 工作流选择</div>
+<div class="mermaid">
+flowchart TD
+    A(["用户请求到达"]) --> B{"解析用户意图"}
+
+    B -->|"文本生成图片"| C{"需要海报/图中文字?"}
+    C -->|"是"| C1["qwen_image_2512_4step<br/>-p prompt"]
+    C -->|"否 (默认)"| C2["z_image_turbo<br/>-p prompt"]
+
+    B -->|"参考图→新图"| D["Agent Vision 读取参考图<br/>生成英文 prompt"]
+    D --> D1["z_image_turbo<br/>-p enhanced_prompt<br/>⚠ 不上传参考图"]
+
+    B -->|"编辑已有图片"| E["klein_edit<br/>--image input_image=path<br/>-p edit_prompt"]
+
+    B -->|"文字转视频"| F1["ltx-23-t2v<br/>-p shot_prompt"]
+    B -->|"图片转视频"| F2["ltx-23-i2v<br/>--image input_image=path<br/>-p motion_prompt"]
+
+    B -->|"生成音乐"| G["ace_step_15_music<br/>-p music_tags"]
+
+    B -->|"语音合成"| H["qwen3_tts<br/>--speech-text ...<br/>--instruct ..."]
+
+    B -->|"检查服务器"| I["comfyui-skill check"]
+
+    B -->|"仅讨论/brainstorm"| J((不调用 Skill))
+
+    style A fill:#238636,color:#fff,stroke:#238636
+    style J fill:#484f58,color:#c9d1d9,stroke:#484f58
+    style C1 fill:#1f6feb,color:#fff,stroke:#1f6feb
+    style C2 fill:#1f6feb,color:#fff,stroke:#1f6feb
+    style D1 fill:#1f6feb,color:#fff,stroke:#1f6feb
+    style E fill:#1f6feb,color:#fff,stroke:#1f6feb
+    style F1 fill:#1f6feb,color:#fff,stroke:#1f6feb
+    style F2 fill:#1f6feb,color:#fff,stroke:#1f6feb
+    style G fill:#1f6feb,color:#fff,stroke:#1f6feb
+    style H fill:#1f6feb,color:#fff,stroke:#1f6feb
+    style I fill:#8957e5,color:#fff,stroke:#8957e5
+</div>
+
+<!-- ==================== 2. CLI 子命令路由 ==================== -->
+<div class="section-title">2. CLI 子命令路由 — cli.py</div>
+<div class="mermaid">
+flowchart TD
+    START(["comfyui-skill / python -m comfyui"]) --> PARSE{"解析 sys.argv[1]"}
+
+    PARSE -->|"generate"| GEN["cli_generate.py<br/>cmd_generate"]
+    PARSE -->|"check"| CHK["cli_admin.py<br/>check"]
+    PARSE -->|"doctor"| DOC["cli_admin.py<br/>doctor"]
+    PARSE -->|"validate"| VAL["cli_validate.py<br/>validate"]
+    PARSE -->|"save-server"| SSV["cli_admin.py<br/>save-server"]
+    PARSE -->|"import-workflow"| IMP["cli_admin.py<br/>import-workflow"]
+    PARSE -->|"无参数或以 - 开头"| DEF["默认 → generate"]
+    PARSE -->|"未知子命令"| ERR["打印错误并退出"]
+
+    DEF --> GEN
+
+    style START fill:#238636,color:#fff,stroke:#238636
+    style GEN fill:#1f6feb,color:#fff,stroke:#1f6feb
+    style CHK fill:#8957e5,color:#fff,stroke:#8957e5
+    style DOC fill:#8957e5,color:#fff,stroke:#8957e5
+    style VAL fill:#8957e5,color:#fff,stroke:#8957e5
+    style SSV fill:#8957e5,color:#fff,stroke:#8957e5
+    style IMP fill:#8957e5,color:#fff,stroke:#8957e5
+    style ERR fill:#da3633,color:#fff,stroke:#da3633
+</div>
+
+<!-- ==================== 3. Generate 核心流程 ==================== -->
+<div class="section-title">3. Generate 核心执行流程 — cli_generate.py + executor</div>
+<div class="mermaid">
+flowchart TD
+    G_START(["generate 命令入口"]) --> G_MODE{"异步模式?"}
+
+    G_MODE -->|"--submit"| SUBMIT["submitter.py<br/>验证→上传→队列→存SQLite<br/>返回 job_id"]
+    G_MODE -->|"--poll JOB_ID"| POLL["poller.py<br/>WS实时 → HTTP回退<br/>下载完成的输出"]
+    G_MODE -->|"--poll-all"| POLLALL["轮询所有已提交/执行中任务"]
+    G_MODE -->|"同步 (默认)"| SYNC["继续主流程"]
+
+    SYNC --> G_WF{"workflow 已注册?"}
+    G_WF -->|"否"| G_WF_ERR["返回 WORKFLOW_NOT_REGISTERED"]
+    G_WF -->|"是"| G_TTS{"是 TTS 工作流?"}
+
+    G_TTS -->|"是"| G_TTS_CHK{"有 --speech-text<br/>和 --instruct?"}
+    G_TTS_CHK -->|"否"| G_TTS_ERR["返回错误:<br/>缺少必要参数"]
+    G_TTS_CHK -->|"是"| G_SRV
+
+    G_TTS -->|"否"| G_PROMPT{"有 -p prompt?"}
+    G_PROMPT -->|"否"| G_PROMPT_ERR["返回 EMPTY_PROMPT"]
+    G_PROMPT -->|"是"| G_SIZE{"检查 width/height"}
+
+    G_SIZE -->|"workflow 管理尺寸<br/>但用户指定了尺寸"| G_SIZE_ERR["返回错误:<br/>尺寸冲突"]
+    G_SIZE -->|"合法"| G_SRV
+
+    G_SRV["解析 Server URL<br/>--server > ENV > config.local.json > 默认"] --> G_HEALTH{"Health Check<br/>GET /system_stats"}
+
+    G_HEALTH -->|"不可达"| G_SVR_ERR["返回 SERVER_UNAVAILABLE<br/>询问用户 ComfyUI 地址"]
+    G_HEALTH -->|"OK"| G_PFLT{"--skip-preflight?"}
+
+    G_PFLT -->|"是"| G_EXEC
+    G_PFLT -->|"否"| PREFLIGHT["preflight.py<br/>检查节点类型 + 模型文件 + 插件"]
+
+    PREFLIGHT --> PFLT_OK{"全部通过?"}
+    PFLT_OK -->|"否"| PFLT_ERR["返回:<br/>PREFLIGHT_MISSING_NODES<br/>PREFLIGHT_MISSING_MODELS"]
+    PFLT_OK -->|"是"| G_EXEC
+
+    G_EXEC["executor.py: execute_workflow<br/>加载JSON → 上传图片 → 注入参数<br/>→ 排队 → WS等待 → 取结果 → 保存"] --> G_OUT["JSON 输出到 stdout<br/>文件保存到 results/"]
+
+    style G_START fill:#238636,color:#fff,stroke:#238636
+    style SUBMIT fill:#1f6feb,color:#fff,stroke:#1f6feb
+    style POLL fill:#1f6feb,color:#fff,stroke:#1f6feb
+    style POLLALL fill:#1f6feb,color:#fff,stroke:#1f6feb
+    style G_EXEC fill:#238636,color:#fff,stroke:#238636
+    style G_OUT fill:#238636,color:#fff,stroke:#238636
+    style G_WF_ERR fill:#da3633,color:#fff,stroke:#da3633
+    style G_TTS_ERR fill:#da3633,color:#fff,stroke:#da3633
+    style G_PROMPT_ERR fill:#da3633,color:#fff,stroke:#da3633
+    style G_SIZE_ERR fill:#da3633,color:#fff,stroke:#da3633
+    style G_SVR_ERR fill:#da3633,color:#fff,stroke:#da3633
+    style PFLT_ERR fill:#d29922,color:#fff,stroke:#d29922
+    style PREFLIGHT fill:#8957e5,color:#fff,stroke:#8957e5
+</div>
+
+<!-- ==================== 4. Prompt Enhancement 决策 ==================== -->
+<div class="section-title">4. Prompt Enhancement 决策 — Agent 侧预处理</div>
+<div class="mermaid">
+flowchart TD
+    PE_START(["用户原始请求"]) --> PE_TYPE{"请求类型?"}
+
+    PE_TYPE -->|"人物/角色/肖像"| PE_CHAR["读取 character.md<br/>扩展为详细英文 T2I prompt"]
+    PE_TYPE -->|"参考图→新图"| PE_REF["读取 reference_to_image.md"]
+    PE_REF --> REF_IMG{"有参考图?"}
+    REF_IMG -->|"否"| REF_ERR["返回 NO_REFERENCE_IMAGE"]
+    REF_IMG -->|"是"| REF_VISION{"运行时支持<br/>图片分析?"}
+    REF_VISION -->|"否"| VIS_ERR["返回 VISION_UNAVAILABLE"]
+    REF_VISION -->|"是"| REF_DONE["Vision 分析参考图<br/>生成英文 prompt<br/>调用 z_image_turbo"]
+
+    PE_TYPE -->|"编辑图片"| PE_I2I["读取 image_to_image.md<br/>准备 --image 参数"]
+    PE_I2I --> I2I_CHK{"有本地图片路径?"}
+    I2I_CHK -->|"否"| I2I_ERR["返回 NO_INPUT_IMAGE"]
+    I2I_CHK -->|"是"| I2I_OK["调用 klein_edit"]
+
+    PE_TYPE -->|"语音合成"| PE_TTS["读取 text_to_speech.md<br/>拆分 speech-text / instruct"]
+    PE_TTS --> TTS_OK["调用 qwen3_tts<br/>--speech-text + --instruct"]
+
+    PE_TYPE -->|"其他"| PE_DIRECT["直接构建命令<br/>无需增强"]
+
+    style PE_START fill:#238636,color:#fff,stroke:#238636
+    style REF_ERR fill:#da3633,color:#fff,stroke:#da3633
+    style VIS_ERR fill:#da3633,color:#fff,stroke:#da3633
+    style I2I_ERR fill:#da3633,color:#fff,stroke:#da3633
+    style PE_CHAR fill:#d29922,color:#000,stroke:#d29922
+    style REF_DONE fill:#1f6feb,color:#fff,stroke:#1f6feb
+    style I2I_OK fill:#1f6feb,color:#fff,stroke:#1f6feb
+    style TTS_OK fill:#1f6feb,color:#fff,stroke:#1f6feb
+    style PE_DIRECT fill:#30363d,color:#c9d1d9,stroke:#484f58
+</div>
+
+<!-- ==================== 5. 错误码速查 ==================== -->
+<div class="section-title">5. 错误码速查</div>
+<div class="mermaid">
+flowchart LR
+    ERR(["错误触发点"]) --> E1["SERVER_UNAVAILABLE<br/>服务器不可达"]
+    ERR --> E2["WORKFLOW_NOT_REGISTERED<br/>工作流未注册"]
+    ERR --> E3["EMPTY_PROMPT<br/>缺少 prompt"]
+    ERR --> E4["NO_REFERENCE_IMAGE<br/>缺少参考图"]
+    ERR --> E5["VISION_UNAVAILABLE<br/>无法分析图片"]
+    ERR --> E6["NO_INPUT_IMAGE<br/>缺少输入图"]
+    ERR --> E7["PREFLIGHT_MISSING_NODES<br/>缺少自定义节点"]
+    ERR --> E8["PREFLIGHT_MISSING_MODELS<br/>缺少模型文件"]
+
+    style ERR fill:#484f58,color:#c9d1d9,stroke:#484f58
+    style E1 fill:#da3633,color:#fff,stroke:#da3633
+    style E2 fill:#da3633,color:#fff,stroke:#da3633
+    style E3 fill:#da3633,color:#fff,stroke:#da3633
+    style E4 fill:#da3633,color:#fff,stroke:#da3633
+    style E5 fill:#da3633,color:#fff,stroke:#da3633
+    style E6 fill:#da3633,color:#fff,stroke:#da3633
+    style E7 fill:#d29922,color:#fff,stroke:#d29922
+    style E8 fill:#d29922,color:#fff,stroke:#d29922
+</div>
+
+<!-- ==================== 6. 数据流全景 ==================== -->
+<div class="section-title">6. 数据流全景 — 从用户请求到输出文件</div>
+<div class="mermaid">
+flowchart LR
+    U(["用户"]) -->|"自然语言"| AGENT["AI Agent"]
+    AGENT -->|"读取 SKILL.md + references/"| DECIDE{"意图判断 + Prompt 增强"}
+    DECIDE -->|"CLI 命令"| CLI["comfyui-skill generate<br/>--workflow ... -p ..."]
+    CLI -->|"HTTP /ws"| COMFY["ComfyUI Server<br/>127.0.0.1:8188"]
+    COMFY -->|"输出媒体"| CLI
+    CLI -->|"JSON + 文件路径"| AGENT
+    AGENT -->|"展示结果"| U
+
+    CLI -->|"保存"| FS["results/YYYYMMDD/<br/>HHMMSS_prompt_id/<br/>.png / .mp4 / .mp3"]
+
+    style U fill:#238636,color:#fff,stroke:#238636
+    style AGENT fill:#1f6feb,color:#fff,stroke:#1f6feb
+    style CLI fill:#8957e5,color:#fff,stroke:#8957e5
+    style COMFY fill:#d29922,color:#000,stroke:#d29922
+    style FS fill:#30363d,color:#c9d1d9,stroke:#484f58
+</div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'dark',
+    themeVariables: {
+      primaryColor: '#1f6feb',
+      primaryTextColor: '#fff',
+      primaryBorderColor: '#388bfd',
+      lineColor: '#8b949e',
+      secondaryColor: '#238636',
+      tertiaryColor: '#161b22',
+      background: '#161b22',
+      mainBkg: '#161b22',
+      nodeBorder: '#388bfd',
+      clusterBkg: '#161b22',
+      clusterBorder: '#30363d',
+      titleColor: '#c9d1d9',
+      edgeLabelBackground: '#161b22',
+    },
+    flowchart: { curve: 'basis', padding: 16 },
+  });
+</script>
+</body>
+</html>

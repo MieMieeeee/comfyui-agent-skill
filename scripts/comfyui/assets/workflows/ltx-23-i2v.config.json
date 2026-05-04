@@ -1,5 +1,5 @@
 {
-  "workflow_id": "ltx-23-i2v",
+  "workflow_id": "ltx_23_i2v_distilled",
   "workflow_file": "ltx-23-i2v.json",
   "output_node_title": "Video Combine (Primary MP4)",
   "capability": "image_to_video",

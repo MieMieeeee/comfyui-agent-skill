@@ -385,6 +385,19 @@ def cmd_generate() -> int:
         )
         return 1
 
+    explicit_workflow = "--workflow" in sys.argv or "-w" in sys.argv
+    if (not explicit_workflow) and (not getattr(args, "submit", False)) and (not getattr(args, "poll", None)) and (not getattr(args, "poll_all", False)):
+        prompts = list(args.prompt) + list(args.prompt_flags)
+        is_tts_args = bool((getattr(args, "speech_text", None) or "").strip() or (getattr(args, "instruct", None) or "").strip())
+        if prompts and (not args.image) and (not is_tts_args):
+            from comfyui.workflow_selection import select_text_to_image_workflow_id
+
+            args.workflow = select_text_to_image_workflow_id(
+                " ".join(prompts),
+                registry=WORKFLOW_REGISTRY,
+                default_workflow_id=DEFAULT_WORKFLOW,
+            )
+
     async_modes = sum(bool(getattr(args, m, False)) for m in ("submit", "poll", "poll_all"))
     if async_modes > 1:
         print(

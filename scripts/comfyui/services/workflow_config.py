@@ -24,6 +24,10 @@ class WorkflowConfig:
     description: str = ""
     size_strategy: str = ""  # "workflow_managed" = dims from workflow, not skill
     output_kind: str = "image"  # "image" | "audio" | "video" — selects history output keys (see executor.node_output_media_list)
+    intent_categories: list[str] = field(default_factory=list)
+    input_modes: list[str] = field(default_factory=list)
+    priority: int = 0
+    keywords_any: list[str] = field(default_factory=list)
     # Optional: human/Agent reference only unless tooling consumes them
     resolution_presets: dict[str, Any] = field(default_factory=dict)
     default_resolution: str = ""
@@ -40,6 +44,10 @@ class WorkflowConfig:
             "description": self.description,
             "size_strategy": self.size_strategy,
             "output_kind": self.output_kind,
+            "intent_categories": self.intent_categories,
+            "input_modes": self.input_modes,
+            "priority": self.priority,
+            "keywords_any": self.keywords_any,
             "node_mapping": self.node_mapping,
         }
         if self.resolution_presets:
@@ -73,6 +81,10 @@ class WorkflowConfig:
             description=data.get("description", ""),
             size_strategy=data.get("size_strategy", ""),
             output_kind=data.get("output_kind", "image"),
+            intent_categories=data.get("intent_categories") or [],
+            input_modes=data.get("input_modes") or [],
+            priority=int(data.get("priority") or 0),
+            keywords_any=data.get("keywords_any") or [],
             resolution_presets=data.get("resolution_presets") or {},
             default_resolution=data.get("default_resolution") or "",
         )

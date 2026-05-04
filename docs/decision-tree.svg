@@ -1,0 +1,278 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 2200" width="960" height="2200">
+  <style>
+    text { font-family: "SF Mono","Fira Code","Cascadia Code","Courier New","Microsoft YaHei","SimHei",monospace; fill:#e2e8f0; }
+    .title{font-size:18px;font-weight:700;fill:#a855f7}
+    .section{font-size:14px;font-weight:700;fill:#3b82f6}
+    .label{font-size:12px;fill:#e2e8f0}
+    .sub{font-size:10px;fill:#94a3b8}
+    .error{font-size:11px;fill:#ef4444}
+    .ok{font-size:11px;fill:#10b981}
+    .al{font-size:10px;fill:#94a3b8}
+  </style>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#0f0f1a"/><stop offset="100%" stop-color="#1a1a2e"/></linearGradient>
+    <marker id="ap" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#a855f7"/></marker>
+    <marker id="ab" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#3b82f6"/></marker>
+    <marker id="ag" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#10b981"/></marker>
+    <marker id="ao" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#f97316"/></marker>
+    <marker id="ar" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#ef4444"/></marker>
+    <marker id="ay" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#eab308"/></marker>
+    <filter id="glow"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <rect width="960" height="2200" fill="url(#bg)"/>
+  <text x="480" y="40" text-anchor="middle" class="title">comfyui-agent-skill-mie 决策树</text>
+  <text x="480" y="58" text-anchor="middle" class="sub">Agent Skill for ComfyUI Workflows — Decision Flowchart</text>
+  <rect x="20" y="80" width="920" height="480" rx="8" fill="#0f172a" stroke="#334155"/>
+  <text x="40" y="102" class="section">§ 1  用户意图 → 工作流选择</text>
+  <rect x="370" y="130" width="220" height="36" rx="18" fill="#1e1b4b" stroke="#7c3aed" stroke-width="1.5" filter="url(#glow)"/>
+  <text x="480" y="153" text-anchor="middle" class="label">用户请求到达</text>
+  <polygon points="480,190 580,230 480,270 380,230" fill="#1e3a5f" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="480" y="225" text-anchor="middle" class="label">解析意图</text>
+  <line x1="480" y1="166" x2="480" y2="190" stroke="#a855f7" stroke-width="1.5" marker-end="url(#ap)"/>
+  <line x1="380" y1="230" x2="160" y2="290" stroke="#10b981" stroke-width="1.5" marker-end="url(#ab)"/>
+  <text x="270" y="255" text-anchor="middle" class="al">文本→图片</text>
+  <rect x="65" y="280" width="190" height="30" rx="6" fill="#052e16" stroke="#10b981" stroke-width="1.5"/>
+  <text x="160" y="300" text-anchor="middle" class="ok">z_image_turbo (默认)</text>
+  <line x1="410" y1="250" x2="290" y2="290" stroke="#10b981" stroke-width="1.5" marker-end="url(#ab)"/>
+  <rect x="195" y="280" width="190" height="30" rx="6" fill="#052e16" stroke="#10b981" stroke-width="1.5"/>
+  <text x="290" y="300" text-anchor="middle" class="ok">qwen_image (海报/文字)</text>
+  <line x1="480" y1="270" x2="480" y2="280" stroke="#a855f7" stroke-width="1.5" marker-end="url(#ab)"/>
+  <rect x="385" y="270" width="190" height="30" rx="6" fill="#1e1b4b" stroke="#a855f7" stroke-width="1.5"/>
+  <text x="480" y="290" text-anchor="middle" class="ok">Vision→prompt→T2I</text>
+  <line x1="510" y1="250" x2="650" y2="290" stroke="#f97316" stroke-width="1.5" marker-end="url(#ab)"/>
+  <rect x="555" y="280" width="190" height="30" rx="6" fill="#1c1917" stroke="#f97316" stroke-width="1.5"/>
+  <text x="650" y="300" text-anchor="middle" class="ok">klein_edit (编辑图)</text>
+  <line x1="540" y1="230" x2="810" y2="290" stroke="#10b981" stroke-width="1.5" marker-end="url(#ab)"/>
+  <text x="675" y="255" text-anchor="middle" class="al">视频</text>
+  <rect x="715" y="280" width="190" height="30" rx="6" fill="#052e16" stroke="#10b981" stroke-width="1.5"/>
+  <text x="810" y="300" text-anchor="middle" class="ok">ltx-23-t2v / i2v</text>
+  <line x1="430" y1="260" x2="300" y2="335" stroke="#3b82f6" stroke-width="1.5" marker-end="url(#ab)"/>
+  <rect x="190" y="325" width="220" height="30" rx="6" fill="#052e16" stroke="#10b981" stroke-width="1.5"/>
+  <text x="300" y="344" text-anchor="middle" class="ok">ace_step_15_music (音乐)</text>
+  <line x1="530" y1="260" x2="680" y2="335" stroke="#3b82f6" stroke-width="1.5" marker-end="url(#ab)"/>
+  <rect x="560" y="325" width="240" height="30" rx="6" fill="#052e16" stroke="#10b981" stroke-width="1.5"/>
+  <text x="680" y="344" text-anchor="middle" class="ok">qwen3_tts (语音合成)</text>
+  <rect x="180" y="380" width="600" height="120" rx="8" fill="#0f172a" stroke="#eab308" stroke-dasharray="5,3"/>
+  <text x="480" y="398" text-anchor="middle" class="label" fill="#eab308">Prompt Enhancement (Agent 侧预处理)</text>
+  <rect x="40" y="410" width="160" height="38" rx="6" fill="#1e1b4b" stroke="#7c3aed" stroke-width="1"/>
+  <text x="120" y="425" text-anchor="middle" class="sub" fill="#a855f7">character.md</text>
+  <text x="120" y="440" text-anchor="middle" class="sub">人物/角色/肖像</text>
+  <rect x="240" y="410" width="160" height="38" rx="6" fill="#1e1b4b" stroke="#7c3aed" stroke-width="1"/>
+  <text x="320" y="425" text-anchor="middle" class="sub" fill="#a855f7">reference_to_image.md</text>
+  <text x="320" y="440" text-anchor="middle" class="sub">参考图→新图</text>
+  <rect x="440" y="410" width="160" height="38" rx="6" fill="#1e1b4b" stroke="#7c3aed" stroke-width="1"/>
+  <text x="520" y="425" text-anchor="middle" class="sub" fill="#a855f7">image_to_image.md</text>
+  <text x="520" y="440" text-anchor="middle" class="sub">编辑图片+--image</text>
+  <rect x="650" y="410" width="160" height="38" rx="6" fill="#1e1b4b" stroke="#7c3aed" stroke-width="1"/>
+  <text x="730" y="425" text-anchor="middle" class="sub" fill="#a855f7">text_to_speech.md</text>
+  <text x="730" y="440" text-anchor="middle" class="sub">语音合成拆参</text>
+  <rect x="255" y="458" width="140" height="20" rx="4" fill="#450a0a" stroke="#ef4444"/>
+  <text x="325" y="472" text-anchor="middle" class="error">NO_REFERENCE_IMAGE</text>
+  <rect x="430" y="458" width="140" height="20" rx="4" fill="#450a0a" stroke="#ef4444"/>
+  <text x="500" y="472" text-anchor="middle" class="error">VISION_UNAVAILABLE</text>
+  <rect x="605" y="458" width="140" height="20" rx="4" fill="#450a0a" stroke="#ef4444"/>
+  <text x="675" y="472" text-anchor="middle" class="error">NO_INPUT_IMAGE</text>
+  <rect x="20" y="580" width="920" height="200" rx="8" fill="#0f172a" stroke="#334155"/>
+  <text x="40" y="602" class="section">§ 2  CLI 子命令路由 — cli.py</text>
+  <rect x="330" y="622" width="300" height="32" rx="16" fill="#1e1b4b" stroke="#7c3aed" stroke-width="1.5"/>
+  <text x="480" y="643" text-anchor="middle" class="label">comfyui-skill / python -m comfyui</text>
+  <rect x="75" y="677" width="100" height="26" rx="6" fill="#0f172a" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="125" y="694" text-anchor="middle" class="sub" fill="#3b82f6">generate</text>
+  <rect x="235" y="677" width="100" height="26" rx="6" fill="#0f172a" stroke="#10b981" stroke-width="1.5"/>
+  <text x="285" y="694" text-anchor="middle" class="sub" fill="#10b981">check</text>
+  <rect x="355" y="677" width="100" height="26" rx="6" fill="#0f172a" stroke="#10b981" stroke-width="1.5"/>
+  <text x="405" y="694" text-anchor="middle" class="sub" fill="#10b981">doctor</text>
+  <rect x="475" y="677" width="100" height="26" rx="6" fill="#0f172a" stroke="#10b981" stroke-width="1.5"/>
+  <text x="525" y="694" text-anchor="middle" class="sub" fill="#10b981">validate</text>
+  <rect x="615" y="677" width="100" height="26" rx="6" fill="#0f172a" stroke="#eab308" stroke-width="1.5"/>
+  <text x="665" y="694" text-anchor="middle" class="sub" fill="#eab308">save-server</text>
+  <rect x="765" y="677" width="100" height="26" rx="6" fill="#0f172a" stroke="#eab308" stroke-width="1.5"/>
+  <text x="815" y="694" text-anchor="middle" class="sub" fill="#eab308">import-workflow</text>
+  <line x1="480" y1="654" x2="480" y2="677" stroke="#a855f7" stroke-width="1.5" marker-end="url(#ap)"/>
+  <rect x="30" y="712" width="160" height="22" rx="4" fill="#1c1917" stroke="#f97316"/>
+  <text x="110" y="727" text-anchor="middle" class="sub" fill="#f97316">无参数/以-开头→generate</text>
+  <line x1="190" y1="723" x2="120" y2="690" stroke="#f97316" stroke-width="1" marker-end="url(#ao)" stroke-dasharray="4,2"/>
+  <rect x="770" y="712" width="140" height="22" rx="4" fill="#450a0a" stroke="#ef4444"/>
+  <text x="840" y="727" text-anchor="middle" class="error">未知→报错退出</text>
+  <line x1="810" y1="703" x2="840" y2="712" stroke="#ef4444" stroke-width="1" marker-end="url(#ar)" stroke-dasharray="4,2"/>
+  <rect x="20" y="800" width="920" height="340" rx="8" fill="#0f172a" stroke="#334155"/>
+  <text x="40" y="822" class="section">§ 3  Generate 参数校验链</text>
+  <rect x="370" y="842" width="220" height="32" rx="16" fill="#1e1b4b" stroke="#7c3aed" stroke-width="1.5" filter="url(#glow)"/>
+  <text x="480" y="863" text-anchor="middle" class="label">generate 命令入口</text>
+  <line x1="480" y1="874" x2="480" y2="897" stroke="#a855f7" stroke-width="1.5" marker-end="url(#ap)"/>
+  <polygon points="480,897 560,927 480,957 400,927" fill="#1e3a5f" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="480" y="925" text-anchor="middle" class="sub">已注册?</text>
+  <line x1="560" y1="927" x2="720" y2="912" stroke="#ef4444" stroke-width="1.5" marker-end="url(#ar)"/>
+  <text x="620" y="919" text-anchor="middle" class="al">否</text>
+  <rect x="720" y="901" width="180" height="22" rx="4" fill="#450a0a" stroke="#ef4444"/>
+  <text x="810" y="916" text-anchor="middle" class="error">WORKFLOW_NOT_REGISTERED</text>
+  <line x1="480" y1="957" x2="480" y2="967" stroke="#10b981" stroke-width="1.5" marker-end="url(#ag)"/>
+  <text x="492" y="969" class="al">是</text>
+  <polygon points="480,967 560,997 480,1027 400,997" fill="#1e3a5f" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="480" y="995" text-anchor="middle" class="sub">TTS?</text>
+  <line x1="400" y1="997" x2="300" y2="1022" stroke="#10b981" stroke-width="1.5" marker-end="url(#ag)"/>
+  <text x="340" y="1005" class="al">是</text>
+  <polygon points="300,1022 380,1052 300,1082 220,1052" fill="#1e3a5f" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="300" y="1050" text-anchor="middle" class="sub">speech-text?</text>
+  <line x1="220" y1="1052" x2="100" y2="1037" stroke="#ef4444" stroke-width="1.5" marker-end="url(#ar)"/>
+  <text x="155" y="1044" class="al">否</text>
+  <rect x="20" y="1026" width="130" height="22" rx="4" fill="#450a0a" stroke="#ef4444"/>
+  <text x="85" y="1041" text-anchor="middle" class="error">缺少必要参数</text>
+  <line x1="300" y1="1082" x2="300" y2="1112" stroke="#10b981" stroke-width="1.5" marker-end="url(#ag)"/>
+  <text x="312" y="1094" class="al">是</text>
+  <line x1="560" y1="997" x2="680" y2="1022" stroke="#f97316" stroke-width="1.5" marker-end="url(#ao)"/>
+  <text x="630" y="1005" class="al">否</text>
+  <polygon points="760,1022 840,1052 760,1082 680,1052" fill="#1e3a5f" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="760" y="1050" text-anchor="middle" class="sub">有prompt?</text>
+  <line x1="840" y1="1052" x2="900" y2="1037" stroke="#ef4444" stroke-width="1.5" marker-end="url(#ar)"/>
+  <rect x="840" y="1026" width="100" height="22" rx="4" fill="#450a0a" stroke="#ef4444"/>
+  <text x="890" y="1041" text-anchor="middle" class="error">EMPTY_PROMPT</text>
+  <line x1="760" y1="1082" x2="600" y2="1112" stroke="#10b981" stroke-width="1.5" marker-end="url(#ag)"/>
+  <rect x="350" y="1112" width="260" height="28" rx="6" fill="#0f172a" stroke="#eab308" stroke-width="1.5"/>
+  <text x="480" y="1131" text-anchor="middle" class="label" fill="#eab308">校验 width/height 约束</text>
+  <rect x="20" y="1160" width="920" height="380" rx="8" fill="#0f172a" stroke="#334155"/>
+  <text x="40" y="1182" class="section">§ 4  服务器连接 &amp; 环境预检</text>
+  <rect x="280" y="1202" width="400" height="28" rx="6" fill="#1e3a5f" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="480" y="1221" text-anchor="middle" class="label">解析 Server URL</text>
+  <rect x="80" y="1242" width="130" height="22" rx="4" fill="#0f172a" stroke="#94a3b8"/>
+  <text x="145" y="1257" text-anchor="middle" class="sub">--server</text>
+  <line x1="205" y1="1253" x2="245" y2="1253" stroke="#94a3b8" stroke-width="1" marker-end="url(#ab)" stroke-dasharray="4,2"/>
+  <rect x="250" y="1242" width="130" height="22" rx="4" fill="#0f172a" stroke="#94a3b8"/>
+  <text x="315" y="1257" text-anchor="middle" class="sub">ENV</text>
+  <line x1="375" y1="1253" x2="435" y2="1253" stroke="#94a3b8" stroke-width="1" marker-end="url(#ab)" stroke-dasharray="4,2"/>
+  <rect x="440" y="1242" width="130" height="22" rx="4" fill="#0f172a" stroke="#94a3b8"/>
+  <text x="505" y="1257" text-anchor="middle" class="sub">config.local.json</text>
+  <line x1="565" y1="1253" x2="635" y2="1253" stroke="#94a3b8" stroke-width="1" marker-end="url(#ab)" stroke-dasharray="4,2"/>
+  <rect x="640" y="1242" width="130" height="22" rx="4" fill="#0f172a" stroke="#94a3b8"/>
+  <text x="705" y="1257" text-anchor="middle" class="sub">127.0.0.1:8188</text>
+  <text x="480" y="1274" text-anchor="middle" class="sub">优先级: 左→右</text>
+  <line x1="480" y1="1230" x2="480" y2="1287" stroke="#a855f7" stroke-width="1.5" marker-end="url(#ap)"/>
+  <polygon points="480,1287 580,1322 480,1357 380,1322" fill="#1e3a5f" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="480" y="1312" text-anchor="middle" class="sub">Health Check</text>
+  <text x="480" y="1325" text-anchor="middle" class="sub">GET /system_stats</text>
+  <line x1="580" y1="1322" x2="750" y2="1305" stroke="#ef4444" stroke-width="1.5" marker-end="url(#ar)"/>
+  <text x="650" y="1315" class="al">不可达</text>
+  <rect x="750" y="1294" width="170" height="22" rx="4" fill="#450a0a" stroke="#ef4444"/>
+  <text x="835" y="1309" text-anchor="middle" class="error">SERVER_UNAVAILABLE</text>
+  <line x1="480" y1="1357" x2="480" y2="1357" stroke="#10b981" stroke-width="1.5" marker-end="url(#ag)"/>
+  <text x="492" y="1369" class="al">OK</text>
+  <polygon points="480,1357 580,1392 480,1427 380,1392" fill="#1e3a5f" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="480" y="1379" text-anchor="middle" class="sub">Preflight</text>
+  <text x="480" y="1395" text-anchor="middle" class="sub">节点+模型+插件</text>
+  <line x1="380" y1="1392" x2="200" y2="1375" stroke="#ef4444" stroke-width="1.5" marker-end="url(#ar)"/>
+  <text x="280" y="1385" class="al">缺失</text>
+  <rect x="30" y="1360" width="180" height="36" rx="4" fill="#450a0a" stroke="#ef4444"/>
+  <text x="120" y="1374" text-anchor="middle" class="error">PREFLIGHT_MISSING_</text>
+  <text x="120" y="1388" text-anchor="middle" class="error">NODES / MODELS</text>
+  <line x1="480" y1="1427" x2="480" y2="1427" stroke="#10b981" stroke-width="1.5" marker-end="url(#ag)"/>
+  <polygon points="480,1427 580,1462 480,1497 380,1462" fill="#1e3a5f" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="480" y="1452" text-anchor="middle" class="sub">--skip-preflight?</text>
+  <line x1="580" y1="1462" x2="750" y2="1479" stroke="#f97316" stroke-width="1.5" marker-end="url(#ao)"/>
+  <text x="650" y="1469" class="al">是</text>
+  <line x1="480" y1="1497" x2="480" y2="1517" stroke="#10b981" stroke-width="1.5" marker-end="url(#ag)"/>
+  <text x="492" y="1509" class="al">否→执行</text>
+  <rect x="20" y="1560" width="920" height="350" rx="8" fill="#0f172a" stroke="#334155"/>
+  <text x="40" y="1582" class="section">§ 5  执行引擎 &amp; 异步模式</text>
+  <rect x="340" y="1602" width="280" height="32" rx="16" fill="#1e1b4b" stroke="#7c3aed" stroke-width="1.5" filter="url(#glow)"/>
+  <text x="480" y="1623" text-anchor="middle" class="label">执行模式选择</text>
+  <line x1="380" y1="1634" x2="160" y2="1657" stroke="#3b82f6" stroke-width="1.5" marker-end="url(#ab)"/>
+  <text x="260" y="1647" class="al">--submit</text>
+  <rect x="40" y="1657" width="240" height="55" rx="6" fill="#052e16" stroke="#10b981" stroke-width="1.5"/>
+  <text x="160" y="1675" text-anchor="middle" class="ok">submitter.py</text>
+  <text x="160" y="1691" text-anchor="middle" class="sub">验证→上传→排队→SQLite</text>
+  <text x="160" y="1705" text-anchor="middle" class="ok">返回 job_id</text>
+  <line x1="440" y1="1634" x2="380" y2="1657" stroke="#3b82f6" stroke-width="1.5" marker-end="url(#ab)"/>
+  <text x="410" y="1647" class="al">--poll</text>
+  <rect x="280" y="1657" width="200" height="55" rx="6" fill="#1e3a5f" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="380" y="1675" text-anchor="middle" class="label">poller.py</text>
+  <text x="380" y="1691" text-anchor="middle" class="sub">WS实时→HTTP回退</text>
+  <text x="380" y="1705" text-anchor="middle" class="sub">下载完成输出</text>
+  <line x1="520" y1="1634" x2="590" y2="1657" stroke="#3b82f6" stroke-width="1.5" marker-end="url(#ab)"/>
+  <text x="560" y="1647" class="al">--poll-all</text>
+  <rect x="500" y="1657" width="180" height="55" rx="6" fill="#1e3a5f" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="590" y="1675" text-anchor="middle" class="label">轮询所有任务</text>
+  <text x="590" y="1691" text-anchor="middle" class="sub">已提交/执行中</text>
+  <line x1="580" y1="1634" x2="810" y2="1657" stroke="#eab308" stroke-width="1.5" marker-end="url(#ay)"/>
+  <text x="700" y="1647" class="al">同步(默认)</text>
+  <rect x="720" y="1657" width="200" height="55" rx="6" fill="#1e1b4b" stroke="#a855f7" stroke-width="1.5" filter="url(#glow)"/>
+  <text x="820" y="1675" text-anchor="middle" class="label">executor.py</text>
+  <text x="820" y="1691" text-anchor="middle" class="sub">加载→注入→排队→WS等待</text>
+  <text x="820" y="1705" text-anchor="middle" class="sub">→取结果→保存</text>
+  <rect x="620" y="1732" width="310" height="170" rx="8" fill="#0f172a" stroke="#7c3aed" stroke-dasharray="5,3"/>
+  <text x="775" y="1748" text-anchor="middle" class="sub" fill="#a855f7">executor 详细流程</text>
+  <text x="640" y="1760" class="sub">1. 加载 workflow JSON</text>
+  <text x="640" y="1780" class="sub">2. 创建 API 连接</text>
+  <text x="640" y="1800" class="sub">3. 上传输入图片 (如有)</text>
+  <text x="640" y="1820" class="sub">4. node_mapping 注入参数</text>
+  <text x="640" y="1840" class="sub">5. 排队 prompt → WS 等待</text>
+  <text x="640" y="1860" class="sub">6. history API 取结果</text>
+  <text x="640" y="1880" class="sub">7. 保存到 results/YYYYMMDD/</text>
+  <rect x="50" y="1802" width="540" height="100" rx="8" fill="#0f172a" stroke="#eab308"/>
+  <text x="320" y="1818" text-anchor="middle" class="sub" fill="#eab308">Node Mapping — 核心抽象层</text>
+  <text x="320" y="1832" text-anchor="middle" class="sub">CLI 参数 → ComfyUI 工作流节点</text>
+  <rect x="65" y="1842" width="120" height="20" rx="3" fill="#1e1b4b" stroke="#7c3aed" stroke-width="0.8"/>
+  <text x="125" y="1856" text-anchor="middle" class="sub">prompt→KSampler</text>
+  <rect x="195" y="1842" width="120" height="20" rx="3" fill="#1e1b4b" stroke="#7c3aed" stroke-width="0.8"/>
+  <text x="255" y="1856" text-anchor="middle" class="sub">seed→KSampler</text>
+  <rect x="325" y="1842" width="120" height="20" rx="3" fill="#1e1b4b" stroke="#7c3aed" stroke-width="0.8"/>
+  <text x="385" y="1856" text-anchor="middle" class="sub">w/h→latent</text>
+  <rect x="455" y="1842" width="120" height="20" rx="3" fill="#1e1b4b" stroke="#7c3aed" stroke-width="0.8"/>
+  <text x="515" y="1856" text-anchor="middle" class="sub">image→LoadImage</text>
+  <rect x="20" y="1930" width="920" height="280" rx="8" fill="#0f172a" stroke="#334155"/>
+  <text x="40" y="1952" class="section">§ 6  输出 &amp; 错误码速查</text>
+  <rect x="330" y="1972" width="300" height="32" rx="6" fill="#052e16" stroke="#10b981" stroke-width="1.5"/>
+  <text x="480" y="1993" text-anchor="middle" class="ok">JSON stdout + 文件 results/</text>
+  <rect x="95" y="2017" width="120" height="24" rx="4" fill="#0f172a" stroke="#10b981" stroke-width="1.5"/>
+  <text x="155" y="2033" text-anchor="middle" class="sub" fill="#10b981">image .png</text>
+  <rect x="295" y="2017" width="120" height="24" rx="4" fill="#0f172a" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="355" y="2033" text-anchor="middle" class="sub" fill="#3b82f6">video .mp4</text>
+  <rect x="495" y="2017" width="120" height="24" rx="4" fill="#0f172a" stroke="#a855f7" stroke-width="1.5"/>
+  <text x="555" y="2033" text-anchor="middle" class="sub" fill="#a855f7">audio .mp3</text>
+  <rect x="695" y="2017" width="120" height="24" rx="4" fill="#0f172a" stroke="#eab308" stroke-width="1.5"/>
+  <text x="755" y="2033" text-anchor="middle" class="sub" fill="#eab308">job_id 异步</text>
+  <text x="480" y="2062" text-anchor="middle" class="sub" fill="#ef4444">错误码速查</text>
+  <rect x="80" y="2077" width="200" height="20" rx="3" fill="#450a0a" stroke="#ef4444" stroke-width="0.8"/>
+  <text x="86" y="2091" class="error" font-size="9">SERVER_UNAVAILABLE</text>
+  <text x="290" y="2091" class="sub" font-size="9">服务器不可达</text>
+  <rect x="530" y="2077" width="200" height="20" rx="3" fill="#450a0a" stroke="#ef4444" stroke-width="0.8"/>
+  <text x="536" y="2091" class="error" font-size="9">WORKFLOW_NOT_REGISTERED</text>
+  <text x="740" y="2091" class="sub" font-size="9">未注册</text>
+  <rect x="80" y="2103" width="200" height="20" rx="3" fill="#450a0a" stroke="#ef4444" stroke-width="0.8"/>
+  <text x="86" y="2117" class="error" font-size="9">EMPTY_PROMPT</text>
+  <text x="290" y="2117" class="sub" font-size="9">缺少prompt</text>
+  <rect x="530" y="2103" width="200" height="20" rx="3" fill="#450a0a" stroke="#ef4444" stroke-width="0.8"/>
+  <text x="536" y="2117" class="error" font-size="9">NO_REFERENCE_IMAGE</text>
+  <text x="740" y="2117" class="sub" font-size="9">缺参考图</text>
+  <rect x="80" y="2129" width="200" height="20" rx="3" fill="#450a0a" stroke="#ef4444" stroke-width="0.8"/>
+  <text x="86" y="2143" class="error" font-size="9">VISION_UNAVAILABLE</text>
+  <text x="290" y="2143" class="sub" font-size="9">无Vision</text>
+  <rect x="530" y="2129" width="200" height="20" rx="3" fill="#450a0a" stroke="#ef4444" stroke-width="0.8"/>
+  <text x="536" y="2143" class="error" font-size="9">NO_INPUT_IMAGE</text>
+  <text x="740" y="2143" class="sub" font-size="9">缺输入图</text>
+  <rect x="80" y="2155" width="200" height="20" rx="3" fill="#450a0a" stroke="#ef4444" stroke-width="0.8"/>
+  <text x="86" y="2169" class="error" font-size="9">PREFLIGHT_MISSING_NODES</text>
+  <text x="290" y="2169" class="sub" font-size="9">缺节点</text>
+  <rect x="530" y="2155" width="200" height="20" rx="3" fill="#450a0a" stroke="#ef4444" stroke-width="0.8"/>
+  <text x="536" y="2169" class="error" font-size="9">PREFLIGHT_MISSING_MODELS</text>
+  <text x="740" y="2169" class="sub" font-size="9">缺模型</text>
+  <rect x="20" y="2230" width="920" height="90" rx="8" fill="#0f172a" stroke="#334155"/>
+  <text x="40" y="2252" class="section">§ 7  数据流全景</text>
+  <rect x="30" y="2280" width="110" height="30" rx="6" fill="#0f172a" stroke="#7c3aed" stroke-width="1.5"/>
+  <text x="85" y="2299" text-anchor="middle" class="sub" fill="#7c3aed">用户</text>
+  <rect x="180" y="2280" width="110" height="30" rx="6" fill="#0f172a" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="235" y="2299" text-anchor="middle" class="sub" fill="#3b82f6">AI Agent</text>
+  <rect x="330" y="2280" width="110" height="30" rx="6" fill="#0f172a" stroke="#eab308" stroke-width="1.5"/>
+  <text x="385" y="2299" text-anchor="middle" class="sub" fill="#eab308">SKILL.md</text>
+  <rect x="480" y="2280" width="110" height="30" rx="6" fill="#0f172a" stroke="#a855f7" stroke-width="1.5"/>
+  <text x="535" y="2299" text-anchor="middle" class="sub" fill="#a855f7">CLI</text>
+  <rect x="630" y="2280" width="110" height="30" rx="6" fill="#0f172a" stroke="#f97316" stroke-width="1.5"/>
+  <text x="685" y="2299" text-anchor="middle" class="sub" fill="#f97316">ComfyUI</text>
+  <rect x="780" y="2280" width="110" height="30" rx="6" fill="#0f172a" stroke="#10b981" stroke-width="1.5"/>
+  <text x="835" y="2299" text-anchor="middle" class="sub" fill="#10b981">results/</text>
+  <line x1="140" y1="2295" x2="175" y2="2295" stroke="#7c3aed" stroke-width="1.5" marker-end="url(#ab)"/>
+  <line x1="290" y1="2295" x2="325" y2="2295" stroke="#3b82f6" stroke-width="1.5" marker-end="url(#ab)"/>
+  <line x1="440" y1="2295" x2="475" y2="2295" stroke="#eab308" stroke-width="1.5" marker-end="url(#ab)"/>
+  <line x1="590" y1="2295" x2="625" y2="2295" stroke="#a855f7" stroke-width="1.5" marker-end="url(#ab)"/>
+  <line x1="740" y1="2295" x2="775" y2="2295" stroke="#f97316" stroke-width="1.5" marker-end="url(#ab)"/>
+  <text x="480" y="2185" text-anchor="middle" class="sub">Generated by fireworks-tech-graph | Style 2: Dark Terminal | comfyui-agent-skill-mie v0.1.5</text>
+</svg>

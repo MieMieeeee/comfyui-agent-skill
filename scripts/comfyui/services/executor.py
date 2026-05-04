@@ -246,7 +246,6 @@ def execute_workflow(
     width: int | None = None,
     height: int | None = None,
     seed: int | None = None,
-    execution_timeout_s: float | None = None,
     progress_callback: Callable[[dict[str, Any]], None] | None = None,
     text_inputs: dict[str, str] | None = None,
     workflows_dir: Path | None = None,
@@ -391,22 +390,13 @@ def execute_workflow(
         loop = asyncio.new_event_loop()
         try:
             if progress_callback is None:
-                coro = api.queue_prompt_and_wait(wf)
+                prompt_id = loop.run_until_complete(api.queue_prompt_and_wait(wf))
             else:
-                coro = _queue_prompt_and_wait_with_progress(api, wf, progress_callback)
-            if execution_timeout_s is not None:
-                coro = asyncio.wait_for(coro, timeout=float(execution_timeout_s))
-            prompt_id = loop.run_until_complete(coro)
+                prompt_id = loop.run_until_complete(
+                    _queue_prompt_and_wait_with_progress(api, wf, progress_callback)
+                )
         finally:
             loop.close()
-    except asyncio.TimeoutError:
-        return GenerationResult(
-            success=False,
-            workflow_id=config.workflow_id,
-            status="failed",
-            error=_err("EXECUTION_TIMEOUT", f"Workflow execution timed out after {execution_timeout_s} seconds."),
-            job_id=prompt_id,
-        )
     except Exception as e:
         err_text = str(e)
         if _should_add_connection_hint(err_text):

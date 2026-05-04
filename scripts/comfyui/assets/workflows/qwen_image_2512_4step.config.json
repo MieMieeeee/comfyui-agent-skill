@@ -5,6 +5,10 @@
   "capability": "text_to_image",
   "description": "Qwen Image 2512 4-step lightning text-to-image",
   "output_kind": "image",
+  "intent_categories": ["text_to_image"],
+  "input_modes": ["text"],
+  "priority": 80,
+  "keywords_any": ["poster", "海报", "宣传图", "banner", "标题", "文字海报"],
   "resolution_presets": {
     "portrait_fast": { "width": 512,  "height": 768,  "label": "快速" },
     "portrait_hd":   { "width": 704,  "height": 1280, "label": "高清" }
