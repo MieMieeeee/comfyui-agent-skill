@@ -28,6 +28,7 @@ class WorkflowConfig:
     input_modes: list[str] = field(default_factory=list)
     priority: int = 0
     keywords_any: list[str] = field(default_factory=list)
+    selection_guidance: dict[str, Any] = field(default_factory=dict)
     # Optional: human/Agent reference only unless tooling consumes them
     resolution_presets: dict[str, Any] = field(default_factory=dict)
     default_resolution: str = ""
@@ -48,6 +49,7 @@ class WorkflowConfig:
             "input_modes": self.input_modes,
             "priority": self.priority,
             "keywords_any": self.keywords_any,
+            "selection_guidance": self.selection_guidance,
             "node_mapping": self.node_mapping,
         }
         if self.resolution_presets:
@@ -85,6 +87,7 @@ class WorkflowConfig:
             input_modes=data.get("input_modes") or [],
             priority=int(data.get("priority") or 0),
             keywords_any=data.get("keywords_any") or [],
+            selection_guidance=data.get("selection_guidance") or {},
             resolution_presets=data.get("resolution_presets") or {},
             default_resolution=data.get("default_resolution") or "",
         )

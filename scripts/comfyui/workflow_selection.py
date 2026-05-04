@@ -1,5 +1,12 @@
 from __future__ import annotations
 
+"""Low-risk fallback workflow selection.
+
+This module provides a minimal, conservative selector intended for CLI/default usage when no explicit
+workflow has been chosen. Agents should remain the primary decision-maker and explicitly specify
+`--workflow` when appropriate.
+"""
+
 from collections.abc import Mapping
 
 from comfyui.services.workflow_config import WorkflowConfig

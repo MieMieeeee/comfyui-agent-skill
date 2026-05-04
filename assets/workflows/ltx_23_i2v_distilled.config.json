@@ -5,6 +5,19 @@
   "capability": "image_to_video",
   "description": "LTX-2.3 dev image-to-video: output resolution follows uploaded image. Do NOT use CLI --width/--height.",
   "output_kind": "video",
+  "intent_categories": ["image_to_video", "video"],
+  "input_modes": ["image", "text"],
+  "priority": 70,
+  "keywords_any": ["image-to-video", "i2v", "图生视频", "图片转视频", "动起来", "运镜"],
+  "selection_guidance": {
+    "best_for": [
+      "image-to-video generation from a provided input image"
+    ],
+    "avoid_for": [
+      "text-only video generation"
+    ],
+    "agent_hint": "Use this workflow when the user provides an image and wants a video. Output resolution follows the uploaded image; do not pass width/height."
+  },
   "resolution_presets": {},
   "default_resolution": "",
   "node_mapping": {

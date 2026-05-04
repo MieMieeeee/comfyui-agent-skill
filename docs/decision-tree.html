@@ -49,8 +49,8 @@ flowchart TD
 
     B -->|"编辑已有图片"| E["klein_edit<br/>--image input_image=path<br/>-p edit_prompt"]
 
-    B -->|"文字转视频"| F1["ltx-23-t2v<br/>-p shot_prompt"]
-    B -->|"图片转视频"| F2["ltx-23-i2v<br/>--image input_image=path<br/>-p motion_prompt"]
+    B -->|"文字转视频"| F1["ltx_23_t2v_distill<br/>-p shot_prompt"]
+    B -->|"图片转视频"| F2["ltx_23_i2v_distilled<br/>--image input_image=path<br/>-p motion_prompt"]
 
     B -->|"生成音乐"| G["ace_step_15_music<br/>-p music_tags"]
 

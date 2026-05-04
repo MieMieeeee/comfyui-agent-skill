@@ -65,3 +65,10 @@
 - Replace all `ltx_23_*_distilled` references with `ltx-23-t2v` / `ltx-23-i2v` across docs and tests.
 
 ## Unreleased
+
+### Features
+- Add agent-first workflow selection policy docs and workflow selection guidance cards.
+- Add lightweight CLI fallback selector for high-confidence poster-like prompts (prefers `qwen_image_2512_4step`).
+
+### Compatibility
+- Standardize LTX workflow ids as `ltx_23_t2v_distill` and `ltx_23_i2v_distilled` in docs and configs.

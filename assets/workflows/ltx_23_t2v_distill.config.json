@@ -5,6 +5,20 @@
   "capability": "text_to_video",
   "description": "LTX-2.3 dev text-to-video",
   "output_kind": "video",
+  "intent_categories": ["text_to_video", "video"],
+  "input_modes": ["text"],
+  "priority": 70,
+  "keywords_any": ["video", "mp4", "视频", "短片", "镜头", "运镜", "动画"],
+  "selection_guidance": {
+    "best_for": [
+      "text-to-video generation",
+      "shot-based prompts with camera/motion"
+    ],
+    "avoid_for": [
+      "image-to-video requests with a provided input image"
+    ],
+    "agent_hint": "Use this workflow when the user wants a video from text. Width/height are supported when provided together."
+  },
   "resolution_presets": {
     "landscape_fast": {
       "width": 768,

@@ -19,10 +19,56 @@ This file is the workflow-selection reference for Agents using the ComfyUI skill
 | Generate a poster or image with embedded text | `qwen_image_2512_4step` | `text_to_image` | Excels at text-in-image (Chinese/English characters, posters). Supports `--width` and `--height`; default `512x768`; good HD preset is `704x1280`. |
 | Create a similar image from a reference picture | `z_image_turbo` after Agent vision | `reference_to_image` | Reference image is not uploaded to ComfyUI; Agent turns image + user intent into one English prompt. |
 | Edit a provided image | `klein_edit` | `image_to_image` | Upload image with `--image input_image=path`; do not pass `--width`/`--height`. |
-| Text prompt to MP4 video | `ltx-23-t2v` | `text_to_video` | Supports paired `--width`/`--height`; default `768x512`; output is MP4. |
-| Image + prompt to MP4 video | `ltx-23-i2v` | `image_to_video` | Requires one valid raster input image; output resolution follows uploaded image; do not pass CLI width/height. |
+| Text prompt to MP4 video | `ltx_23_t2v_distill` | `text_to_video` | Supports paired `--width`/`--height`; default `768x512`; output is MP4. |
+| Image + prompt to MP4 video | `ltx_23_i2v_distilled` | `image_to_video` | Requires one valid raster input image; output resolution follows uploaded image; do not pass CLI width/height. |
 | Music / instrumental / song-style MP3 | `ace_step_15_music` | `text_to_music` | Use `--prompt` / `-p` as tags; do not use TTS flags. |
 | Spoken voice synthesis | `qwen3_tts` | `text_to_speech` | Use `--speech-text` and `--instruct`; do not pass positional prompt. |
+
+## Workflow Selection Guidance
+
+The Agent should be the primary decision-maker for workflow choice. Built-in defaults are fallback options and can be overridden by a stronger semantic match among registered workflows.
+
+### `z_image_turbo`
+- **Best for**: general-purpose text-to-image requests
+- **Prefer when**: the user wants a normal image from text and has no strong poster/text/layout requirement
+- **Avoid when**: the user wants posters, banners, embedded text, or marketing layout
+- **Agent note**: this is the default fallback T2I workflow
+
+### `qwen_image_2512_4step`
+- **Best for**: posters, banners, title-heavy images, text-in-image tasks
+- **Prefer when**: the user asks for 海报 / 宣传图 / banner / 标题 / 带字图片
+- **Avoid when**: the user only wants a standard photo-like image with no text composition requirement
+- **Agent note**: prefer this over the default T2I workflow when text rendering or poster-style layout is important
+
+### `klein_edit`
+- **Best for**: editing a provided input image while preserving pose/structure
+- **Prefer when**: the user provides an image and asks to change details (clothing/background/style, retouch, inpaint)
+- **Avoid when**: the user only provides text and wants a new image from scratch
+- **Agent note**: requires `--image input_image=...` and does not support CLI width/height
+
+### `ltx_23_t2v_distill`
+- **Best for**: text-to-video generation
+- **Prefer when**: the user wants an MP4 from a shot prompt (camera/motion)
+- **Avoid when**: the user provides an input image (use I2V)
+- **Agent note**: width/height are supported when provided together
+
+### `ltx_23_i2v_distilled`
+- **Best for**: image-to-video generation from a provided image
+- **Prefer when**: the user provides an input image and wants motion/camera prompt applied
+- **Avoid when**: the user only provides text (use T2V)
+- **Agent note**: output resolution follows input image; do not pass width/height
+
+### `ace_step_15_music`
+- **Best for**: music/audio generation (MP3)
+- **Prefer when**: the user asks for music, instrumental tracks, songs, or background scoring
+- **Avoid when**: the user wants spoken narration (use TTS)
+- **Agent note**: treat the prompt as tags; do not use TTS flags or width/height
+
+### `qwen3_tts`
+- **Best for**: text-to-speech voice synthesis (MP3)
+- **Prefer when**: the user wants spoken audio with a voice/style instruction
+- **Avoid when**: the user wants music generation (use Ace Step)
+- **Agent note**: require `--speech-text` and `--instruct`; no positional prompt
 
 ## Capability Boundaries
 
@@ -32,9 +78,9 @@ This file is the workflow-selection reference for Agents using the ComfyUI skill
 
 `image_to_image` uploads the user's local image to ComfyUI and binds it to the configured image node. Use it when the user asks to edit, preserve structure, change clothing/background/style, or otherwise operate on the actual provided pixels.
 
-`text_to_video` uses `ltx-23-t2v`. Width and height, when provided, are mapped to the workflow's `EmptyImage` node and drive the LTX latent size through `GetImageSize`.
+`text_to_video` uses `ltx_23_t2v_distill`. Width and height, when provided, are mapped to the workflow's `EmptyImage` node and drive the LTX latent size through `GetImageSize`.
 
-`image_to_video` uses `ltx-23-i2v`. The workflow reads uploaded image size with `GetImageSize`; export resolution follows that uploaded image. If the user wants a different output size, change the input image or workflow, not CLI width/height.
+`image_to_video` uses `ltx_23_i2v_distilled`. The workflow reads uploaded image size with `GetImageSize`; export resolution follows that uploaded image. If the user wants a different output size, change the input image or workflow, not CLI width/height.
 
 `text_to_music` uses Ace Step and outputs MP3. The prompt acts like music tags: genre, mood, instrumentation, tempo, vocal/instrumental hints, and structure. It is not text-to-speech.
 
@@ -58,7 +104,7 @@ Width/height are valid only when all of these are true:
 - The workflow does not use `size_strategy: "workflow_managed"`.
 - Both values are provided together.
 
-Do not pass `--width`/`--height` to `klein_edit`, `ltx-23-i2v`, `ace_step_15_music`, or `qwen3_tts`.
+Do not pass `--width`/`--height` to `klein_edit`, `ltx_23_i2v_distilled`, `ace_step_15_music`, or `qwen3_tts`.
 
 Registered defaults:
 
@@ -66,9 +112,9 @@ Registered defaults:
 |----------|-----------------------|
 | `z_image_turbo` | `832x1280` unless overridden with paired width/height |
 | `qwen_image_2512_4step` | `512x768` unless overridden with paired width/height |
-| `ltx-23-t2v` | `768x512` unless overridden with paired width/height |
+| `ltx_23_t2v_distill` | `768x512` unless overridden with paired width/height |
 | `klein_edit` | `workflow_managed`; no CLI dimensions |
-| `ltx-23-i2v` | Upload image size; no CLI dimensions |
+| `ltx_23_i2v_distilled` | Upload image size; no CLI dimensions |
 | Audio workflows | No image dimensions |
 
 `resolution_presets` and `default_resolution` in config are Agent-facing metadata. Runtime still follows `node_mapping` defaults plus CLI overrides.
@@ -96,13 +142,13 @@ uv run --no-sync python -m comfyui generate --workflow klein_edit --image input_
 Text-to-video:
 
 ```bash
-uv run --no-sync python -m comfyui generate --workflow ltx-23-t2v --width 1280 --height 704 -p "Cinematic shot of waves at sunset, slow pan, natural motion"
+uv run --no-sync python -m comfyui generate --workflow ltx_23_t2v_distill --width 1280 --height 704 -p "Cinematic shot of waves at sunset, slow pan, natural motion"
 ```
 
 Image-to-video:
 
 ```bash
-uv run --no-sync python -m comfyui generate --workflow ltx-23-i2v --image input_image=photo.png -p "Subtle camera drift, soft daylight, preserve the subject"
+uv run --no-sync python -m comfyui generate --workflow ltx_23_i2v_distilled --image input_image=photo.png -p "Subtle camera drift, soft daylight, preserve the subject"
 ```
 
 Text-to-music:
@@ -129,7 +175,7 @@ If the user asks for multiple aspect ratios, run the workflow multiple times. On
 | Landscape LTX video HD | `--width 1280 --height 704` |
 | Landscape LTX video FHD | `--width 1920 --height 1088` |
 
-For `ltx-23-i2v`, output aspect ratio follows the uploaded image. To make square/landscape/portrait variants, provide different input images or adjust the workflow.
+For `ltx_23_i2v_distilled`, output aspect ratio follows the uploaded image. To make square/landscape/portrait variants, provide different input images or adjust the workflow.
 
 ## Model and Node Requirements
 

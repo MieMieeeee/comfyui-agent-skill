@@ -55,7 +55,7 @@ branches = [
     (410, iy+60, 290, bx+20, "qwen_image (海报/文字)", "#052e16", "#10b981", None),
     (480, iy+80, 480, bx+10, "Vision→prompt→T2I", "#1e1b4b", "#a855f7", None),
     (510, iy+60, 650, bx+20, "klein_edit (编辑图)", "#1c1917", "#f97316", None),
-    (540, iy+40, 810, bx+20, "ltx-23-t2v / i2v", "#052e16", "#10b981", "视频"),
+    (540, iy+40, 810, bx+20, "ltx_23_t2v_distill / i2v", "#052e16", "#10b981", "视频"),
 ]
 for x1, y1, x2, y2, text, fill, stroke, above in branches:
     lines.append(f'  <line x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}" stroke="{stroke}" stroke-width="1.5" marker-end="url(#ab)"/>')

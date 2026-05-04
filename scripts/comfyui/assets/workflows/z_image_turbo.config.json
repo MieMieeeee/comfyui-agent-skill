@@ -4,6 +4,22 @@
   "output_node_title": "Save Image",
   "capability": "text_to_image",
   "description": "Text-to-image generation using Z-Image Turbo model",
+  "output_kind": "image",
+  "intent_categories": ["text_to_image"],
+  "input_modes": ["text"],
+  "priority": 50,
+  "keywords_any": [],
+  "selection_guidance": {
+    "best_for": [
+      "general-purpose text-to-image requests",
+      "photoreal image generation without special text rendering requirements"
+    ],
+    "avoid_for": [
+      "poster-style requests",
+      "images requiring prominent embedded text"
+    ],
+    "agent_hint": "Use this as the default fallback T2I workflow when no more specialized registered workflow is a stronger match."
+  },
   "node_mapping": {
     "prompt": {
       "node_title": "CLIP Text Encode (Positive Prompt)",

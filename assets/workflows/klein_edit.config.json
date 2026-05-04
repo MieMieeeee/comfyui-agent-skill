@@ -5,6 +5,21 @@
   "capability": "image_to_image",
   "description": "Flux2-Klein image editing: upload an image, edit via prompt while preserving pose, structure and composition",
   "size_strategy": "workflow_managed",
+  "output_kind": "image",
+  "intent_categories": ["image_to_image", "image_edit"],
+  "input_modes": ["image", "text"],
+  "priority": 80,
+  "keywords_any": ["edit", "editing", "编辑", "修改", "换", "替换", "局部", "inpaint", "remix", "retouch"],
+  "selection_guidance": {
+    "best_for": [
+      "editing a provided image",
+      "preserving composition/pose while changing details"
+    ],
+    "avoid_for": [
+      "text-only generation without an input image"
+    ],
+    "agent_hint": "Use this workflow when the user provides an input image and requests edits; require --image input_image=... and do not use CLI width/height."
+  },
   "node_mapping": {
     "input_image": {
       "node_title": "Load Image",

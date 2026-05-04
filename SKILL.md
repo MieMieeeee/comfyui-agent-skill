@@ -38,6 +38,14 @@ Do not use this skill when the user only wants prompt writing, brainstorming, or
 - For `image_to_image` and `image_to_video`, upload the provided local image with `--image`.
 - Analyzer-generated workflow configs require human review before activation.
 
+## Workflow Selection Policy
+
+- Built-in defaults are fallback choices, not hard requirements.
+- If another registered workflow is a stronger semantic match for the request, prefer the stronger match.
+- Use workflow capability metadata and workflow selection guidance to choose among registered workflows.
+- Any automatic workflow selection in the CLI is only a low-risk fallback when no explicit workflow has been chosen.
+- If multiple workflows appear suitable and the user’s preference is ambiguous, ask a brief clarifying question.
+
 ## Setup
 
 Recommended install (tool-install mode):

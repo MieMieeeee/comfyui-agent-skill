@@ -6,6 +6,21 @@
   "capability": "text_to_speech",
   "description": "Qwen3-TTS VoiceDesign: speech content + style instruct → MP3 (requires FB_Qwen3TTSVoiceDesign + SaveAudioMP3 custom nodes)",
   "size_strategy": "workflow_managed",
+  "intent_categories": ["text_to_speech"],
+  "input_modes": ["text"],
+  "priority": 80,
+  "keywords_any": ["tts", "speech", "voice", "语音", "配音", "朗读", "说话", "播报"],
+  "selection_guidance": {
+    "best_for": [
+      "spoken voice synthesis",
+      "reading a script with a specified voice style"
+    ],
+    "avoid_for": [
+      "music generation",
+      "image/video generation"
+    ],
+    "agent_hint": "Use this workflow for speech synthesis. Require --speech-text and --instruct; do not use positional prompts or width/height."
+  },
   "node_mapping": {
     "speech_text": {
       "node_title": "🎨 Qwen3-TTS VoiceDesign",

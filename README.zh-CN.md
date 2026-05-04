@@ -108,8 +108,8 @@ comfyui-agent-skill-mie save-server http://localhost:8188
 - `z_image_turbo`（文生图）
 - `klein_edit`（图像编辑）
 - `qwen3_tts`（文本转语音）
-- `ltx-23-t2v`（文生视频）
-- `ltx-23-i2v`（图生视频）
+- `ltx_23_t2v_distill`（文生视频）
+- `ltx_23_i2v_distilled`（图生视频）
 - `ace_step_15_music`（音乐/音频）
 - `qwen_image_2512_4step`（文生图，适合海报、含文字的图片）
 
@@ -166,27 +166,27 @@ A watercolor style poster. Centered large Chinese characters: 五一节快乐. C
 
 ![klein_edit 输出](assets/examples/klein_edit.png)
 
-### 文生视频（`ltx-23-t2v`）
+### 文生视频（`ltx_23_t2v_distill`）
 
 提示词：
 ```
 一只猫懒洋洋地打哈欠，轻微镜头推近，柔和光线，真实自然运动，稳定画面
 ```
 
-[ltx-23-t2v 输出（MP4）](assets/examples/ltx-23-t2v.mp4)
+[ltx_23_t2v_distill 输出（MP4）](assets/examples/ltx-23-t2v.mp4)
 
-### 图生视频（`ltx-23-i2v`）
+### 图生视频（`ltx_23_i2v_distilled`）
 
 输入：
 
-![ltx-23-i2v 输入](assets/input/person.png)
+![ltx_23_i2v_distilled 输入](assets/input/person.png)
 
 提示词：
 ```
 A cinematic close-up portrait of a young woman with a tousled chin-length bob, wearing a chunky-knit taupe scarf and an oversized striped cardigan. She gazes upward with a melancholic, contemplative expression, soft diffused twilight light illuminating her face from the upper left. Gentle breeze moves her hair. The camera slowly drifts laterally with subtle breathing motion. Shallow depth of field, atmospheric film grain, quiet and emotional mood.
 ```
 
-[ltx-23-i2v 输出（MP4）](assets/examples/ltx-23-i2v.mp4)
+[ltx_23_i2v_distilled 输出（MP4）](assets/examples/ltx-23-i2v.mp4)
 
 ### 音乐生成（`ace_step_15_music`）
 

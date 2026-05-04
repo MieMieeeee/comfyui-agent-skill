@@ -65,3 +65,10 @@
 - 全局替换 `ltx_23_*_distilled` 引用为 `ltx-23-t2v` / `ltx-23-i2v`。
 
 ## 未发布
+
+### 新特性
+- 增加 agent-first 的工作流选择策略说明与工作流选择指导卡片。
+- 增加轻量的 CLI fallback selector：在高置信度“海报/带字”场景优先选择 `qwen_image_2512_4step`。
+
+### 兼容性
+- 统一 LTX 工作流 id 为 `ltx_23_t2v_distill` 与 `ltx_23_i2v_distilled`（文档与配置对齐）。

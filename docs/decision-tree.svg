@@ -45,7 +45,7 @@
   <line x1="540" y1="230" x2="810" y2="290" stroke="#10b981" stroke-width="1.5" marker-end="url(#ab)"/>
   <text x="675" y="255" text-anchor="middle" class="al">视频</text>
   <rect x="715" y="280" width="190" height="30" rx="6" fill="#052e16" stroke="#10b981" stroke-width="1.5"/>
-  <text x="810" y="300" text-anchor="middle" class="ok">ltx-23-t2v / i2v</text>
+  <text x="810" y="300" text-anchor="middle" class="ok">ltx_23_t2v_distill / i2v</text>
   <line x1="430" y1="260" x2="300" y2="335" stroke="#3b82f6" stroke-width="1.5" marker-end="url(#ab)"/>
   <rect x="190" y="325" width="220" height="30" rx="6" fill="#052e16" stroke="#10b981" stroke-width="1.5"/>
   <text x="300" y="344" text-anchor="middle" class="ok">ace_step_15_music (音乐)</text>

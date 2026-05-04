@@ -9,6 +9,18 @@
   "input_modes": ["text"],
   "priority": 80,
   "keywords_any": ["poster", "海报", "宣传图", "banner", "标题", "文字海报"],
+  "selection_guidance": {
+    "best_for": [
+      "posters",
+      "marketing banners",
+      "images with embedded text"
+    ],
+    "avoid_for": [
+      "general photoreal portraits without text",
+      "pure image editing tasks"
+    ],
+    "agent_hint": "Prefer this workflow when the user asks for 海报/宣传图/banner/标题/带字图片 or expects prominent text rendered inside the image."
+  },
   "resolution_presets": {
     "portrait_fast": { "width": 512,  "height": 768,  "label": "快速" },
     "portrait_hd":   { "width": 704,  "height": 1280, "label": "高清" }
