@@ -151,7 +151,7 @@ comfyui-skill generate \
 
 ## Adding Your Own Workflow (User Extension Example)
 
-If you want to add your own ComfyUI workflow and make it available as a registered workflow:
+If you want to add your own ComfyUI workflow and make it available as a registered workflow, treat it as “connecting a proven ComfyUI graph as a new capability”:
 
 ### 1) Create a local workflow registry directory
 
@@ -165,7 +165,7 @@ D:\comfyui-skill-custom\
 
 ### 2) Import an exported ComfyUI workflow JSON
 
-Export a workflow from ComfyUI (API format JSON), then run:
+First make sure the workflow works inside ComfyUI, then export it as API-format JSON. After that, run:
 
 ```powershell
 $env:COMFYUI_SKILL_ROOT="D:\comfyui-skill-custom"
@@ -182,7 +182,9 @@ assets/workflows/my_custom_workflow.config.template.json
 ### 3) Review and activate the config
 
 - Open `assets/workflows/my_custom_workflow.config.template.json`
-- Fill in `capability`, `description`, `node_mapping`, `output_kind`, and (optionally) selection metadata:
+- Confirm the minimal required fields:
+  - `description`, `capability`, `output_kind`, and the exposed inputs in `node_mapping`
+- Optional: improve agent choice by adding selection metadata:
   - `intent_categories`, `input_modes`, `priority`, `keywords_any`, `selection_guidance`
 - Rename the reviewed file to:
 

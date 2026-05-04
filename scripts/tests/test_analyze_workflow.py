@@ -53,6 +53,42 @@ class TestAnalyzerBasic:
         assert config["node_mapping"]["width"]["default"] == 832
         assert config["node_mapping"]["height"]["default"] == 1280
 
+    def test_analyze_detects_image_input_for_klein_edit(self, skill_root):
+        workflow_path = skill_root / "assets" / "workflows" / "klein_edit.json"
+        config = analyze_workflow(workflow_path)
+        assert config["output_kind"] == "image"
+        assert config["capability"] == "image_to_image"
+        assert "input_image" in config["node_mapping"]
+        m = config["node_mapping"]["input_image"]
+        assert m["value_type"] == "image"
+        assert m["input_strategy"] == "upload"
+        assert m.get("required") is True
+
+    def test_analyze_detects_tts_inputs_and_audio_output(self, skill_root):
+        workflow_path = skill_root / "assets" / "workflows" / "qwen3_tts.json"
+        config = analyze_workflow(workflow_path)
+        assert config["output_kind"] == "audio"
+        assert config["capability"] == "text_to_speech"
+        assert config["output_node_title"] == "Save Audio (MP3)"
+        assert "speech_text" in config["node_mapping"]
+        assert "instruct" in config["node_mapping"]
+        assert config["node_mapping"]["speech_text"]["param"] == "text"
+        assert config["node_mapping"]["instruct"]["param"] == "instruct"
+
+    def test_analyze_detects_video_output_kind(self, skill_root):
+        workflow_path = skill_root / "assets" / "workflows" / "ltx-23-t2v.json"
+        config = analyze_workflow(workflow_path)
+        assert config["output_kind"] == "video"
+        assert config["capability"] == "text_to_video"
+        assert config["output_node_title"] == "Video Combine (Primary MP4)"
+
+    def test_analyze_includes_template_field_groups(self, skill_root):
+        workflow_path = skill_root / "assets" / "workflows" / "z_image_turbo.json"
+        config = analyze_workflow(workflow_path)
+        assert "_template" in config
+        assert "required_fields" in config["_template"]
+        assert "optional_fields" in config["_template"]
+
 
 class TestAnalyzerRoundtrip:
     def test_generated_config_loads_as_workflow_config(self, skill_root):

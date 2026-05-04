@@ -53,7 +53,9 @@ def import_workflow(
         "workflow_path": str(dst_json),
         "template_path": str(dst_tpl),
         "next_steps": [
-            f"Review {dst_tpl.name}, fill in capability/description/node_mapping, then rename to {wid}.config.json when ready.",
-            f"Run preflight: uv run --no-sync python -m comfyui generate --workflow {wid} --preflight",
+            f"Review {dst_tpl.name} and confirm the minimal required fields (description/capability/output_kind + exposed inputs in node_mapping).",
+            f"Optionally add selection metadata (intent_categories/priority/keywords_any/selection_guidance) to help Agents choose the workflow.",
+            f"Rename the reviewed template to {wid}.config.json to register it.",
+            f"Optional preflight (runs automatically before execution unless skipped): uv run --no-sync python -m comfyui generate --workflow {wid} --preflight",
         ],
     }

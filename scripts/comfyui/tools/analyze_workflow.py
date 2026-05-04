@@ -17,6 +17,9 @@ def analyze_workflow(workflow_path: Path) -> dict:
     latent_candidates = []
     prompt_candidates = []
     loader_candidates = []
+    image_input_candidates = []
+    tts_candidates = []
+    ace_audio_candidates = []
 
     # Loader node types and their model-path input keys
     _LOADER_MODEL_KEYS: dict[str, tuple[str, ...]] = {
@@ -58,7 +61,7 @@ def analyze_workflow(workflow_path: Path) -> dict:
         ct_lower = class_type.lower()
         title_lower = title.lower()
 
-        if "save" in ct_lower or "save" in title_lower:
+        if ("save" in ct_lower) or ("save" in title_lower) or ("videocombine" in ct_lower) or ("video combine" in title_lower):
             output_candidates.append(node_key)
         if "sampler" in ct_lower or "ksampler" in ct_lower:
             sampler_candidates.append(node_key)
@@ -68,6 +71,14 @@ def analyze_workflow(workflow_path: Path) -> dict:
             prompt_candidates.append(node_key)
         if class_type in _LOADER_MODEL_KEYS:
             loader_candidates.append(node_key)
+        if class_type == "LoadImage" or ("loadimage" in ct_lower) or ("load image" in title_lower):
+            image_input_candidates.append(node_key)
+        if ("tts" in ct_lower) or ("tts" in title_lower) or ("voicedesign" in ct_lower) or ("voicedesign" in title_lower):
+            if "text" in scalar_params and "instruct" in scalar_params:
+                tts_candidates.append(node_key)
+        if ("acestep" in ct_lower) or ("ace step" in title_lower) or ("audio1.5" in ct_lower):
+            if "tags" in scalar_params:
+                ace_audio_candidates.append(node_key)
 
     # Build node_mapping
     node_mapping: dict[str, dict] = {}
@@ -120,6 +131,51 @@ def analyze_workflow(workflow_path: Path) -> dict:
                 "default": params["height"],
             }
 
+    image_role_count = 0
+    for node_key in image_input_candidates:
+        node_info = nodes[node_key]
+        title = node_key.split("#")[0]
+        key = "input_image" if image_role_count == 0 else f"input_image_{image_role_count+1}"
+        node_mapping[key] = {
+            "node_title": title,
+            "param": "image",
+            "value_type": "image",
+            "input_strategy": "upload",
+            "required": True,
+        }
+        image_role_count += 1
+
+    if tts_candidates:
+        node_key = tts_candidates[0]
+        title = node_key.split("#")[0]
+        node_mapping["speech_text"] = {
+            "node_title": title,
+            "param": "text",
+            "value_type": "string",
+            "required": True,
+        }
+        node_mapping["instruct"] = {
+            "node_title": title,
+            "param": "instruct",
+            "value_type": "string",
+            "required": True,
+        }
+
+    if ace_audio_candidates:
+        node_key = ace_audio_candidates[0]
+        title = node_key.split("#")[0]
+        node_mapping["prompt"] = {
+            "node_title": title,
+            "param": "tags",
+            "value_type": "string",
+            "required": True,
+        }
+        node_mapping["lyrics"] = {
+            "node_title": title,
+            "param": "lyrics",
+            "value_type": "string",
+        }
+
     # Extract model file references from loader nodes
     required_models: list[str] = []
     for node_key in loader_candidates:
@@ -131,15 +187,89 @@ def analyze_workflow(workflow_path: Path) -> dict:
             if isinstance(val, str) and val.strip():
                 required_models.append(val.strip())
 
-    output_node_title = output_candidates[0].split("#")[0] if output_candidates else "REVIEW_NEEDED"
+    def _pick_output_node_title() -> str:
+        if not output_candidates:
+            return "REVIEW_NEEDED"
+        best = output_candidates[0]
+        best_score = -1
+        for cand in output_candidates:
+            title = cand.split("#")[0]
+            info = nodes.get(cand, {})
+            params = info.get("params", {})
+            ct = (info.get("class_type") or "").lower()
+            t = title.lower()
+            score = 0
+            if "primary" in t:
+                score += 10
+            if params.get("save_output") is True:
+                score += 8
+            if "save" in ct or "save" in t:
+                score += 5
+            if score > best_score:
+                best_score = score
+                best = cand
+        return best.split("#")[0]
+
+    output_node_title = _pick_output_node_title()
+
+    output_kind = "image"
+    output_title_lower = output_node_title.lower()
+    output_info = next((nodes[k] for k in output_candidates if k.split("#")[0] == output_node_title), None)
+    output_ct_lower = (output_info.get("class_type", "").lower() if output_info else "")
+    if ("audio" in output_title_lower) or ("mp3" in output_title_lower) or ("audio" in output_ct_lower):
+        output_kind = "audio"
+    elif ("video" in output_title_lower) or ("mp4" in output_title_lower) or ("video" in output_ct_lower):
+        output_kind = "video"
+
+    has_image_input = any(v.get("value_type") == "image" for v in node_mapping.values())
+    if output_kind == "audio":
+        capability = "text_to_speech" if tts_candidates else "text_to_music"
+    elif output_kind == "video":
+        capability = "image_to_video" if has_image_input else "text_to_video"
+    else:
+        capability = "image_to_image" if has_image_input else "text_to_image"
+
+    input_modes = []
+    if any(v.get("value_type") == "string" for v in node_mapping.values()):
+        input_modes.append("text")
+    if has_image_input:
+        input_modes.append("image")
+    if not input_modes:
+        input_modes = ["text"]
 
     return {
         "workflow_id": workflow_name,
         "workflow_file": workflow_path.name,
         "output_node_title": output_node_title,
-        "capability": "REVIEW: text_to_image | image_to_image | etc.",
-        "description": "REVIEW: Add description",
+        "capability": capability,
+        "description": "TODO: Describe what this workflow does.",
+        "output_kind": output_kind,
+        "intent_categories": [],
+        "input_modes": input_modes,
+        "priority": 0,
+        "keywords_any": [],
+        "selection_guidance": {"agent_hint": ""},
         "node_mapping": node_mapping,
+        "_template": {
+            "required_fields": [
+                "workflow_id",
+                "workflow_file",
+                "output_node_title",
+                "description",
+                "capability",
+                "output_kind",
+                "node_mapping",
+            ],
+            "optional_fields": [
+                "intent_categories",
+                "input_modes",
+                "priority",
+                "keywords_any",
+                "selection_guidance",
+                "resolution_presets",
+                "default_resolution",
+            ],
+        },
         "_discovered_nodes": nodes,
         "_required_models": required_models,
     }
