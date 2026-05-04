@@ -93,6 +93,60 @@ In tool-install mode, workflows/references are read from the installed package, 
 
 Short alias also available: `comfyui-skill`
 
+## End-to-End Example (User input → decision → workflow → result)
+
+This project is designed for agent-first workflow selection:
+
+- The Agent makes the primary workflow decision using [SKILL.md](SKILL.md), workflow capability metadata, and [references/workflows.md](references/workflows.md).
+- The CLI only provides a low-risk fallback when no explicit `--workflow` is chosen.
+
+### 1) User input (natural language)
+
+> "帮我做一张海报，标题写「夏日促销」，风格现代简洁，主色调蓝白。"
+
+### 2) Decision (what gets chosen and why)
+
+- Task type: text-to-image
+- Strong cue: poster / embedded text requirement ("海报", "标题写…")
+- Prefer a stronger match over the general fallback T2I workflow
+- Selected workflow: `qwen_image_2512_4step`
+- Size choice: `704x1280` (HD portrait preset for posters)
+
+### 3) CLI command (agent explicitly chooses the workflow)
+
+```bash
+comfyui-skill generate \
+  --workflow qwen_image_2512_4step \
+  --width 704 --height 1280 \
+  -p "Modern minimalist marketing poster, blue and white palette, bold Chinese title text '夏日促销', clean layout, high contrast, product-focused composition"
+```
+
+### 4) Example JSON result (stdout)
+
+```json
+{
+  "success": true,
+  "workflow_id": "qwen_image_2512_4step",
+  "status": "completed",
+  "outputs": [
+    {
+      "path": "C:\\\\Users\\\\<you>\\\\AppData\\\\Roaming\\\\comfyui-skill\\\\results\\\\20260504\\\\120301_<job_id>\\\\output.png",
+      "filename": "output.png",
+      "size_bytes": 1234567
+    }
+  ],
+  "error": null,
+  "job_id": "<prompt_id>",
+  "metadata": {
+    "seed": 123456789,
+    "prompt_id": "<prompt_id>",
+    "prompt": "Modern minimalist marketing poster ...",
+    "width": 704,
+    "height": 1280
+  }
+}
+```
+
 ## Upgrade
 
 If you installed via pipx:

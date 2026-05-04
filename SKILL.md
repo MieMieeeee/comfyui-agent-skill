@@ -90,7 +90,8 @@ comfyui-skill check
 
 Minimal decision tree:
 
-- User gives text only → `generate -p "..."` (defaults to `z_image_turbo`)
+- User gives text only → start from general T2I (`z_image_turbo` fallback), but prefer a stronger registered match when workflow guidance indicates one (e.g. posters / embedded text).
+- Poster / text-in-image requests → prefer `qwen_image_2512_4step`
 - User gives a reference image and wants a new similar image → vision → `reference_to_image` prompt → run `z_image_turbo`
 - User gives an input image and wants edits → `generate --workflow klein_edit --image input_image=... -p "..."`
 - User wants TTS / voice audio → `generate --workflow qwen3_tts --speech-text "..." --instruct "..."`
@@ -98,8 +99,8 @@ Minimal decision tree:
 
 | User intent | Workflow / mode | Required command shape |
 |-------------|-----------------|------------------------|
-| Text to image | `z_image_turbo` default | `generate -p "prompt"` |
-| Qwen Image 2512 | `qwen_image_2512_4step` | `generate --workflow qwen_image_2512_4step -p "prompt"` |
+| Text to image (general fallback) | `z_image_turbo` | `generate -p "prompt"` |
+| Poster / embedded text (preferred) | `qwen_image_2512_4step` | `generate --workflow qwen_image_2512_4step -p "prompt"` |
 | Similar image from reference | Agent vision + T2I | Read reference image, create English prompt, then T2I |
 | Edit image | `klein_edit` | `generate --workflow klein_edit --image input_image=photo.png -p "edit prompt"` |
 | Text to video | `ltx_23_t2v_distill` | `generate --workflow ltx_23_t2v_distill -p "shot prompt"` |
