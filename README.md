@@ -114,6 +114,8 @@ This project is designed for agent-first workflow selection:
 
 ### 3) CLI command (agent explicitly chooses the workflow)
 
+In this example, the agent explicitly chooses `qwen_image_2512_4step`; the CLI fallback selector is only a convenience when no explicit workflow is passed.
+
 ```bash
 comfyui-skill generate \
   --workflow qwen_image_2512_4step \
@@ -146,6 +148,60 @@ comfyui-skill generate \
   }
 }
 ```
+
+## Adding Your Own Workflow (User Extension Example)
+
+If you want to add your own ComfyUI workflow and make it available as a registered workflow:
+
+### 1) Create a local workflow registry directory
+
+Choose a directory for your local workflow registrations:
+
+```text
+D:\comfyui-skill-custom\
+  assets\
+    workflows\
+```
+
+### 2) Import an exported ComfyUI workflow JSON
+
+Export a workflow from ComfyUI (API format JSON), then run:
+
+```powershell
+$env:COMFYUI_SKILL_ROOT="D:\comfyui-skill-custom"
+python -m comfyui import-workflow .\my_workflow.json --id my_custom_workflow
+```
+
+This creates:
+
+```text
+assets/workflows/my_custom_workflow.json
+assets/workflows/my_custom_workflow.config.template.json
+```
+
+### 3) Review and activate the config
+
+- Open `assets/workflows/my_custom_workflow.config.template.json`
+- Fill in `capability`, `description`, `node_mapping`, `output_kind`, and (optionally) selection metadata:
+  - `intent_categories`, `input_modes`, `priority`, `keywords_any`, `selection_guidance`
+- Rename the reviewed file to:
+
+```text
+assets/workflows/my_custom_workflow.config.json
+```
+
+Only `*.config.json` files are treated as registered workflows.
+
+### 4) Run using your custom registry
+
+Point runtime resources at your custom registry directory:
+
+```powershell
+$env:COMFYUI_SKILL_RESOURCE_ROOT="D:\comfyui-skill-custom"
+comfyui-skill generate --workflow my_custom_workflow -p "test prompt"
+```
+
+If you omit `--workflow`, the CLI may apply low-risk fallback selection (for example, poster-like keywords) but it will not attempt to fully “understand” your workflow. Agent-first selection remains the intended model.
 
 ## Upgrade
 

@@ -52,6 +52,15 @@ class TestNodeMapping:
         assert m is not None
         assert m["node_title"] == "CLIP Text Encode (Negative Prompt)"
 
+    def test_builtin_fallback_has_selection_metadata(self):
+        assert Z_IMAGE_TURBO.output_kind == "image"
+        assert Z_IMAGE_TURBO.intent_categories == ["text_to_image"]
+        assert Z_IMAGE_TURBO.input_modes == ["text"]
+        assert Z_IMAGE_TURBO.priority == 50
+        assert Z_IMAGE_TURBO.keywords_any == []
+        assert isinstance(Z_IMAGE_TURBO.selection_guidance, dict)
+        assert "agent_hint" in Z_IMAGE_TURBO.selection_guidance
+
     def test_custom_mapping(self):
         cfg = WorkflowConfig(
             workflow_id="custom",

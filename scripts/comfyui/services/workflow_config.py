@@ -142,6 +142,22 @@ Z_IMAGE_TURBO = WorkflowConfig(
     },
     capability="text_to_image",
     description="Text-to-image generation using Z-Image Turbo model",
+    output_kind="image",
+    intent_categories=["text_to_image"],
+    input_modes=["text"],
+    priority=50,
+    keywords_any=[],
+    selection_guidance={
+        "best_for": [
+            "general-purpose text-to-image requests",
+            "photoreal image generation without special text rendering requirements",
+        ],
+        "avoid_for": [
+            "poster-style requests",
+            "images requiring prominent embedded text",
+        ],
+        "agent_hint": "Use this as the default fallback T2I workflow when no more specialized registered workflow is a stronger match.",
+    },
 )
 
 # Registry: workflow_id → WorkflowConfig. Prefer JSON configs; fall back to built-in.
