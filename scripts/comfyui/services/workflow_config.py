@@ -127,7 +127,19 @@ def load_user_configs_from_dir(
 ) -> tuple[dict[str, WorkflowConfig], list[dict[str, Any]]]:
     registry: dict[str, WorkflowConfig] = {}
     errors: list[dict[str, Any]] = []
-    for config_file in _iter_user_workflow_config_files(custom_dir):
+    try:
+        config_files = _iter_user_workflow_config_files(custom_dir)
+    except OSError as e:
+        errors.append(
+            {
+                "code": "USER_WORKFLOW_REGISTRY_UNAVAILABLE",
+                "message": f"Cannot scan user workflow registry directory: {e}",
+                "path": str(custom_dir),
+            }
+        )
+        return registry, errors
+
+    for config_file in config_files:
         try:
             cfg = WorkflowConfig.from_json_file(config_file)
         except ConfigError as e:

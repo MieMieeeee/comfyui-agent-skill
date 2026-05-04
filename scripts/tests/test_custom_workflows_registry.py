@@ -2,6 +2,8 @@ import json
 import importlib
 from pathlib import Path
 
+import pytest
+
 
 def _write_min_config(path: Path, workflow_id: str, workflow_file: str) -> None:
     cfg = {
@@ -76,3 +78,17 @@ class TestCustomWorkflowRegistry:
         importlib.reload(wc)
         assert "u3" in wc.WORKFLOW_REGISTRY
 
+    def test_user_registry_scan_error_does_not_block_loading(self, tmp_path, monkeypatch):
+        monkeypatch.setenv("COMFYUI_SKILL_USER_DATA_ROOT", str(tmp_path))
+        custom_dir = tmp_path / "custom_workflows"
+        custom_dir.mkdir(parents=True, exist_ok=True)
+
+        import comfyui.services.workflow_config as wc
+
+        def _boom(_p: Path) -> list[Path]:
+            raise OSError("boom")
+
+        monkeypatch.setattr(wc, "_iter_user_workflow_config_files", _boom)
+        reg, errors = wc.load_user_configs_from_dir(custom_dir, builtin_ids=set())
+        assert reg == {}
+        assert any(e.get("code") == "USER_WORKFLOW_REGISTRY_UNAVAILABLE" for e in errors)
