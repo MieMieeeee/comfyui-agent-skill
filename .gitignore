@@ -6,6 +6,7 @@ venv/
 ENV/
 results/
 .tmp/
+.tmp_user_data/
 .claude/
 config.local.json
 review/
