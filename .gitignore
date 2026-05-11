@@ -5,6 +5,7 @@ __pycache__/
 venv/
 ENV/
 results/
+output/
 .tmp/
 .tmp_user_data/
 .claude/

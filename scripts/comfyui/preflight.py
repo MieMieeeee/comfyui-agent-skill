@@ -285,10 +285,10 @@ def build_preflight_cli_payload(workflow_id: str, result: PreflightResult) -> di
             msg = result.error or "Cannot reach ComfyUI or GET /object_info failed"
         elif result.missing_node_types:
             code = "PREFLIGHT_MISSING_NODES"
-            msg = f"Node types not registered on server: {result.missing_node_types}"
+            msg = f"Node types not registered on server: {result.missing_node_types} 可通过 ComfyUI Manager 进行安装。"
         elif result.missing_plugins:
             code = "PREFLIGHT_MISSING_PLUGINS"
-            msg = f"Third-party plugins not installed: {result.missing_plugins}"
+            msg = f"Third-party plugins not installed: {result.missing_plugins} 可通过 ComfyUI Manager 进行安装。"
         elif result.missing_models:
             code = "PREFLIGHT_MISSING_MODELS"
             details = [f"{m['path']} (type={m['type']}, folder={m['folder']})" for m in result.missing_models]
