@@ -33,6 +33,7 @@ Do not pass `--check` or `--save-server` to `generate`; they are top-level compa
 | `uv run --no-sync python -m comfyui save-server URL` | Persist a ComfyUI server URL to `config.local.json` |
 | `uv run --no-sync python -m comfyui generate [options]` | Execute or submit a registered workflow |
 | `uv run --no-sync python -m comfyui import-workflow PATH` | Import a workflow JSON into the per-user workflow registry and generate a `workflow.config.template.json` for review (`--into-project` for maintainers) |
+| `uv run --no-sync python -m comfyui convert-ui PATH [options]` | Convert ComfyUI UI/Save format workflows (`{nodes, links}`) to API format by driving a running ComfyUI front-end. Opt-in; needs Playwright + Chromium. Does not trigger inference. |
 
 Health check:
 
@@ -238,6 +239,7 @@ Agent-only codes are `NO_REFERENCE_IMAGE` and `VISION_UNAVAILABLE`. Do not use `
 | `CONFIG_ERROR` | Invalid workflow config | Maintainer action required |
 | `MAPPING_NOT_FOUND` | Config lacks required node mapping | Maintainer action required |
 | `WORKFLOW_FILE_NOT_FOUND` | Registered workflow JSON is missing | Maintainer action required |
+| `WORKFLOW_NOT_API_FORMAT` | Import input is UI/Save format (`{nodes, links}`) or otherwise not API format | Re-export from ComfyUI via *Save (API)*, or batch-convert with `convert-ui` |
 | `WORKFLOW_LOAD_FAILED` | Workflow JSON could not be parsed/loaded | Maintainer action required |
 | `EXECUTION_FAILED` | ComfyUI accepted but execution failed | Report message; check ComfyUI UI/logs |
 | `NO_OUTPUT` | Execution completed without retrievable media | Check output nodes, models, and [workflow_nodes.md](workflow_nodes.md) |

@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 
 from comfyui.config import SKILL_ROOT, check_server, get_comfyui_url, local_config_path, save_comfyui_url
+from comfyui.tools.convert_ui_workflow import WorkflowFormatError
 from comfyui.tools.import_workflow import import_workflow, validate_workflow_id
 
 
@@ -148,7 +149,11 @@ def cmd_import_workflow() -> int:
     p = argparse.ArgumentParser(
         description="Import a ComfyUI API workflow JSON into the per-user registry and generate a config template."
     )
-    p.add_argument("path", help="Path to an exported ComfyUI workflow JSON (API format).")
+    p.add_argument(
+        "path",
+        help="Path to an exported ComfyUI workflow JSON. Must be API format: in ComfyUI, enable "
+        "Settings -> Enable Dev mode options, then use 'Save (API)' (not 'Save').",
+    )
     p.add_argument("--id", default=None, help="Optional workflow_id override (default: file stem).")
     p.add_argument("--force", action="store_true", help="Overwrite existing imported files.")
     p.add_argument(
@@ -201,6 +206,10 @@ def cmd_import_workflow() -> int:
         return 1
     except FileExistsError:
         err = {"code": "WORKFLOW_ALREADY_EXISTS", "message": f"Workflow '{wid}' already exists. Use --force to overwrite."}
+        print(json.dumps({"success": False, "workflow_id": wid, "error": err}, ensure_ascii=True, indent=2))
+        return 1
+    except WorkflowFormatError as e:
+        err = {"code": "WORKFLOW_NOT_API_FORMAT", "message": str(e)}
         print(json.dumps({"success": False, "workflow_id": wid, "error": err}, ensure_ascii=True, indent=2))
         return 1
     except ValueError as e:

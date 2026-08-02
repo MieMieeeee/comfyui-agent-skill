@@ -9,6 +9,12 @@ from typing import Any
 from comfyui.config import SKILL_ROOT, get_user_data_root, get_workflows_dir
 from comfyui.services.workflow_config import Z_IMAGE_TURBO, load_configs_from_dir
 from comfyui.tools.analyze_workflow import analyze_workflow
+from comfyui.tools.convert_ui_workflow import (
+    FORMAT_API,
+    FORMAT_UI,
+    WorkflowFormatError,
+    classify_workflow_format,
+)
 
 
 _WORKFLOW_ID_RE = re.compile(r"^[a-z0-9][a-z0-9_-]{0,63}$")
@@ -33,10 +39,29 @@ def import_workflow(
     if not src_path.exists():
         raise FileNotFoundError(f"workflow json not found: {src_path}")
 
+    # Validate JSON *and* format. analyze_workflow assumes API format
+    # ({"1": {"class_type":..., "inputs":...}}); feeding it a UI/Save file
+    # ({"nodes":[...], "links":[...]}) crashes with AttributeError. Detect that
+    # here with an actionable message instead.
     try:
-        json.loads(src_path.read_text(encoding="utf-8"))
+        data = json.loads(src_path.read_text(encoding="utf-8"))
     except json.JSONDecodeError as e:
         raise ValueError(f"invalid workflow json: {e}") from e
+
+    fmt = classify_workflow_format(data)
+    if fmt == FORMAT_UI:
+        raise WorkflowFormatError(
+            "this is a ComfyUI UI/Save format workflow ({nodes, links}), not the API format "
+            "this skill runs. Re-export it from ComfyUI: enable Settings -> Enable Dev mode options, "
+            "then use the 'Save (API)' button (not 'Save'). "
+            "To batch-convert existing UI workflows, run: python -m comfyui convert-ui --help"
+        )
+    if fmt != FORMAT_API:
+        raise WorkflowFormatError(
+            "workflow JSON is neither UI/Save format ({nodes, links}) nor API format "
+            "({\"1\": {\"class_type\":..., \"inputs\":...}}). Re-export from ComfyUI using "
+            "the 'Save (API)' button (requires Settings -> Enable Dev mode options)."
+        )
 
     wid = validate_workflow_id(workflow_id or src_path.stem)
 

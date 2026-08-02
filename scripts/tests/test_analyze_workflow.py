@@ -109,3 +109,51 @@ class TestAnalyzerRoundtrip:
             description=config["description"],
         )
         assert "prompt" in cfg.node_mapping
+
+
+class TestSkillPrefixMapping:
+    @staticmethod
+    def _fixtures_dir() -> Path:
+        return Path(__file__).resolve().parent / "fixtures"
+
+    def test_fs_without_skill_prefix_only_heuristic_inputs(self):
+        config = analyze_workflow(self._fixtures_dir() / "fs.json")
+        mapping = config["node_mapping"]
+
+        assert "input_image" in mapping
+        assert mapping["input_image"]["node_title"] == "Load Image"
+        assert "prompt" not in mapping
+        assert "font_size" not in mapping
+        assert not any(entry.get("source") == "skill_prefix" for entry in mapping.values())
+
+    def test_fs_skill_prefix_exposes_watermark_inputs(self):
+        config = analyze_workflow(self._fixtures_dir() / "fs-skill.json")
+        mapping = config["node_mapping"]
+
+        assert "input_image" in mapping
+        assert mapping["input_image"]["node_title"] == "Load Image"
+
+        assert "prompt" in mapping
+        prompt = mapping["prompt"]
+        assert prompt["node_title"] == "SKILL Add Text Watermark For Image 🐑"
+        assert prompt["param"] == "text"
+        assert prompt["source"] == "skill_prefix"
+        assert prompt["required"] is True
+
+        assert mapping["font_size"]["source"] == "skill_prefix"
+        assert mapping["font_size"]["default"] == 128
+        assert mapping["font_size"]["value_type"] == "integer"
+        assert mapping["outline"]["value_type"] == "boolean"
+
+    def test_fs_skill_has_more_mappings_than_fs_plain(self):
+        plain = analyze_workflow(self._fixtures_dir() / "fs.json")["node_mapping"]
+        skill = analyze_workflow(self._fixtures_dir() / "fs-skill.json")["node_mapping"]
+        assert len(skill) > len(plain)
+        assert set(plain.keys()).issubset(set(skill.keys()))
+
+    def test_z_image_turbo_prompt_unchanged_with_skill_logic(self, skill_root):
+        config = analyze_workflow(skill_root / "assets" / "workflows" / "z_image_turbo.json")
+        prompt = config["node_mapping"]["prompt"]
+        assert prompt["node_title"] == "CLIP Text Encode (Positive Prompt)"
+        assert prompt["param"] == "text"
+        assert prompt.get("source") != "skill_prefix"

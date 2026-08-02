@@ -1,0 +1,46 @@
+{
+  "8": {
+    "inputs": {
+      "image": "负鼠 (1).png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "Load Image"
+    }
+  },
+  "10": {
+    "inputs": {
+      "text": "鼠鼠我啊~\n今天心情很好！",
+      "font_size": 128,
+      "position_x": 50,
+      "position_y": 70,
+      "color_r": 255,
+      "color_g": 255,
+      "color_b": 255,
+      "outline": true,
+      "outline_width": 3,
+      "align": "center",
+      "images": [
+        "8",
+        0
+      ]
+    },
+    "class_type": "AddTextWatermarkForImage|Mie",
+    "_meta": {
+      "title": "Add Text Watermark For Image 🐑"
+    }
+  },
+  "11": {
+    "inputs": {
+      "filename_prefix": "fs",
+      "images": [
+        "10",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "Save Image"
+    }
+  }
+}

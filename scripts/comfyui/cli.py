@@ -5,11 +5,12 @@ import json
 import sys
 
 from comfyui.cli_admin import cmd_check, cmd_doctor, cmd_import_workflow, cmd_save_server
+from comfyui.cli_convert import cmd_convert_ui
 from comfyui.cli_generate import cmd_generate
 
 
 def main_module() -> None:
-    """`python -m comfyui` subcommands: check | doctor | save-server | import-workflow | generate"""
+    """`python -m comfyui` subcommands: check | doctor | save-server | import-workflow | convert-ui | generate"""
     if len(sys.argv) >= 2 and sys.argv[1] in ("-h", "--help"):
         print(
             "Usage:\n"
@@ -17,6 +18,7 @@ def main_module() -> None:
             "  python -m comfyui doctor\n"
             "  python -m comfyui save-server URL\n"
             "  python -m comfyui import-workflow PATH\n"
+            "  python -m comfyui convert-ui PATH [options]\n"
             "  python -m comfyui generate [options]\n"
             "\n"
             "Examples:\n"
@@ -34,7 +36,7 @@ def main_module() -> None:
     sub = sys.argv[1]
 
     # Route subcommands FIRST (before any flag checks)
-    if sub in ("check", "doctor", "save-server", "generate", "import-workflow"):
+    if sub in ("check", "doctor", "save-server", "generate", "import-workflow", "convert-ui"):
         sys.argv = [sys.argv[0]] + sys.argv[2:]
         if sub == "check":
             sys.exit(cmd_check())
@@ -44,6 +46,8 @@ def main_module() -> None:
             sys.exit(cmd_save_server())
         if sub == "import-workflow":
             sys.exit(cmd_import_workflow())
+        if sub == "convert-ui":
+            sys.exit(cmd_convert_ui())
         sys.exit(cmd_generate())
 
     # Handle --check flag (not a subcommand)
@@ -65,5 +69,5 @@ def main_module() -> None:
     if sub.startswith("-"):
         sys.exit(cmd_generate())
 
-    print(f"Unknown subcommand: {sub}. Use: check | doctor | save-server | import-workflow | generate", file=sys.stderr)
+    print(f"Unknown subcommand: {sub}. Use: check | doctor | save-server | import-workflow | convert-ui | generate", file=sys.stderr)
     sys.exit(2)

@@ -2,7 +2,115 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
+from typing import Any
+
+_SKILL_TITLE_RE = re.compile(r"^skill(?:[\s:\]\-_]|$)", re.IGNORECASE)
+
+_KNOWN_HINT_ROLES: dict[str, str] = {
+    "input_image": "image",
+    "prompt": "text",
+    "negative_prompt": "text",
+    "seed": "seed",
+    "width": "width",
+    "height": "height",
+    "speech_text": "text",
+    "instruct": "instruct",
+}
+
+
+def parse_skill_hint(title: str) -> str | None:
+    """Return the hint after a leading ``Skill`` prefix, or ``None`` if not a Skill node."""
+    if not _SKILL_TITLE_RE.match(title):
+        return None
+    remainder = re.sub(r"^skill[\s:\]\-_]*", "", title, count=1, flags=re.IGNORECASE).strip()
+    return remainder
+
+
+def slugify_hint(hint: str) -> str:
+    slug = re.sub(r"[^\w]+", "_", hint.lower(), flags=re.UNICODE)
+    slug = re.sub(r"_+", "_", slug).strip("_")
+    return slug or "skill_node"
+
+
+def infer_scalar_value_type(value: Any) -> str:
+    if isinstance(value, bool):
+        return "boolean"
+    if isinstance(value, int):
+        return "integer"
+    if isinstance(value, float):
+        return "float"
+    return "string"
+
+
+def mapped_node_params(node_mapping: dict[str, dict]) -> set[tuple[str, str]]:
+    return {(entry["node_title"], entry["param"]) for entry in node_mapping.values()}
+
+
+def skill_role_name(hint: str, param: str, node_mapping: dict[str, dict]) -> str:
+    """Derive a stable mapping role for a Skill-prefixed node parameter."""
+    slug = slugify_hint(hint)
+    normalized_hint = hint.lower().replace(" ", "_").strip("_")
+
+    for role, expected_param in _KNOWN_HINT_ROLES.items():
+        if normalized_hint == role and param == expected_param and role not in node_mapping:
+            return role
+        if hint.lower().strip() == role.replace("_", " ") and param == expected_param and role not in node_mapping:
+            return role
+
+    if param == "image" and "input_image" not in node_mapping:
+        return "input_image"
+    if param == "text" and "prompt" not in node_mapping:
+        return "prompt"
+
+    if param not in node_mapping:
+        return param
+
+    candidate = f"{slug}_{param}"
+    if candidate not in node_mapping:
+        return candidate
+
+    index = 2
+    while f"{candidate}_{index}" in node_mapping:
+        index += 1
+    return f"{candidate}_{index}"
+
+
+def apply_skill_node_mappings(nodes: dict[str, dict], node_mapping: dict[str, dict]) -> None:
+    """Expose scalar inputs on Skill-prefixed nodes without overriding existing heuristics."""
+    already_mapped = mapped_node_params(node_mapping)
+
+    for node_key, node_info in nodes.items():
+        title = node_key.split("#")[0]
+        hint = parse_skill_hint(title)
+        if hint is None:
+            continue
+
+        params = node_info.get("params") or {}
+        for param, value in params.items():
+            if (title, param) in already_mapped:
+                continue
+
+            value_type = infer_scalar_value_type(value)
+            role = skill_role_name(hint, param, node_mapping)
+            entry: dict[str, Any] = {
+                "node_title": title,
+                "param": param,
+                "value_type": value_type,
+                "source": "skill_prefix",
+            }
+
+            if value_type == "image":
+                entry["input_strategy"] = "upload"
+                entry["required"] = True
+            elif value_type == "string" and role == "prompt":
+                entry["required"] = True
+            else:
+                entry["default"] = value
+
+            node_mapping[role] = entry
+            already_mapped.add((title, param))
 
 
 def analyze_workflow(workflow_path: Path) -> dict:
@@ -175,6 +283,8 @@ def analyze_workflow(workflow_path: Path) -> dict:
             "param": "lyrics",
             "value_type": "string",
         }
+
+    apply_skill_node_mappings(nodes, node_mapping)
 
     # Extract model file references from loader nodes
     required_models: list[str] = []

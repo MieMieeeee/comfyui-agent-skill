@@ -53,6 +53,7 @@ Do not use this skill when the user only wants prompt writing, brainstorming, or
 - Import the workflow, generate/review the config template, and activate it only after a reviewed `workflow.config.json` exists.
 - User-added workflows must be stored in the per-user workflow registry so skill upgrades do not overwrite them.
 - Once activated, user-added workflows may be selected like other registered workflows when they are a stronger semantic match and required inputs are available.
+- `import-workflow` only accepts **API format** (ComfyUI's *Save (API)* button, requires *Settings → Enable Dev mode options*). A plain *Save* product (UI/Save format, `{nodes, links}`) is refused with `WORKFLOW_NOT_API_FORMAT`. To convert existing UI/Save workflows in place, run `convert-ui` (needs a running ComfyUI + Playwright).
 
 ## Setup
 
@@ -182,6 +183,13 @@ Show progress for long jobs:
 
 ```bash
 uv run --no-sync python -m comfyui generate --workflow ltx_23_t2v_distill -p "cinematic waves at sunset, slow pan" --progress
+```
+
+Convert UI/Save workflows to API format (opt-in; needs a running ComfyUI + Playwright, does not run inference):
+
+```bash
+uv run --no-sync python -m comfyui convert-ui path/to/ui_workflow.json --server http://127.0.0.1:8188
+uv run --no-sync python -m comfyui convert-ui path/to/workflows_dir -o api_workflows/
 ```
 
 Full CLI options, output path behavior, async submit/poll, and error code details are in [references/cli.md](references/cli.md).

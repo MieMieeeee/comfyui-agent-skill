@@ -1,0 +1,23 @@
+{
+  "id": 4,
+  "links": [
+    [1, 2, 0, 5, 0, "CLIP"]
+  ],
+  "nodes": [
+    {
+      "id": 5,
+      "type": "CLIPTextEncode",
+      "title": "CLIP Text Encode (Positive Prompt)",
+      "widgets_values": ["a cat"],
+      "inputs": [
+        {"name": "clip", "type": "CLIP", "link": 1}
+      ]
+    },
+    {
+      "id": 2,
+      "type": "SaveImage",
+      "title": "Save Image",
+      "widgets_values": []
+    }
+  ]
+}

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.7 - 2026-08-02
+
+### Features
+- Add `convert-ui` subcommand: batch-convert ComfyUI UI/Save format workflows (`{nodes, links}`) to API format by driving a running ComfyUI front-end via Playwright (lazy-imported, opt-in). Mirrors the authoritative `loadGraphData` + `graphToPrompt` path; does not trigger inference.
+- Guard `import-workflow` against non-API input. UI/Save and unknown formats are now refused up front with actionable guidance (`WORKFLOW_NOT_API_FORMAT`) instead of crashing inside the analyzer.
+- Expose `SKILL`-prefixed node scalar inputs in generated config templates (analyzer heuristic).
+
 ## 0.1.6 - 2026-05-04
 
 ### Features

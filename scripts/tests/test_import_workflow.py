@@ -119,3 +119,41 @@ class TestImportWorkflow:
         data = json.loads(r.stdout)
         assert data["success"] is False
         assert data["error"]["code"] == "WORKFLOW_ID_CONFLICTS_WITH_BUILTIN"
+
+
+class TestImportWorkflowFormatGuard:
+    """Import must refuse non-API input with an actionable error, not crash analyze."""
+
+    def _write_ui_workflow(self, path: Path) -> None:
+        # UI/Save format: {nodes: [...], links: [...]} (litegraph graph).
+        ui = {
+            "id": 4,
+            "nodes": [
+                {"id": 1, "type": "SaveImage", "title": "Save Image", "widgets_values": []},
+            ],
+            "links": [[1, 2, 0, 1, 0, "IMAGE"]],
+        }
+        path.write_text(json.dumps(ui, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    def test_import_rejects_ui_format(self, tmp_path: Path):
+        src = tmp_path / "ui_workflow.json"
+        self._write_ui_workflow(src)
+
+        r = _run_module("import-workflow", str(src), "--skill-root", str(tmp_path))
+        assert r.returncode != 0, r.stderr
+        data = json.loads(r.stdout)
+        assert data["success"] is False
+        assert data["error"]["code"] == "WORKFLOW_NOT_API_FORMAT"
+        # The message must steer the user toward the fix.
+        msg = data["error"]["message"]
+        assert "Save (API)" in msg
+        assert "convert-ui" in msg
+
+    def test_import_rejects_unknown_format(self, tmp_path: Path):
+        src = tmp_path / "weird.json"
+        src.write_text(json.dumps({"random": "stuff"}), encoding="utf-8")
+
+        r = _run_module("import-workflow", str(src), "--skill-root", str(tmp_path))
+        assert r.returncode != 0
+        data = json.loads(r.stdout)
+        assert data["error"]["code"] == "WORKFLOW_NOT_API_FORMAT"
