@@ -1,0 +1,51 @@
+{
+  "workflow_id": "krea2_turbo",
+  "workflow_file": "krea2_turbo.json",
+  "output_node_title": "Save Image",
+  "capability": "text_to_image",
+  "description": "Krea-2 Turbo text-to-image (fast, stable;写实/概念设计/产品图)",
+  "output_kind": "image",
+  "intent_categories": ["text_to_image"],
+  "input_modes": ["text"],
+  "priority": 55,
+  "keywords_any": ["写实", "photoreal", "concept art", "概念设计", "产品图", "product", "artistic", "艺术", "painterly", "illustrative"],
+  "selection_guidance": {
+    "best_for": [
+      "photorealistic but artistic / painterly images",
+      "concept art and product visualization",
+      "stylized realism that is neither pure anime nor plain photoreal"
+    ],
+    "avoid_for": [
+      "anime / manga styles (use anima_turbo)",
+      "photoreal portraits (use z_image_turbo)",
+      "images with embedded text (use qwen_image_2512_4step)"
+    ],
+    "agent_hint": "Prefer this workflow when the user asks for 写实/艺术/概念设计/产品图 style images that lean artistic rather than plain photoreal or anime. The prompt maps to a dedicated user-prompt node; the workflow's own optional enhance chain stays untouched."
+  },
+  "node_mapping": {
+    "prompt": {
+      "node_title": "Text String (User Prompt)",
+      "param": "value",
+      "value_type": "string",
+      "required": true
+    },
+    "seed": {
+      "node_title": "KSampler",
+      "param": "seed",
+      "value_type": "integer",
+      "auto_random": true
+    },
+    "width": {
+      "node_title": "Empty Latent Image",
+      "param": "width",
+      "value_type": "integer",
+      "default": 1024
+    },
+    "height": {
+      "node_title": "Empty Latent Image",
+      "param": "height",
+      "value_type": "integer",
+      "default": 1024
+    }
+  }
+}

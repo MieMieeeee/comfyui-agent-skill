@@ -15,8 +15,10 @@ This file is the workflow-selection reference for Agents using the ComfyUI skill
 
 | User intent | `workflow_id` | Capability | Key rule |
 |-------------|---------------|------------|----------|
-| Generate an image from text | `z_image_turbo` | `text_to_image` | Default T2I workflow; supports `--width` and `--height` together. |
+| Generate an image from text | `z_image_turbo` | `text_to_image` | Default T2I workflow (photoreal/general); supports `--width` and `--height` together. |
 | Generate a poster or image with embedded text | `qwen_image_2512_4step` | `text_to_image` | Excels at text-in-image (Chinese/English characters, posters). Supports `--width` and `--height`; default `512x768`; good HD preset is `704x1280`. |
+| Anime / manga / illustration image | `anima_turbo` | `text_to_image` | Clean lines, saturated color, stylized cartoon/anime look. Supports `--width`/`--height`; default `1024x1024`. |
+| Artistic / painterly / concept-art image | `krea2_turbo` | `text_to_image` | Fast, stable; leans artistic/painterly realism over plain photoreal. Supports `--width`/`--height`; default `1024x1024`. |
 | Create a similar image from a reference picture | `z_image_turbo` after Agent vision | `reference_to_image` | Reference image is not uploaded to ComfyUI; Agent turns image + user intent into one English prompt. |
 | Edit a provided image | `klein_edit` | `image_to_image` | Upload image with `--image input_image=path`; do not pass `--width`/`--height`. |
 | Text prompt to MP4 video | `ltx_23_t2v_distill` | `text_to_video` | Supports paired `--width`/`--height`; default `768x512`; output is MP4. |
@@ -39,6 +41,18 @@ The Agent should be the primary decision-maker for workflow choice. Built-in def
 - **Prefer when**: the user asks for 海报 / 宣传图 / banner / 标题 / 带字图片
 - **Avoid when**: the user only wants a standard photo-like image with no text composition requirement
 - **Agent note**: prefer this over the default T2I workflow when text rendering or poster-style layout is important
+
+### `anima_turbo`
+- **Best for**: anime / manga / illustration style images
+- **Prefer when**: the user asks for 动漫 / 插画 / 二次元 / anime / manga / cartoon style — clean lines and saturated color
+- **Avoid when**: the user wants photoreal (use `z_image_turbo`) or embedded text (use `qwen_image_2512_4step`)
+- **Agent note**: maps prompt/negative_prompt to CLIP Text Encode; default square `1024x1024`. Anime quality boosters (masterpiece, best quality, score_7_up) work well.
+
+### `krea2_turbo`
+- **Best for**: artistic / painterly realism, concept art, product visualization
+- **Prefer when**: the user asks for 写实 / 艺术 / 概念设计 / 产品图 that leans artistic rather than plain photoreal or anime
+- **Avoid when**: the user wants pure anime (use `anima_turbo`) or photoreal portraits (use `z_image_turbo`)
+- **Agent note**: the prompt maps to a dedicated user-prompt node (not CLIP Encode); the workflow's own optional enhance chain is left untouched. No negative prompt role.
 
 ### `klein_edit`
 - **Best for**: editing a provided input image while preserving pose/structure
@@ -112,6 +126,8 @@ Registered defaults:
 |----------|-----------------------|
 | `z_image_turbo` | `832x1280` unless overridden with paired width/height |
 | `qwen_image_2512_4step` | `512x768` unless overridden with paired width/height |
+| `anima_turbo` | `1024x1024` unless overridden with paired width/height |
+| `krea2_turbo` | `1024x1024` unless overridden with paired width/height |
 | `ltx_23_t2v_distill` | `768x512` unless overridden with paired width/height |
 | `klein_edit` | `workflow_managed`; no CLI dimensions |
 | `ltx_23_i2v_distilled` | Upload image size; no CLI dimensions |
@@ -131,6 +147,18 @@ Qwen Image 2512:
 
 ```bash
 uv run --no-sync python -m comfyui generate --workflow qwen_image_2512_4step --width 704 --height 1280 -p "English prompt, detailed scene"
+```
+
+Anime / illustration (Anima):
+
+```bash
+uv run --no-sync python -m comfyui generate --workflow anima_turbo -p "masterpiece, best quality, 1girl, blue hair, green eyes, white dress, cherry blossoms, soft lighting"
+```
+
+Artistic / concept art (Krea-2):
+
+```bash
+uv run --no-sync python -m comfyui generate --workflow krea2_turbo -p "a sleek concept car in a neon-lit studio, cinematic lighting, reflective surfaces"
 ```
 
 Image edit:

@@ -103,3 +103,54 @@ def test_priority_breaks_ties_when_both_match():
     }
     assert select_text_to_image_workflow_id("poster", registry=registry, default_workflow_id="w1") == "w2"
 
+
+def _full_t2i_registry():
+    """A registry mirroring the shipped text_to_image workflows for selection tests."""
+    base = dict(
+        workflow_file="x.json",
+        output_node_title="Out",
+        intent_categories=["text_to_image"],
+        input_modes=["text"],
+        output_kind="image",
+    )
+    return {
+        "z_image_turbo": WorkflowConfig(workflow_id="z_image_turbo", priority=50, keywords_any=[], **base),
+        "qwen_image_2512_4step": WorkflowConfig(
+            workflow_id="qwen_image_2512_4step", priority=80, keywords_any=["海报", "poster"], **base
+        ),
+        "anima_turbo": WorkflowConfig(
+            workflow_id="anima_turbo", priority=60, keywords_any=["动漫", "anime", "插画", "二次元"], **base
+        ),
+        "krea2_turbo": WorkflowConfig(
+            workflow_id="krea2_turbo", priority=55, keywords_any=["写实", "concept art", "概念设计", "艺术"], **base
+        ),
+    }
+
+
+def test_anime_keyword_selects_anima_turbo():
+    reg = _full_t2i_registry()
+    assert (
+        select_text_to_image_workflow_id("画一个动漫风格的女孩子", registry=reg, default_workflow_id="z_image_turbo")
+        == "anima_turbo"
+    )
+    assert (
+        select_text_to_image_workflow_id("an anime girl with blue hair", registry=reg, default_workflow_id="z_image_turbo")
+        == "anima_turbo"
+    )
+
+
+def test_artistic_keyword_selects_krea2_turbo():
+    reg = _full_t2i_registry()
+    assert (
+        select_text_to_image_workflow_id("一张概念设计的飞船", registry=reg, default_workflow_id="z_image_turbo")
+        == "krea2_turbo"
+    )
+
+
+def test_generic_prompt_still_falls_back_to_default():
+    reg = _full_t2i_registry()
+    assert (
+        select_text_to_image_workflow_id("a cat sitting on a windowsill", registry=reg, default_workflow_id="z_image_turbo")
+        == "z_image_turbo"
+    )
+

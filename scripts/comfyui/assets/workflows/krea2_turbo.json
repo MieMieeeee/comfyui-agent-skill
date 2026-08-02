@@ -1,0 +1,253 @@
+{
+  "1": {
+    "inputs": {
+      "text": [
+        "20",
+        0
+      ],
+      "clip": [
+        "7",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP Text Encode (Prompt)"
+    }
+  },
+  "2": {
+    "inputs": {
+      "samples": [
+        "9",
+        0
+      ],
+      "vae": [
+        "4",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE Decode"
+    }
+  },
+  "3": {
+    "inputs": {
+      "unet_name": "Krea-2\\krea2_turbo_int8_convrot.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {
+      "title": "Load Diffusion Model"
+    }
+  },
+  "4": {
+    "inputs": {
+      "vae_name": "Qwen\\qwen_image_vae.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "Load VAE"
+    }
+  },
+  "6": {
+    "inputs": {
+      "width": 1024,
+      "height": 1024,
+      "batch_size": 1
+    },
+    "class_type": "EmptyLatentImage",
+    "_meta": {
+      "title": "Empty Latent Image"
+    }
+  },
+  "7": {
+    "inputs": {
+      "clip_name": "Krea-2\\qwen3vl_4b_fp8_scaled.safetensors",
+      "type": "krea2",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {
+      "title": "Load CLIP"
+    }
+  },
+  "9": {
+    "inputs": {
+      "seed": 77,
+      "steps": 8,
+      "cfg": 1,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "denoise": 1,
+      "model": [
+        "3",
+        0
+      ],
+      "positive": [
+        "1",
+        0
+      ],
+      "negative": [
+        "26",
+        0
+      ],
+      "latent_image": [
+        "6",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "KSampler"
+    }
+  },
+  "10": {
+    "inputs": {
+      "filename_prefix": "Krea2/k2",
+      "images": [
+        "2",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "Save Image"
+    }
+  },
+  "11": {
+    "inputs": {},
+    "class_type": "SimpleTextNode|Mie",
+    "_meta": {
+      "title": "Simple Text 🐑"
+    }
+  },
+  "16": {
+    "inputs": {
+      "value": "You are an expert prompt engineer for text-to-image models. Your sole task is to convert the user's input into a highly effective single-paragraph image-generation prompt.\n\nOutput **nothing** except the final expanded prompt paragraph. No titles, no headers, no explanations, no markdown, no \"Final expanded prompt\", no quotes around the whole thing — just the clean paragraph.\n\nRules (apply internally only):\n1. Faithfulness First: Preserve all original subjects, actions, colors, and spatial relationships exactly. Never add unmentioned elements.\n2. Practical T2I Structure: Create a clean, flowing paragraph optimized for text-to-image models. Group attributes logically.\n3. Internal Planning: Decide style, lighting, composition, and medium internally based on the request. Never output any reasoning.\n4. Respect User Medium: Honor exact mediums like \"photo of\", \"illustration of\", etc.\n5. Light Polish: If the input is already detailed, refine wording for flow without major additions.\n6. Human Dignity: Always assume appropriate clothing.\n7. Text: Only include visible text if explicitly requested.\n\nUser's Input:"
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "Text String (System Prompt)"
+    }
+  },
+  "17": {
+    "inputs": {
+      "string_a": [
+        "16",
+        0
+      ],
+      "string_b": [
+        "19",
+        0
+      ],
+      "delimiter": ""
+    },
+    "class_type": "StringConcatenate",
+    "_meta": {
+      "title": "Concatenate Text"
+    }
+  },
+  "18": {
+    "inputs": {
+      "prompt": [
+        "17",
+        0
+      ],
+      "max_length": 512,
+      "sampling_mode": "on",
+      "sampling_mode.temperature": 0.7,
+      "sampling_mode.top_k": 64,
+      "sampling_mode.top_p": 0.95,
+      "sampling_mode.min_p": 0.05,
+      "sampling_mode.repetition_penalty": 1.05,
+      "sampling_mode.seed": 0,
+      "sampling_mode.presence_penalty": 0,
+      "thinking": false,
+      "use_default_template": true,
+      "clip": [
+        "7",
+        0
+      ]
+    },
+    "class_type": "TextGenerate",
+    "_meta": {
+      "title": "Generate Text"
+    }
+  },
+  "19": {
+    "inputs": {
+      "value": "a cat on a sofa"
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "Text String (User Prompt)"
+    }
+  },
+  "20": {
+    "inputs": {
+      "on_true": [
+        "18",
+        0
+      ],
+      "on_false": [
+        "19",
+        0
+      ],
+      "boolean": [
+        "22",
+        0
+      ]
+    },
+    "class_type": "Switch string [Crystools]",
+    "_meta": {
+      "title": "🪛 Switch string"
+    }
+  },
+  "21": {
+    "inputs": {
+      "value": false
+    },
+    "class_type": "PrimitiveBoolean",
+    "_meta": {
+      "title": "Enable Prompt Enhance"
+    }
+  },
+  "22": {
+    "inputs": {
+      "value": [
+        "21",
+        0
+      ]
+    },
+    "class_type": "ComfyNotNode",
+    "_meta": {
+      "title": "Not"
+    }
+  },
+  "24": {
+    "inputs": {
+      "anything": [
+        "18",
+        0
+      ]
+    },
+    "class_type": "ShowAnything|Mie",
+    "_meta": {
+      "title": "Show Anything 🐑"
+    }
+  },
+  "26": {
+    "inputs": {
+      "text": "",
+      "clip": [
+        "7",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP Text Encode (Prompt)"
+    }
+  }
+}

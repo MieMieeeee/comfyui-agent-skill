@@ -1,0 +1,56 @@
+{
+  "workflow_id": "anima_turbo",
+  "workflow_file": "anima_turbo.json",
+  "output_node_title": "Save Image",
+  "capability": "text_to_image",
+  "description": "Anima Turbo anime/illustration text-to-image (clean lines, saturated color)",
+  "output_kind": "image",
+  "intent_categories": ["text_to_image"],
+  "input_modes": ["text"],
+  "priority": 60,
+  "keywords_any": ["anime", "动漫", "插画", "illustration", "二次元", "manga", "卡通", "cartoon", "anime style"],
+  "selection_guidance": {
+    "best_for": [
+      "anime / illustration style images",
+      "manga characters and scenes",
+      "stylized cartoon artwork with clean lines and saturated color"
+    ],
+    "avoid_for": [
+      "photorealistic portraits (use z_image_turbo)",
+      "images with embedded text (use qwen_image_2512_4step)",
+      "abstract / fine-art styles (use krea2_turbo)"
+    ],
+    "agent_hint": "Prefer this workflow when the user asks for 动漫/插画/二次元/anime/manga/cartoon style images. Emphasize anime-style quality boosters (masterpiece, best quality, score_7_up) in the prompt."
+  },
+  "node_mapping": {
+    "prompt": {
+      "node_title": "CLIP Text Encode (Positive Prompt)",
+      "param": "text",
+      "value_type": "string",
+      "required": true
+    },
+    "negative_prompt": {
+      "node_title": "CLIP Text Encode (Negative Prompt)",
+      "param": "text",
+      "value_type": "string"
+    },
+    "seed": {
+      "node_title": "KSampler",
+      "param": "seed",
+      "value_type": "integer",
+      "auto_random": true
+    },
+    "width": {
+      "node_title": "Empty Latent Image",
+      "param": "width",
+      "value_type": "integer",
+      "default": 1024
+    },
+    "height": {
+      "node_title": "Empty Latent Image",
+      "param": "height",
+      "value_type": "integer",
+      "default": 1024
+    }
+  }
+}

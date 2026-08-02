@@ -145,6 +145,33 @@ class TestJsonConfig:
         assert cfg.resolution_presets["portrait_hd"]["height"] == 1280
         assert cfg.default_resolution == "portrait_fast"
 
+    def test_anima_turbo_registered_and_mapped(self, skill_root):
+        cfg = WORKFLOW_REGISTRY["anima_turbo"]
+        assert cfg.capability == "text_to_image"
+        assert cfg.output_kind == "image"
+        assert cfg.node_mapping["prompt"]["node_title"] == "CLIP Text Encode (Positive Prompt)"
+        assert cfg.node_mapping["negative_prompt"]["node_title"] == "CLIP Text Encode (Negative Prompt)"
+        assert cfg.node_mapping["seed"]["param"] == "seed"
+        assert cfg.node_mapping["width"]["default"] == 1024
+        assert cfg.node_mapping["height"]["default"] == 1024
+        # The two CLIP encode nodes must have distinct titles (set_node_param matches by title).
+        assert cfg.node_mapping["prompt"]["node_title"] != cfg.node_mapping["negative_prompt"]["node_title"]
+        wf_path = cfg.resolve_workflow_path(skill_root / "assets" / "workflows")
+        assert wf_path.exists()
+
+    def test_krea2_turbo_registered_and_mapped(self, skill_root):
+        cfg = WORKFLOW_REGISTRY["krea2_turbo"]
+        assert cfg.capability == "text_to_image"
+        # Krea-2 prompt maps to a dedicated user-prompt node, not CLIP Text Encode.
+        assert cfg.node_mapping["prompt"]["node_title"] == "Text String (User Prompt)"
+        assert cfg.node_mapping["prompt"]["param"] == "value"
+        assert "negative_prompt" not in cfg.node_mapping
+        assert cfg.node_mapping["seed"]["param"] == "seed"
+        assert cfg.node_mapping["width"]["default"] == 1024
+        assert cfg.node_mapping["height"]["default"] == 1024
+        wf_path = cfg.resolve_workflow_path(skill_root / "assets" / "workflows")
+        assert wf_path.exists()
+
     def test_to_json_includes_resolution_presets_when_non_empty(self):
         cfg = WorkflowConfig(
             workflow_id="preset_test",
