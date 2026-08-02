@@ -157,3 +157,125 @@ class TestImportWorkflowFormatGuard:
         assert r.returncode != 0
         data = json.loads(r.stdout)
         assert data["error"]["code"] == "WORKFLOW_NOT_API_FORMAT"
+
+
+class TestImportPromptNodeResolution:
+    """When the analyzer cannot detect the prompt node, import must surface it."""
+
+    @staticmethod
+    def _write_no_prompt_workflow(path: Path) -> None:
+        # API format, but prompt lives in a non-CLIP string node so the
+        # analyzer's CLIP/encode heuristic misses it.
+        wf = {
+            "1": {"class_type": "EmptyLatentImage", "inputs": {"width": 1024, "height": 1024, "batch_size": 1},
+                  "_meta": {"title": "Empty Latent Image"}},
+            "2": {"class_type": "KSampler", "inputs": {"seed": 1, "cfg": 1, "steps": 8, "denoise": 1,
+                  "sampler_name": "euler", "scheduler": "simple"}, "_meta": {"title": "KSampler"}},
+            "3": {"class_type": "PrimitiveStringMultiline", "inputs": {"value": "a user prompt"},
+                  "_meta": {"title": "Text String (User Prompt)"}},
+            "4": {"class_type": "SaveImage", "inputs": {"filename_prefix": "x"}, "_meta": {"title": "Save Image"}},
+        }
+        path.write_text(json.dumps(wf, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    def test_no_prompt_noninteractive_surfaces_candidates(self, tmp_path: Path):
+        src = tmp_path / "no_prompt.json"
+        self._write_no_prompt_workflow(src)
+
+        r = _run_module("import-workflow", str(src), "--skill-root", str(tmp_path), "--no-interactive")
+        assert r.returncode == 0, r.stderr
+        data = json.loads(r.stdout)
+        assert data["success"] is True
+        assert data["prompt_status"] == "unresolved"
+        # next_steps must point the maintainer at --prompt-node with the candidate listed.
+        assert "--prompt-node" in data["next_steps"][0]
+        assert "Text String (User Prompt)" in data["next_steps"][0]
+        assert any(c["title"] == "Text String (User Prompt)" for c in data.get("_prompt_candidates", []))
+
+    def test_prompt_node_flag_writes_mapping(self, tmp_path: Path):
+        src = tmp_path / "no_prompt.json"
+        self._write_no_prompt_workflow(src)
+
+        r = _run_module(
+            "import-workflow", str(src), "--skill-root", str(tmp_path),
+            "--prompt-node", "Text String (User Prompt):value",
+        )
+        assert r.returncode == 0, r.stderr
+        data = json.loads(r.stdout)
+        assert data["prompt_status"] == "specified"
+        tpl = tmp_path / "custom_workflows" / "no_prompt" / "workflow.config.template.json"
+        cfg = json.loads(tpl.read_text(encoding="utf-8"))
+        prompt = cfg["node_mapping"]["prompt"]
+        assert prompt["node_title"] == "Text String (User Prompt)"
+        assert prompt["param"] == "value"
+        assert prompt["required"] is True
+
+    def test_prompt_node_flag_rejects_malformed_spec(self, tmp_path: Path):
+        src = tmp_path / "wf.json"
+        _write_min_workflow(src)
+        r = _run_module(
+            "import-workflow", str(src), "--skill-root", str(tmp_path),
+            "--prompt-node", "no-colon-here",
+        )
+        assert r.returncode != 0
+        data = json.loads(r.stdout)
+        assert data["error"]["code"] == "INVALID_PROMPT_NODE"
+
+
+class TestImportAmbiguousTitles:
+    """Two node_mapping roles pointing at a duplicated title must be caught."""
+
+    @staticmethod
+    def _write_dup_title_workflow(path: Path) -> None:
+        # Two CLIPTextEncode nodes share the identical title (the Anima problem).
+        wf = {
+            "1": {"class_type": "CLIPTextEncode", "inputs": {"text": "positive"},
+                  "_meta": {"title": "CLIP Text Encode (Prompt)"}},
+            "2": {"class_type": "CLIPTextEncode", "inputs": {"text": "negative"},
+                  "_meta": {"title": "CLIP Text Encode (Prompt)"}},
+            "3": {"class_type": "SaveImage", "inputs": {}, "_meta": {"title": "Save Image"}},
+        }
+        path.write_text(json.dumps(wf, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    def test_ambiguous_titles_rejected(self, tmp_path: Path):
+        src = tmp_path / "dup.json"
+        self._write_dup_title_workflow(src)
+
+        r = _run_module("import-workflow", str(src), "--skill-root", str(tmp_path), "--no-interactive")
+        assert r.returncode != 0
+        data = json.loads(r.stdout)
+        assert data["error"]["code"] == "AMBIGUOUS_NODE_TITLE"
+        assert "rename" in data["error"]["message"].lower()
+
+
+class TestImportPromptNodeInteractive:
+    """Interactive prompt-node selection via injectable input_fn (no real stdin)."""
+
+    def test_interactive_selection_writes_prompt(self):
+        from comfyui.tools.import_workflow import prompt_for_prompt_node
+
+        candidates = [
+            {"title": "Text String (User Prompt)", "class_type": "PrimitiveStringMultiline",
+             "param": "value", "current_value": "a cat on a sofa"},
+            {"title": "System Prompt", "class_type": "PrimitiveStringMultiline",
+             "param": "value", "current_value": "You are an expert..."},
+        ]
+        choice = prompt_for_prompt_node(candidates, interactive=True, input_fn=lambda _: "1")
+        assert choice == "Text String (User Prompt):value"
+
+    def test_interactive_skip_returns_none(self):
+        from comfyui.tools.import_workflow import prompt_for_prompt_node
+
+        candidates = [{"title": "X", "class_type": "T", "param": "p", "current_value": "v"}]
+        assert prompt_for_prompt_node(candidates, interactive=True, input_fn=lambda _: "0") is None
+        assert prompt_for_prompt_node(candidates, interactive=True, input_fn=lambda _: "") is None
+
+    def test_noninteractive_returns_unresolved_sentinel(self):
+        from comfyui.tools.import_workflow import prompt_for_prompt_node, PROMPT_NODE_UNRESOLVED
+
+        candidates = [{"title": "X", "class_type": "T", "param": "p", "current_value": "v"}]
+        assert prompt_for_prompt_node(candidates, interactive=False) == PROMPT_NODE_UNRESOLVED
+
+    def test_no_candidates_returns_none(self):
+        from comfyui.tools.import_workflow import prompt_for_prompt_node
+
+        assert prompt_for_prompt_node([], interactive=True) is None

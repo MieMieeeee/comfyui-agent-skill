@@ -157,3 +157,48 @@ class TestSkillPrefixMapping:
         assert prompt["node_title"] == "CLIP Text Encode (Positive Prompt)"
         assert prompt["param"] == "text"
         assert prompt.get("source") != "skill_prefix"
+
+
+class TestPromptDetection:
+    """The analyzer must surface (not silently swallow) a missing prompt node."""
+
+    @staticmethod
+    def _fixtures_dir() -> Path:
+        return Path(__file__).resolve().parent / "fixtures"
+
+    def test_detected_when_clip_encode_present(self, skill_root):
+        config = analyze_workflow(skill_root / "assets" / "workflows" / "z_image_turbo.json")
+        assert config["_prompt_detected"] is True
+
+    def test_not_detected_for_non_clip_prompt_node(self):
+        # api_no_prompt.json: prompt lives in PrimitiveStringMultiline, no CLIP encode.
+        config = analyze_workflow(self._fixtures_dir() / "api_no_prompt.json")
+        assert config["_prompt_detected"] is False
+        assert "prompt" not in config["node_mapping"]
+
+    def test_candidates_include_non_clip_string_node(self):
+        config = analyze_workflow(self._fixtures_dir() / "api_no_prompt.json")
+        # Each candidate is a (node, field) pair with the field's current value.
+        user_prompt = next(
+            c for c in config["_prompt_candidates"]
+            if c["title"] == "Text String (User Prompt)" and c["param"] == "value"
+        )
+        # The current value lets the maintainer recognize the prompt at a glance.
+        assert user_prompt["current_value"] == "a user prompt"
+
+    def test_candidates_show_current_value_for_judgment(self):
+        config = analyze_workflow(self._fixtures_dir() / "api_no_prompt.json")
+        # Settings (e.g. sampler_name) and the real prompt both appear; their
+        # current_value is what lets a human tell them apart.
+        by_field = {(c["title"], c["param"]): c["current_value"] for c in config["_prompt_candidates"]}
+        assert by_field.get(("KSampler", "sampler_name")) == "euler"
+        assert by_field.get(("Text String (User Prompt)", "value")) == "a user prompt"
+
+    def test_candidates_rank_prompt_like_fields_first(self):
+        config = analyze_workflow(self._fixtures_dir() / "api_no_prompt.json")
+        titles = [(c["title"], c["param"]) for c in config["_prompt_candidates"]]
+        # The user prompt (a natural-language sentence) must rank above the
+        # KSampler settings (short tokens like "euler").
+        user_idx = titles.index(("Text String (User Prompt)", "value"))
+        sampler_idx = titles.index(("KSampler", "sampler_name"))
+        assert user_idx < sampler_idx

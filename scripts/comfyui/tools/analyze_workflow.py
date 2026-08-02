@@ -44,6 +44,94 @@ def infer_scalar_value_type(value: Any) -> str:
     return "string"
 
 
+# Roles in node_mapping that satisfy a workflow's primary text input. When any
+# of these is present the workflow is considered to have a usable prompt path
+# and no interactive prompt-node selection is needed at import time.
+_PROMPT_LIKE_ROLES = {"prompt", "speech_text", "tags", "lyrics"}
+
+
+def prompt_is_detected(node_mapping: dict[str, dict]) -> bool:
+    """Return True when node_mapping already contains a prompt-like text role."""
+    return any(role in _PROMPT_LIKE_ROLES for role in node_mapping)
+
+
+def collect_prompt_candidates(discovered_nodes: dict[str, dict]) -> list[dict]:
+    """Enumerate node fields that could host the user-facing prompt.
+
+    Each candidate is a ``(node, field)`` pair with the field's **current
+    value** included, so a maintainer can judge which one is the prompt from
+    what the node actually contains (e.g. "a cat on a sofa" is obviously the
+    prompt; "euler" is obviously not). A node is a candidate when it has at
+    least one scalar string param — this catches text inputs the core
+    CLIP/encode heuristic misses (Krea-2 style workflows whose prompt lives in
+    a dedicated ``PrimitiveStringMultiline`` node).
+
+    The list is stable-sorted by node title and bounded so an interactive
+    picker stays readable on large workflows. Long values are truncated for
+    display (the full value stays in ``_discovered_nodes``).
+    """
+    candidates: list[dict] = []
+    for node_key, info in discovered_nodes.items():
+        title = node_key.split("#")[0]
+        class_type = info.get("class_type", "")
+        params = info.get("params") or {}
+        for name, value in params.items():
+            if infer_scalar_value_type(value) != "string":
+                continue
+            candidates.append(
+                {
+                    "title": title,
+                    "class_type": class_type,
+                    "param": name,
+                    "current_value": _truncate_preview(value),
+                    "confidence": _prompt_confidence(class_type, name, value, title),
+                }
+            )
+    # Higher-confidence prompt candidates first (so the default re-run hint and
+    # the top of the interactive list point at the most likely prompt), then a
+    # stable alphabetical tiebreaker.
+    candidates.sort(key=lambda c: (-c["confidence"], c["title"].lower(), c["param"]))
+    return candidates[:40]
+
+
+def _prompt_confidence(class_type: str, field: str, value: Any, title: str = "") -> int:
+    """Heuristic: how likely is this field the user-facing prompt?
+
+    Higher = more likely. Mirrors the spirit of WebToRun's wizard confidence:
+    a CLIPTextEncode.text with a long natural-language value is a strong signal,
+    while a short token like "euler" or a file path is a weak one.
+    """
+    ct = class_type.lower()
+    title_hint = title.lower()
+    if "clip" in ct and "encode" in ct and field == "text":
+        return 30
+    # Long multi-word strings (a sentence) look like prompts; short tokens
+    # ("euler", "simple") and file paths do not.
+    text = str(value or "").strip()
+    score = 1
+    if " " in text and len(text) >= 12:
+        score = 20
+    elif len(text) >= 20:
+        score = 10
+    # A node whose title signals it holds the *user's* prompt beats a system /
+    # negative one when several long strings compete.
+    if "user" in title_hint or "positive" in title_hint or "main" in title_hint:
+        score += 5
+    return score
+
+
+def _truncate_preview(value: Any, limit: int = 60) -> str:
+    """Render a scalar value as a short human-readable preview string."""
+    if value is None:
+        return "(empty)"
+    text = str(value).replace("\n", " ").strip()
+    if not text:
+        return "(empty)"
+    if len(text) > limit:
+        return text[: limit - 1] + "…"
+    return text
+
+
 def mapped_node_params(node_mapping: dict[str, dict]) -> set[tuple[str, str]]:
     return {(entry["node_title"], entry["param"]) for entry in node_mapping.values()}
 
@@ -377,6 +465,8 @@ def analyze_workflow(workflow_path: Path) -> dict:
         ],
         "_discovered_nodes": nodes,
         "_required_models": required_models,
+        "_prompt_detected": prompt_is_detected(node_mapping),
+        "_prompt_candidates": collect_prompt_candidates(nodes),
     }
 
 

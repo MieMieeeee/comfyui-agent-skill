@@ -1,0 +1,22 @@
+{
+  "1": {
+    "class_type": "EmptyLatentImage",
+    "inputs": {"width": 1024, "height": 1024, "batch_size": 1},
+    "_meta": {"title": "Empty Latent Image"}
+  },
+  "2": {
+    "class_type": "KSampler",
+    "inputs": {"seed": 1, "cfg": 1, "steps": 8, "denoise": 1, "sampler_name": "euler", "scheduler": "simple"},
+    "_meta": {"title": "KSampler"}
+  },
+  "3": {
+    "class_type": "PrimitiveStringMultiline",
+    "inputs": {"value": "a user prompt"},
+    "_meta": {"title": "Text String (User Prompt)"}
+  },
+  "4": {
+    "class_type": "SaveImage",
+    "inputs": {"filename_prefix": "x"},
+    "_meta": {"title": "Save Image"}
+  }
+}

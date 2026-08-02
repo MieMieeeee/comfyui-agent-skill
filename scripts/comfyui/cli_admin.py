@@ -3,11 +3,17 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import sys
 from pathlib import Path
 
 from comfyui.config import SKILL_ROOT, check_server, get_comfyui_url, local_config_path, save_comfyui_url
 from comfyui.tools.convert_ui_workflow import WorkflowFormatError
-from comfyui.tools.import_workflow import import_workflow, validate_workflow_id
+from comfyui.tools.import_workflow import (
+    AmbiguousNodeTitleError,
+    import_workflow,
+    parse_prompt_node_spec,
+    validate_workflow_id,
+)
 
 
 def cmd_check() -> int:
@@ -171,7 +177,40 @@ def cmd_import_workflow() -> int:
         default=None,
         help="Override user data root directory (advanced). Default follows OS conventions.",
     )
+    p.add_argument(
+        "--prompt-node",
+        default=None,
+        metavar='"TITLE:PARAM"',
+        help='Skip interactive prompt-node selection. Format: "node_title:param_name". '
+        "Use when the analyzer cannot auto-detect the prompt node (e.g. the prompt lives in a "
+        "non-CLIP string node). Without this flag, an interactive prompt appears in a TTY.",
+    )
+    p.add_argument(
+        "--no-interactive",
+        action="store_true",
+        help="Never prompt on stdin. When the prompt node cannot be auto-detected, surface "
+        "candidates + a re-run hint instead (use this in CI / scripts / subprocess calls).",
+    )
     args = p.parse_args()
+
+    # Validate --prompt-node syntax early so a malformed spec is a clean error,
+    # not a mid-import crash.
+    if args.prompt_node:
+        try:
+            parse_prompt_node_spec(args.prompt_node)
+        except ValueError as e:
+            print(
+                json.dumps(
+                    {
+                        "success": False,
+                        "workflow_id": "unknown",
+                        "error": {"code": "INVALID_PROMPT_NODE", "message": str(e)},
+                    },
+                    ensure_ascii=True,
+                    indent=2,
+                )
+            )
+            return 1
 
     raw_id = args.id
     derived_id = (raw_id if raw_id is not None else Path(args.path).stem or "").strip()
@@ -199,6 +238,8 @@ def cmd_import_workflow() -> int:
             into_project=bool(args.into_project),
             user_data_root=Path(args.user_data_root or args.skill_root).resolve() if not args.into_project and (args.user_data_root or args.skill_root) else None,
             project_root=Path(args.skill_root or os.environ.get("COMFYUI_SKILL_ROOT") or SKILL_ROOT).resolve() if args.into_project else None,
+            prompt_node=args.prompt_node,
+            interactive=(not args.no_interactive and sys.stdin.isatty()),
         )
     except FileNotFoundError as e:
         err = {"code": "WORKFLOW_FILE_NOT_FOUND", "message": str(e)}
@@ -206,6 +247,10 @@ def cmd_import_workflow() -> int:
         return 1
     except FileExistsError:
         err = {"code": "WORKFLOW_ALREADY_EXISTS", "message": f"Workflow '{wid}' already exists. Use --force to overwrite."}
+        print(json.dumps({"success": False, "workflow_id": wid, "error": err}, ensure_ascii=True, indent=2))
+        return 1
+    except AmbiguousNodeTitleError as e:
+        err = {"code": "AMBIGUOUS_NODE_TITLE", "message": str(e)}
         print(json.dumps({"success": False, "workflow_id": wid, "error": err}, ensure_ascii=True, indent=2))
         return 1
     except WorkflowFormatError as e:
