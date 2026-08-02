@@ -202,3 +202,31 @@ class TestPromptDetection:
         user_idx = titles.index(("Text String (User Prompt)", "value"))
         sampler_idx = titles.index(("KSampler", "sampler_name"))
         assert user_idx < sampler_idx
+
+
+class TestMediaInputDetection:
+    """The analyzer maps VHS_LoadVideo / LoadAudio to video / audio roles."""
+
+    @staticmethod
+    def _fixtures_dir() -> Path:
+        return Path(__file__).resolve().parent / "fixtures"
+
+    def test_detects_image_video_and_audio_roles(self):
+        config = analyze_workflow(self._fixtures_dir() / "api_media_inputs.json")
+        nm = config["node_mapping"]
+        assert nm["input_image"]["value_type"] == "image"
+        assert nm["input_video"]["value_type"] == "video"
+        assert nm["input_audio"]["value_type"] == "audio"
+        # Correct node_title / param per media type.
+        assert nm["input_video"]["node_title"] == "Load Video (Upload)"
+        assert nm["input_video"]["param"] == "video"
+        assert nm["input_audio"]["param"] == "audio"
+        # All upload-required.
+        assert nm["input_video"]["input_strategy"] == "upload"
+        assert nm["input_video"]["required"] is True
+
+    def test_input_modes_include_video_and_audio(self):
+        config = analyze_workflow(self._fixtures_dir() / "api_media_inputs.json")
+        assert "image" in config["input_modes"]
+        assert "video" in config["input_modes"]
+        assert "audio" in config["input_modes"]

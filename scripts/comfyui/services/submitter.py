@@ -122,23 +122,30 @@ def submit_workflow(
         except Exception as e:
             return {"submitted": False, "error": _err("WORKFLOW_LOAD_FAILED", f"Failed to load workflow: {e}")}
 
+        # Upload input media (image / video / audio). input_images holds
+        # role->local-path for all upload-required roles; value_type decides
+        # the upload method + error code.
         input_images = input_images or {}
         for role, entry in config.node_mapping.items():
-            if entry.get("value_type") != "image":
+            value_type = entry.get("value_type")
+            if value_type not in ("image", "video", "audio"):
                 continue
             if role not in input_images:
                 if entry.get("required"):
-                    return {"submitted": False, "error": _err("NO_INPUT_IMAGE", f"Required image input '{role}' not provided.")}
+                    miss_code = "NO_INPUT_IMAGE" if value_type == "image" else "NO_INPUT_MEDIA"
+                    return {"submitted": False, "error": _err(miss_code, f"Required {value_type} input '{role}' not provided.")}
                 continue
-            image_path = Path(input_images[role])
-            if not image_path.exists():
-                return {"submitted": False, "error": _err("INPUT_IMAGE_NOT_FOUND", f"Image file not found: {image_path}")}
+            media_path = Path(input_images[role])
+            if not media_path.exists():
+                nf_code = "INPUT_IMAGE_NOT_FOUND" if value_type == "image" else "INPUT_MEDIA_NOT_FOUND"
+                return {"submitted": False, "error": _err(nf_code, f"{value_type.capitalize()} file not found: {media_path}")}
             try:
-                meta = api.upload_image(str(image_path))
+                meta = api.upload_image(str(media_path)) if value_type == "image" else api.upload_media(str(media_path))
             except Exception as e:
-                return {"submitted": False, "error": _err("IMAGE_UPLOAD_FAILED", f"Failed to upload image '{role}': {e}")}
-            img_param = f"{meta['subfolder']}/{meta['name']}" if meta.get("subfolder") else meta["name"]
-            wf.set_node_param(entry["node_title"], entry["param"], img_param)
+                up_code = "IMAGE_UPLOAD_FAILED" if value_type == "image" else "MEDIA_UPLOAD_FAILED"
+                return {"submitted": False, "error": _err(up_code, f"Failed to upload {value_type} '{role}': {e}")}
+            media_param = f"{meta['subfolder']}/{meta['name']}" if meta.get("subfolder") else meta["name"]
+            wf.set_node_param(entry["node_title"], entry["param"], media_param)
 
         for key, entry in config.node_mapping.items():
             if not _entry_is_string_input(entry):

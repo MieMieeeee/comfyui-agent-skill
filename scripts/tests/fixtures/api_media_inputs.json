@@ -1,0 +1,22 @@
+{
+  "1": {
+    "class_type": "LoadImage",
+    "inputs": {"image": "ref.png"},
+    "_meta": {"title": "Load Image"}
+  },
+  "2": {
+    "class_type": "VHS_LoadVideo",
+    "inputs": {"video": "drive.mp4", "frame_load_cap": 0},
+    "_meta": {"title": "Load Video (Upload)"}
+  },
+  "3": {
+    "class_type": "LoadAudio",
+    "inputs": {"audio": "sample.mp3"},
+    "_meta": {"title": "加载音频"}
+  },
+  "4": {
+    "class_type": "SaveImage",
+    "inputs": {},
+    "_meta": {"title": "Save Image"}
+  }
+}

@@ -443,6 +443,49 @@ class ComfyApi:
                 f"Request failed with status code {resp.status_code}: {resp.reason}"
             )
 
+    def upload_media(
+        self,
+        filename: str,
+        subfolder: str = "default_upload_folder"
+    ) -> Dict[str, Any]:
+        """上传任意媒体文件 (video/audio/image) 到 ComfyUI 服务器.
+
+        ComfyUI 的 ``/upload/image`` 端点实际接受任意文件并存入 ``input``
+        目录, 与媒体类型无关 —— 这个方法只是用更通用的语义封装同一端点,
+        供 video/audio 输入上传使用 (image 输入仍走 :meth:`upload_image`).
+
+        Args:
+            filename: 本地媒体文件路径
+            subfolder: 目标子文件夹
+
+        Returns:
+            服务器响应数据, 含 ``name`` 和 ``subfolder`` (与 upload_image 同构)
+
+        Raises:
+            ComfyApiError: 请求失败时抛出
+            FileNotFoundError: 文件不存在时抛出
+        """
+        url = urljoin(self.url, "/upload/image")
+        serv_file = os.path.basename(filename)
+        data = {"subfolder": subfolder}
+
+        if not os.path.exists(filename):
+            raise FileNotFoundError(f"Media file not found: {filename}")
+
+        with open(filename, "rb") as f:
+            files = {"image": (serv_file, f)}
+            _log.info(f"Posting {filename} to {url} with data {data}")
+            resp = requests.post(url, files=files, data=data, auth=self.auth)
+
+        _log.debug(f"{resp.status_code}: {resp.reason}, {resp.text}")
+
+        if resp.status_code == 200:
+            return resp.json()
+        else:
+            raise ComfyApiError(
+                f"Request failed with status code {resp.status_code}: {resp.reason}"
+            )
+
 
 # 类型别名，保持向后兼容
 ComfyApiWrapper = ComfyApi

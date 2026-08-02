@@ -151,12 +151,33 @@ def _entry_is_string_input(entry: dict[str, Any]) -> bool:
     vt = entry.get("value_type")
     if vt == "string":
         return True
-    if vt in ("integer", "image"):
+    # image / video / audio are upload-bound, not string params written verbatim.
+    if vt in ("integer", "image", "video", "audio"):
         return False
     # Legacy JSON configs may omit value_type for CLIP-style text bindings
     if vt is None and entry.get("param") == "text":
         return True
     return False
+
+
+# Error-code dispatch for upload-required inputs. image keeps the historical
+# codes (so existing image tests/docs stay valid); video/audio get their own.
+def _missing_media_code(value_type: str) -> str:
+    if value_type == "image":
+        return "NO_INPUT_IMAGE"
+    return "NO_INPUT_MEDIA"
+
+
+def _media_not_found_code(value_type: str) -> str:
+    if value_type == "image":
+        return "INPUT_IMAGE_NOT_FOUND"
+    return "INPUT_MEDIA_NOT_FOUND"
+
+
+def _media_upload_failed_code(value_type: str) -> str:
+    if value_type == "image":
+        return "IMAGE_UPLOAD_FAILED"
+    return "MEDIA_UPLOAD_FAILED"
 
 
 def merge_text_inputs(
@@ -330,10 +351,13 @@ def execute_workflow(
             error=_err("SERVER_UNAVAILABLE", f"Cannot connect to ComfyUI: {msg}"),
         )
 
-    # Upload input images and bind to nodes
+    # Upload input media (image / video / audio) and bind to nodes.
+    # input_images carries role->local-path for ALL upload-required roles
+    # despite the legacy name; value_type decides the upload method + error code.
     input_images = input_images or {}
     for role, entry in config.node_mapping.items():
-        if entry.get("value_type") != "image":
+        value_type = entry.get("value_type")
+        if value_type not in ("image", "video", "audio"):
             continue
         if role not in input_images:
             if entry.get("required"):
@@ -341,28 +365,37 @@ def execute_workflow(
                     success=False,
                     workflow_id=config.workflow_id,
                     status="failed",
-                    error=_err("NO_INPUT_IMAGE", f"Required image input '{role}' not provided."),
+                    error=_err(
+                        _missing_media_code(value_type),
+                        f"Required {value_type} input '{role}' not provided.",
+                    ),
                 )
             continue
-        image_path = Path(input_images[role])
-        if not image_path.exists():
+        media_path = Path(input_images[role])
+        if not media_path.exists():
             return GenerationResult(
                 success=False,
                 workflow_id=config.workflow_id,
                 status="failed",
-                error=_err("INPUT_IMAGE_NOT_FOUND", f"Image file not found: {image_path}"),
+                error=_err(
+                    _media_not_found_code(value_type),
+                    f"{value_type.capitalize()} file not found: {media_path}",
+                ),
             )
         try:
-            meta = api.upload_image(str(image_path))
+            meta = api.upload_image(str(media_path)) if value_type == "image" else api.upload_media(str(media_path))
         except Exception as e:
             return GenerationResult(
                 success=False,
                 workflow_id=config.workflow_id,
                 status="failed",
-                error=_err("IMAGE_UPLOAD_FAILED", f"Failed to upload image '{role}': {e}"),
+                error=_err(
+                    _media_upload_failed_code(value_type),
+                    f"Failed to upload {value_type} '{role}': {e}",
+                ),
             )
-        img_param = f"{meta['subfolder']}/{meta['name']}" if meta.get("subfolder") else meta["name"]
-        wf.set_node_param(entry["node_title"], entry["param"], img_param)
+        media_param = f"{meta['subfolder']}/{meta['name']}" if meta.get("subfolder") else meta["name"]
+        wf.set_node_param(entry["node_title"], entry["param"], media_param)
 
     # Apply node_mapping: all string inputs (prompt, speech_text, instruct, negative_prompt, ...)
     for key, entry in config.node_mapping.items():

@@ -214,6 +214,8 @@ def analyze_workflow(workflow_path: Path) -> dict:
     prompt_candidates = []
     loader_candidates = []
     image_input_candidates = []
+    video_input_candidates = []
+    audio_input_candidates = []
     tts_candidates = []
     ace_audio_candidates = []
 
@@ -269,6 +271,10 @@ def analyze_workflow(workflow_path: Path) -> dict:
             loader_candidates.append(node_key)
         if class_type == "LoadImage" or ("loadimage" in ct_lower) or ("load image" in title_lower):
             image_input_candidates.append(node_key)
+        if class_type == "VHS_LoadVideo" or ("loadvideo" in ct_lower) or ("load video" in title_lower):
+            video_input_candidates.append(node_key)
+        if class_type == "LoadAudio" or ("loadaudio" in ct_lower) or ("load audio" in title_lower) or ("加载音频" in title):
+            audio_input_candidates.append(node_key)
         if ("tts" in ct_lower) or ("tts" in title_lower) or ("voicedesign" in ct_lower) or ("voicedesign" in title_lower):
             if "text" in scalar_params and "instruct" in scalar_params:
                 tts_candidates.append(node_key)
@@ -340,6 +346,32 @@ def analyze_workflow(workflow_path: Path) -> dict:
             "required": True,
         }
         image_role_count += 1
+
+    video_role_count = 0
+    for node_key in video_input_candidates:
+        title = node_key.split("#")[0]
+        key = "input_video" if video_role_count == 0 else f"input_video_{video_role_count+1}"
+        node_mapping[key] = {
+            "node_title": title,
+            "param": "video",
+            "value_type": "video",
+            "input_strategy": "upload",
+            "required": True,
+        }
+        video_role_count += 1
+
+    audio_role_count = 0
+    for node_key in audio_input_candidates:
+        title = node_key.split("#")[0]
+        key = "input_audio" if audio_role_count == 0 else f"input_audio_{audio_role_count+1}"
+        node_mapping[key] = {
+            "node_title": title,
+            "param": "audio",
+            "value_type": "audio",
+            "input_strategy": "upload",
+            "required": True,
+        }
+        audio_role_count += 1
 
     if tts_candidates:
         node_key = tts_candidates[0]
@@ -420,10 +452,13 @@ def analyze_workflow(workflow_path: Path) -> dict:
         output_kind = "video"
 
     has_image_input = any(v.get("value_type") == "image" for v in node_mapping.values())
+    has_video_input = any(v.get("value_type") == "video" for v in node_mapping.values())
+    has_audio_input = any(v.get("value_type") == "audio" for v in node_mapping.values())
+    has_media_input = has_image_input or has_video_input or has_audio_input
     if output_kind == "audio":
         capability = "text_to_speech" if tts_candidates else "text_to_music"
     elif output_kind == "video":
-        capability = "image_to_video" if has_image_input else "text_to_video"
+        capability = "image_to_video" if has_media_input else "text_to_video"
     else:
         capability = "image_to_image" if has_image_input else "text_to_image"
 
@@ -432,6 +467,10 @@ def analyze_workflow(workflow_path: Path) -> dict:
         input_modes.append("text")
     if has_image_input:
         input_modes.append("image")
+    if has_video_input:
+        input_modes.append("video")
+    if has_audio_input:
+        input_modes.append("audio")
     if not input_modes:
         input_modes = ["text"]
 

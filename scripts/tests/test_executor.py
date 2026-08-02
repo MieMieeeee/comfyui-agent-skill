@@ -335,6 +335,91 @@ class TestExecuteWorkflowImageUpload:
         )
 
 
+class TestExecuteWorkflowMediaUpload:
+    """Video/audio inputs route through upload_media (not upload_image)."""
+
+    def _make_media_config(self, tmp_path, value_type: str):
+        role = {"image": "input_image", "video": "input_video", "audio": "input_audio"}[value_type]
+        node_title = {"image": "Load Image", "video": "Load Video", "audio": "Load Audio"}[value_type]
+        param = value_type
+        return WorkflowConfig(
+            workflow_id=f"test_{value_type}",
+            workflow_file="test.json",
+            output_node_title="Save Image",
+            node_mapping={
+                role: {
+                    "node_title": node_title,
+                    "param": param,
+                    "value_type": value_type,
+                    "input_strategy": "upload",
+                    "required": True,
+                },
+                "prompt": {"node_title": "Prompt Node", "param": "text", "required": True},
+            },
+            size_strategy="workflow_managed",
+        ), role
+
+    @pytest.mark.parametrize("value_type", ["video", "audio"])
+    @patch("comfyui.services.executor.ComfyApiWrapper")
+    @patch("comfyui.services.executor.ComfyWorkflowWrapper")
+    def test_upload_and_bind_media(self, MockWF, MockAPI, tmp_path, value_type):
+        mock_wf_instance = MagicMock()
+        mock_wf_instance.get_node_id.return_value = "9"
+        MockWF.return_value = mock_wf_instance
+        mock_api = _make_mock_api()
+        mock_api.upload_media.return_value = {"name": "clip.mp4", "subfolder": "default_upload_folder"}
+        MockAPI.return_value = mock_api
+
+        ext = "mp4" if value_type == "video" else "mp3"
+        media_path = tmp_path / f"clip.{ext}"
+        media_path.write_bytes(b"fake media")
+        wf_path = tmp_path / "assets" / "workflows" / "test.json"
+        wf_path.parent.mkdir(parents=True, exist_ok=True)
+        wf_path.write_text('{"1": {"class_type": "Test"}}')
+
+        config, role = self._make_media_config(tmp_path, value_type)
+        result = execute_workflow(
+            config=config,
+            prompt="motion prompt",
+            skill_root=tmp_path,
+            input_images={role: media_path},
+        )
+        assert result.success is True, result
+        # video/audio MUST go through upload_media, NOT upload_image.
+        mock_api.upload_media.assert_called_once_with(str(media_path))
+        mock_api.upload_image.assert_not_called()
+
+    @pytest.mark.parametrize("value_type", ["video", "audio"])
+    def test_missing_required_media_returns_error(self, tmp_path, value_type):
+        config, _ = self._make_media_config(tmp_path, value_type)
+        wf_path = tmp_path / "assets" / "workflows" / "test.json"
+        wf_path.parent.mkdir(parents=True, exist_ok=True)
+        wf_path.write_text('{"1": {"class_type": "Test"}}')
+        result = execute_workflow(
+            config=config,
+            prompt="motion prompt",
+            skill_root=tmp_path,
+            input_images={},
+        )
+        assert result.success is False
+        assert result.error["code"] == "NO_INPUT_MEDIA"
+
+    @pytest.mark.parametrize("value_type", ["video", "audio"])
+    def test_media_file_not_found(self, tmp_path, value_type):
+        config, _ = self._make_media_config(tmp_path, value_type)
+        wf_path = tmp_path / "assets" / "workflows" / "test.json"
+        wf_path.parent.mkdir(parents=True, exist_ok=True)
+        wf_path.write_text('{"1": {"class_type": "Test"}}')
+        result = execute_workflow(
+            config=config,
+            prompt="motion prompt",
+            skill_root=tmp_path,
+            input_images={"input_video" if value_type == "video" else "input_audio": tmp_path / "nope.mp4"},
+        )
+        assert result.success is False
+        assert result.error["code"] == "INPUT_MEDIA_NOT_FOUND"
+
+
 class TestProgressAndErrors:
     @patch("comfyui.services.executor._queue_prompt_and_wait_with_progress", new_callable=AsyncMock)
     @patch("comfyui.services.executor.ComfyApiWrapper")

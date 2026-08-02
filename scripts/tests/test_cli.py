@@ -381,6 +381,44 @@ class TestCLIImage:
             Path(tmp_img).unlink(missing_ok=True)
 
 
+class TestCLIMediaFlags:
+    """--video / --audio flags are accepted and parsed like --image."""
+
+    def test_video_file_not_found(self):
+        result = _run_module(
+            "--server", "http://127.0.0.1:59999",
+            "--workflow", "klein_edit",
+            "--video", "input_video=nonexistent.mp4",
+            "--prompt", "test",
+        )
+        assert result.returncode != 0
+        data = json.loads(result.stdout)
+        assert data["error"]["code"] == "INPUT_MEDIA_NOT_FOUND"
+
+    def test_audio_file_not_found(self):
+        result = _run_module(
+            "--server", "http://127.0.0.1:59999",
+            "--workflow", "klein_edit",
+            "--audio", "input_audio=nonexistent.mp3",
+            "--prompt", "test",
+        )
+        assert result.returncode != 0
+        data = json.loads(result.stdout)
+        assert data["error"]["code"] == "INPUT_MEDIA_NOT_FOUND"
+
+    def test_bare_video_path_without_matching_role_errors(self):
+        """A bare --video path needs a workflow with exactly one video role to auto-bind."""
+        result = _run_module(
+            "--server", "http://127.0.0.1:59999",
+            "--workflow", "klein_edit",  # has no video role
+            "--video", "clip.mp4",
+            "--prompt", "test",
+        )
+        assert result.returncode != 0
+        data = json.loads(result.stdout)
+        assert data["error"]["code"] == "INVALID_PARAM_TYPE"
+
+
 class TestCLISubmit:
     def test_submit_flag_requires_workflow(self):
         """--submit without --workflow should fail."""

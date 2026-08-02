@@ -23,6 +23,44 @@ _VIDEO_LIKE_SUFFIXES = frozenset({".mp4", ".webm", ".mov", ".mkv"})
 _MEDIA_OUTPUT_SUFFIXES = _IMAGE_LIKE_SUFFIXES | _AUDIO_LIKE_SUFFIXES | _VIDEO_LIKE_SUFFIXES
 
 
+def parse_media_inputs(
+    config: WorkflowConfig,
+    *,
+    image_args: list[str],
+    video_args: list[str],
+    audio_args: list[str],
+) -> dict[str, Path]:
+    """Parse --image / --video / --audio into a single role->path dict.
+
+    Each class derives its role set from node_mapping by value_type. A bare path
+    auto-binds only when that class exposes exactly one role; otherwise the
+    'key=path' form is required. Raises FileNotFoundError for missing files.
+    """
+    inputs: dict[str, Path] = {}
+    groups = [
+        ("image", image_args, {k for k, v in config.node_mapping.items() if v.get("value_type") == "image"}),
+        ("video", video_args, {k for k, v in config.node_mapping.items() if v.get("value_type") == "video"}),
+        ("audio", audio_args, {k for k, v in config.node_mapping.items() if v.get("value_type") == "audio"}),
+    ]
+    for kind, args, roles in groups:
+        for arg in args:
+            if "=" in arg:
+                key, path_str = arg.split("=", 1)
+            elif len(roles) == 1:
+                key = next(iter(roles))
+                path_str = arg
+            else:
+                raise ValueError(
+                    f"{kind.capitalize()} argument must be 'key=path' when the workflow has "
+                    f"{len(roles)} {kind} input(s). Available roles: {sorted(roles)}"
+                )
+            p = Path(path_str)
+            if not p.exists():
+                raise FileNotFoundError(f"{kind.capitalize()} file not found: {p}")
+            inputs[key] = p
+    return inputs
+
+
 def resolve_generate_output(raw: str | None) -> tuple[Path | None, Path | None]:
     if not raw or not raw.strip():
         return (None, None)
@@ -177,6 +215,8 @@ def _add_generate_arguments(p: argparse.ArgumentParser, *, default_workflow: str
     p.add_argument("--width", type=int, default=None, metavar="W", help="Output image width (optional).")
     p.add_argument("--height", type=int, default=None, metavar="H", help="Output image height (optional).")
     p.add_argument("--image", action="append", default=[], metavar="KEY=PATH", help="Input image: 'key=path' or bare path; repeat for multiple keys")
+    p.add_argument("--video", action="append", default=[], metavar="KEY=PATH", help="Input video: 'key=path' or bare path; repeat for multiple keys")
+    p.add_argument("--audio", action="append", default=[], metavar="KEY=PATH", help="Input audio: 'key=path' or bare path; repeat for multiple keys")
     p.add_argument("--progress", action="store_true", help="Print JSON progress lines to stderr during generation")
     p.add_argument("--submit", action="store_true", help="Submit job(s) to ComfyUI queue without waiting for completion. Returns job_id(s).")
     p.add_argument("--poll", metavar="JOB_ID", help="Poll a single job's current status.")
@@ -281,23 +321,18 @@ def run_generate_from_args(args: argparse.Namespace) -> int:
         _print_error_and_exit(code="EMPTY_PROMPT", message='A prompt is required. Example: python -m comfyui generate -p "..."', workflow_id=config.workflow_id)
 
     input_images: dict[str, Path] = {}
-    image_roles = {k for k, v in config.node_mapping.items() if v.get("value_type") == "image"}
-    for img_arg in args.image:
-        if "=" in img_arg:
-            key, path_str = img_arg.split("=", 1)
-        elif len(image_roles) == 1:
-            key = next(iter(image_roles))
-            path_str = img_arg
-        else:
-            _print_error_and_exit(
-                code="INVALID_PARAM_TYPE",
-                message=f"Image argument must be 'key=path' when workflow has multiple image inputs. Available roles: {sorted(image_roles)}",
-                workflow_id=config.workflow_id,
-            )
-        img_path = Path(path_str)
-        if not img_path.exists():
-            _print_error_and_exit(code="INPUT_IMAGE_NOT_FOUND", message=f"Image file not found: {img_path}", workflow_id=config.workflow_id)
-        input_images[key] = img_path
+    try:
+        input_images = parse_media_inputs(
+            config, image_args=args.image, video_args=args.video, audio_args=args.audio
+        )
+    except ValueError as e:
+        _print_error_and_exit(code="INVALID_PARAM_TYPE", message=str(e), workflow_id=config.workflow_id)
+    except FileNotFoundError as e:
+        _print_error_and_exit(
+            code="INPUT_IMAGE_NOT_FOUND" if "Image" in str(e) else "INPUT_MEDIA_NOT_FOUND",
+            message=str(e),
+            workflow_id=config.workflow_id,
+        )
 
     health = check_server(server_url)
     if not health["available"]:
@@ -471,21 +506,17 @@ def cmd_generate() -> int:
                 return 1
             submit_prompt = prompts[0]
 
-        image_roles = {k for k, v in config.node_mapping.items() if v.get("value_type") == "image"}
-        for img_arg in args.image:
-            if "=" in img_arg:
-                key, path_str = img_arg.split("=", 1)
-            elif len(image_roles) == 1:
-                key = next(iter(image_roles))
-                path_str = img_arg
-            else:
-                key, path_str = None, img_arg
-            if key and path_str:
-                img_path = Path(path_str)
-                if not img_path.exists():
-                    print(json.dumps({"success": False, "workflow_id": args.workflow, "status": "failed", "error": {"code": "INPUT_IMAGE_NOT_FOUND", "message": f"Image file not found: {img_path}"}}, ensure_ascii=True, indent=2))
-                    return 1
-                input_images[key] = img_path
+        try:
+            input_images = parse_media_inputs(
+                config, image_args=args.image, video_args=args.video, audio_args=args.audio
+            )
+        except ValueError as e:
+            print(json.dumps({"success": False, "workflow_id": args.workflow, "status": "failed", "error": {"code": "INVALID_PARAM_TYPE", "message": str(e)}}, ensure_ascii=True, indent=2))
+            return 1
+        except FileNotFoundError as e:
+            code = "INPUT_IMAGE_NOT_FOUND" if "Image" in str(e) else "INPUT_MEDIA_NOT_FOUND"
+            print(json.dumps({"success": False, "workflow_id": args.workflow, "status": "failed", "error": {"code": code, "message": str(e)}}, ensure_ascii=True, indent=2))
+            return 1
 
         comfyui_url = get_comfyui_url()
         server_url = args.server or comfyui_url
