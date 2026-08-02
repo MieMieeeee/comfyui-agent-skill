@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.8 - 2026-08-02
+
+### Features
+- Add `anima_turbo` (anime/manga T2I) and `krea2_turbo` (artistic/painterly T2I) workflows, expanding the text-to-image style spectrum alongside `z_image_turbo` (photoreal) and `qwen_image_2512_4step` (poster/text). Selection routes anime/artistic intents automatically.
+- Surface a missing prompt node at import time. When the analyzer cannot detect the prompt (e.g. it lives in a non-CLIP string node), `import-workflow` now resolves it via `--prompt-node`, an interactive pick (listing candidates with their current value), or a non-interactive candidate hint — instead of silently shipping a config that drops the user's prompt at runtime.
+- Detect ambiguous node titles at import (`AMBIGUOUS_NODE_TITLE`): two node_mapping roles pointing at the same duplicated title would cross-write via `set_node_param`; now caught with a rename hint.
+
 ## 0.1.7 - 2026-08-02
 
 ### Features
