@@ -172,6 +172,37 @@ class TestJsonConfig:
         wf_path = cfg.resolve_workflow_path(skill_root / "assets" / "workflows")
         assert wf_path.exists()
 
+    def test_liveportrait_registered_with_video_input(self, skill_root):
+        cfg = WORKFLOW_REGISTRY["liveportrait"]
+        assert cfg.capability == "image_to_video"
+        assert cfg.output_kind == "video"
+        assert cfg.node_mapping["input_image"]["value_type"] == "image"
+        assert cfg.node_mapping["input_video"]["value_type"] == "video"
+        assert cfg.node_mapping["input_video"]["param"] == "video"
+        wf_path = cfg.resolve_workflow_path(skill_root / "assets" / "workflows")
+        assert wf_path.exists()
+
+    def test_sam3_mat_image_registered_with_text_prompt(self, skill_root):
+        cfg = WORKFLOW_REGISTRY["sam3_mat_image"]
+        assert cfg.capability == "image_to_image"
+        assert cfg.node_mapping["prompt"]["param"] == "text"
+        assert cfg.node_mapping["input_image"]["value_type"] == "image"
+        wf_path = cfg.resolve_workflow_path(skill_root / "assets" / "workflows")
+        assert wf_path.exists()
+
+    def test_qwen3_tts_clone_registered_with_audio_input(self, skill_root):
+        cfg = WORKFLOW_REGISTRY["qwen3_tts_clone"]
+        assert cfg.capability == "text_to_speech"
+        assert cfg.output_kind == "audio"
+        assert cfg.node_mapping["input_audio"]["value_type"] == "audio"
+        # Voice-clone uses target_text as prompt + a separate ref_text role.
+        assert cfg.node_mapping["prompt"]["param"] == "target_text"
+        assert "ref_text" in cfg.node_mapping
+        # It must NOT expose speech_text (that routes it into the TTS path).
+        assert "speech_text" not in cfg.node_mapping
+        wf_path = cfg.resolve_workflow_path(skill_root / "assets" / "workflows")
+        assert wf_path.exists()
+
     def test_to_json_includes_resolution_presets_when_non_empty(self):
         cfg = WorkflowConfig(
             workflow_id="preset_test",

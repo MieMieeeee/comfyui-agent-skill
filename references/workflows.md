@@ -21,10 +21,13 @@ This file is the workflow-selection reference for Agents using the ComfyUI skill
 | Artistic / painterly / concept-art image | `krea2_turbo` | `text_to_image` | Fast, stable; leans artistic/painterly realism over plain photoreal. Supports `--width`/`--height`; default `1024x1024`. |
 | Create a similar image from a reference picture | `z_image_turbo` after Agent vision | `reference_to_image` | Reference image is not uploaded to ComfyUI; Agent turns image + user intent into one English prompt. |
 | Edit a provided image | `klein_edit` | `image_to_image` | Upload image with `--image input_image=path`; do not pass `--width`/`--height`. |
+| Mask / cut out an object by describing it | `sam3_mat_image` | `image_to_image` | Text-driven segmentation: `--image` + `-p "object to mask"` (e.g. "the cat"). No manual box-clicking. |
+| Face / expression transfer (photo + driving video) | `liveportrait` | `image_to_video` | `--image` (reference face) + `--video` (driving video); no text prompt. Output is MP4. |
 | Text prompt to MP4 video | `ltx_23_t2v_distill` | `text_to_video` | Supports paired `--width`/`--height`; default `768x512`; output is MP4. |
 | Image + prompt to MP4 video | `ltx_23_i2v_distilled` | `image_to_video` | Requires one valid raster input image; output resolution follows uploaded image; do not pass CLI width/height. |
 | Music / instrumental / song-style MP3 | `ace_step_15_music` | `text_to_music` | Use `--prompt` / `-p` as tags; do not use TTS flags. |
 | Spoken voice synthesis | `qwen3_tts` | `text_to_speech` | Use `--speech-text` and `--instruct`; do not pass positional prompt. |
+| Voice cloning (from a reference sample) | `qwen3_tts_clone` | `text_to_speech` | `-p` (new text) + `--text-input "ref_text=..."` (text spoken in the reference) + `--audio` (reference voice). Similarity drops if ref_text mismatches the sample. |
 
 ## Workflow Selection Guidance
 
@@ -60,6 +63,18 @@ The Agent should be the primary decision-maker for workflow choice. Built-in def
 - **Avoid when**: the user only provides text and wants a new image from scratch
 - **Agent note**: requires `--image input_image=...` and does not support CLI width/height
 
+### `sam3_mat_image`
+- **Best for**: text-driven image segmentation / matting (mask an object by describing it)
+- **Prefer when**: the user asks to 抠图/cut out/isolate/mask an object, or remove a background, by naming the target ("the red car", "a person")
+- **Avoid when**: the user wants to edit content (use `klein_edit`) or video matting
+- **Agent note**: `-p` is the object description to segment (not a creative prompt). Requires `--image`.
+
+### `liveportrait`
+- **Best for**: face / expression / pose transfer from a driving video onto a reference face photo
+- **Prefer when**: the user provides a face photo + a driving video and wants the photo to mimic the video's expression/pose (lip-sync, talking head, vtuber-style)
+- **Avoid when**: the user wants full-body motion transfer or text-to-video
+- **Agent note**: requires `--image` (face) + `--video` (driving video); no text prompt. Output is MP4.
+
 ### `ltx_23_t2v_distill`
 - **Best for**: text-to-video generation
 - **Prefer when**: the user wants an MP4 from a shot prompt (camera/motion)
@@ -81,8 +96,14 @@ The Agent should be the primary decision-maker for workflow choice. Built-in def
 ### `qwen3_tts`
 - **Best for**: text-to-speech voice synthesis (MP3)
 - **Prefer when**: the user wants spoken audio with a voice/style instruction
-- **Avoid when**: the user wants music generation (use Ace Step)
+- **Avoid when**: the user wants music generation (use Ace Step) or to clone a specific voice (use `qwen3_tts_clone`)
 - **Agent note**: require `--speech-text` and `--instruct`; no positional prompt
+
+### `qwen3_tts_clone`
+- **Best for**: cloning a specific voice from a short reference sample
+- **Prefer when**: the user provides a reference voice clip and wants new text spoken in that voice
+- **Avoid when**: the user wants generic TTS without a reference (use `qwen3_tts`)
+- **Agent note**: `-p` is the new text to speak; `--text-input "ref_text=..."` is the text actually spoken in the reference audio; `--audio` is the reference clip. Similarity drops if `ref_text` mismatches the sample.
 
 ## Capability Boundaries
 
@@ -167,6 +188,18 @@ Image edit:
 uv run --no-sync python -m comfyui generate --workflow klein_edit --image input_image=photo.png -p "Change only the jacket to a tailored charcoal business suit, preserve pose and face"
 ```
 
+Text-driven matting (SAM3):
+
+```bash
+uv run --no-sync python -m comfyui generate --workflow sam3_mat_image --image photo.png -p "the cat"
+```
+
+Face/expression transfer (LivePortrait):
+
+```bash
+uv run --no-sync python -m comfyui generate --workflow liveportrait --image face.png --video driving.mp4
+```
+
 Text-to-video:
 
 ```bash
@@ -189,6 +222,12 @@ Text-to-speech:
 
 ```bash
 uv run --no-sync python -m comfyui generate --workflow qwen3_tts --speech-text "你好，这是一段测试语音。" --instruct "温柔清晰的女声，语速适中。"
+```
+
+Voice cloning (Qwen3-TTS VoiceClone):
+
+```bash
+uv run --no-sync python -m comfyui generate --workflow qwen3_tts_clone -p "你好，这是用克隆音色念的新文本。" --text-input "ref_text=参考音频里实际念的原话" --audio sample.mp3
 ```
 
 ## Aspect Ratio Guidance

@@ -1,0 +1,38 @@
+{
+  "workflow_id": "sam3_mat_image",
+  "workflow_file": "sam3_mat_image.json",
+  "output_node_title": "Save Image",
+  "capability": "image_to_image",
+  "description": "SAM3 text-driven image segmentation/matting: upload an image and describe the target object (e.g. 'the red car', 'a person with a hat') to produce its mask. No manual box-clicking.",
+  "output_kind": "image",
+  "intent_categories": ["image_to_image"],
+  "input_modes": ["image", "text"],
+  "priority": 65,
+  "keywords_any": ["抠图", "segmentation", "matting", "mask", "sam", "cutout", "去背景", "智能抠图"],
+  "selection_guidance": {
+    "best_for": [
+      "text-driven image segmentation / matting (describe the object to mask)",
+      "background removal / cutout from a single image"
+    ],
+    "avoid_for": [
+      "editing an image's content (use klein_edit)",
+      "video matting (use sam3_mat_video)"
+    ],
+    "agent_hint": "Prefer this when the user wants to isolate/mask/cut out an object in an image by describing it in words. The prompt names the object to segment (e.g. 'the cat', 'a person'). Requires --image and -p \"object description\"."
+  },
+  "node_mapping": {
+    "prompt": {
+      "node_title": "CLIP Text Encode (Prompt)",
+      "param": "text",
+      "value_type": "string",
+      "required": true
+    },
+    "input_image": {
+      "node_title": "Load Image",
+      "param": "image",
+      "value_type": "image",
+      "input_strategy": "upload",
+      "required": true
+    }
+  }
+}

@@ -217,6 +217,7 @@ def _add_generate_arguments(p: argparse.ArgumentParser, *, default_workflow: str
     p.add_argument("--image", action="append", default=[], metavar="KEY=PATH", help="Input image: 'key=path' or bare path; repeat for multiple keys")
     p.add_argument("--video", action="append", default=[], metavar="KEY=PATH", help="Input video: 'key=path' or bare path; repeat for multiple keys")
     p.add_argument("--audio", action="append", default=[], metavar="KEY=PATH", help="Input audio: 'key=path' or bare path; repeat for multiple keys")
+    p.add_argument("--text-input", action="append", default=[], metavar="KEY=VALUE", help="Set a string node_mapping role: 'role=value' (e.g. ref_text=...). Repeat for multiple roles. Used for workflows with extra text inputs beyond 'prompt'.")
     p.add_argument("--progress", action="store_true", help="Print JSON progress lines to stderr during generation")
     p.add_argument("--submit", action="store_true", help="Submit job(s) to ComfyUI queue without waiting for completion. Returns job_id(s).")
     p.add_argument("--poll", metavar="JOB_ID", help="Poll a single job's current status.")
@@ -285,7 +286,11 @@ def run_generate_from_args(args: argparse.Namespace) -> int:
 
     prompts = list(args.prompt) + list(args.prompt_flags)
     is_audio_workflow = getattr(config, "output_kind", "image") == "audio"
-    is_tts_workflow = getattr(config, "capability", "") == "text_to_speech"
+    # A workflow is "TTS-style" only when it exposes the speech_text role (the
+    # qwen3_tts speech-design path). Voice-clone workflows (qwen3_tts_clone)
+    # are also capability=text_to_speech but use prompt + extra text inputs, so
+    # they must take the standard prompt path instead.
+    is_tts_workflow = getattr(config, "capability", "") == "text_to_speech" and "speech_text" in config.node_mapping
 
     aw = getattr(args, "width", None)
     ah = getattr(args, "height", None)
@@ -318,7 +323,10 @@ def run_generate_from_args(args: argparse.Namespace) -> int:
         if not instruct:
             _print_error_and_exit(code="EMPTY_INSTRUCT", message="--instruct is required for this workflow.", workflow_id=config.workflow_id)
     elif not prompts:
-        _print_error_and_exit(code="EMPTY_PROMPT", message='A prompt is required. Example: python -m comfyui generate -p "..."', workflow_id=config.workflow_id)
+        # A prompt is required only when the workflow actually has a prompt role.
+        # Pure-upload workflows (e.g. liveportrait: image + video, no text) need no -p.
+        if "prompt" in config.node_mapping:
+            _print_error_and_exit(code="EMPTY_PROMPT", message='A prompt is required. Example: python -m comfyui generate -p "..."', workflow_id=config.workflow_id)
 
     input_images: dict[str, Path] = {}
     try:
@@ -333,6 +341,14 @@ def run_generate_from_args(args: argparse.Namespace) -> int:
             message=str(e),
             workflow_id=config.workflow_id,
         )
+
+    # Parse --text-input role=value pairs into extra text_inputs (e.g. ref_text).
+    extra_text_inputs: dict[str, str] = {}
+    for ti_arg in getattr(args, "text_input", []) or []:
+        if "=" not in ti_arg:
+            _print_error_and_exit(code="INVALID_PARAM_TYPE", message=f"--text-input must be 'role=value' (missing '=' in {ti_arg!r})", workflow_id=config.workflow_id)
+        role, value = ti_arg.split("=", 1)
+        extra_text_inputs[role.strip()] = value
 
     health = check_server(server_url)
     if not health["available"]:
@@ -354,6 +370,7 @@ def run_generate_from_args(args: argparse.Namespace) -> int:
         speech = getattr(args, "speech_text", "") or ""
         instruct = getattr(args, "instruct", "") or ""
         ti = {"speech_text": speech.strip(), "instruct": instruct.strip()}
+        ti.update(extra_text_inputs)
         for _ in range(count):
             result = _run_single_generate(config, "", server_url, explicit_out, output_subdir, input_images or None, progress, text_inputs=ti, width=aw, height=ah)
             results.append(result.to_dict())
@@ -361,13 +378,16 @@ def run_generate_from_args(args: argparse.Namespace) -> int:
                 all_success = False
         total = count
     else:
-        for prompt in prompts:
+        # Workflows without a prompt role (e.g. liveportrait: image + video)
+        # still need to run once with an empty prompt so media inputs are uploaded.
+        run_prompts = prompts if prompts else [""]
+        for prompt in run_prompts:
             for _ in range(count):
-                result = _run_single_generate(config, prompt, server_url, explicit_out, output_subdir, input_images or None, progress, width=aw, height=ah)
+                result = _run_single_generate(config, prompt, server_url, explicit_out, output_subdir, input_images or None, progress, text_inputs=extra_text_inputs or None, width=aw, height=ah)
                 results.append(result.to_dict())
                 if not result.success:
                     all_success = False
-        total = len(prompts) * count
+        total = len(run_prompts) * count
 
     if total == 1:
         print(json.dumps(results[0], ensure_ascii=True, indent=2))

@@ -292,14 +292,21 @@ def execute_workflow(
     has_string_mapping = any(
         _entry_is_string_input(entry) for entry in config.node_mapping.values()
     )
-    if not has_string_mapping:
+    has_media_mapping = any(
+        entry.get("value_type") in ("image", "video", "audio")
+        for entry in config.node_mapping.values()
+    )
+    # A workflow needs at least one bindable input — a string prompt OR an
+    # upload role. Pure-upload workflows (e.g. liveportrait: image + video,
+    # no text prompt) are valid and must not be rejected here.
+    if not has_string_mapping and not has_media_mapping:
         return GenerationResult(
             success=False,
             workflow_id=config.workflow_id,
             status="failed",
             error=_err(
                 "MAPPING_NOT_FOUND",
-                "Workflow config has no string inputs (prompt/speech_text/etc.).",
+                "Workflow config has no bindable inputs (prompt/speech_text or image/video/audio).",
             ),
         )
 

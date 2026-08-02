@@ -105,7 +105,10 @@ Minimal decision tree:
 - Artistic / painterly realism / concept art / product → prefer `krea2_turbo`
 - User gives a reference image and wants a new similar image → vision → `reference_to_image` prompt → run `z_image_turbo`
 - User gives an input image and wants edits → `generate --workflow klein_edit --image input_image=... -p "..."`
+- User wants to mask / cut out an object by describing it → `sam3_mat_image`
+- User wants face/expression transfer (face photo + driving video) → `liveportrait`
 - User wants TTS / voice audio → `generate --workflow qwen3_tts --speech-text "..." --instruct "..."`
+- User wants to clone a specific voice from a sample → `qwen3_tts_clone`
 - User wants video → `ltx_23_t2v_distill` (text→video) or `ltx_23_i2v_distilled` (image→video)
 
 | User intent | Workflow / mode | Required command shape |
@@ -116,10 +119,13 @@ Minimal decision tree:
 | Artistic / painterly / concept art | `krea2_turbo` | `generate --workflow krea2_turbo -p "prompt"` |
 | Similar image from reference | Agent vision + T2I | Read reference image, create English prompt, then T2I |
 | Edit image | `klein_edit` | `generate --workflow klein_edit --image input_image=photo.png -p "edit prompt"` |
+| Mask / cut out an object (text-driven) | `sam3_mat_image` | `generate --workflow sam3_mat_image --image photo.png -p "the cat"` |
+| Face/expression transfer (photo + video) | `liveportrait` | `generate --workflow liveportrait --image face.png --video drive.mp4` |
 | Text to video | `ltx_23_t2v_distill` | `generate --workflow ltx_23_t2v_distill -p "shot prompt"` |
 | Image to video | `ltx_23_i2v_distilled` | `generate --workflow ltx_23_i2v_distilled --image input_image=photo.png -p "motion prompt"` |
 | Text to music | `ace_step_15_music` | `generate --workflow ace_step_15_music -p "music tags"` |
 | Text to speech | `qwen3_tts` | `generate --workflow qwen3_tts --speech-text "..." --instruct "..."` |
+| Voice cloning (from a sample) | `qwen3_tts_clone` | `generate --workflow qwen3_tts_clone -p "new text" --text-input "ref_text=..." --audio sample.mp3` |
 
 For workflow-specific size rules, capability boundaries, and examples, read [references/workflows.md](references/workflows.md).
 

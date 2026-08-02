@@ -1,0 +1,39 @@
+{
+  "workflow_id": "liveportrait",
+  "workflow_file": "liveportrait.json",
+  "output_node_title": "Video Combine 🎥🅥🅗🅢",
+  "capability": "image_to_video",
+  "description": "LivePortrait expression/motion transfer: a reference face image + a driving video; the driving video's expression/pose is transferred onto the reference face.",
+  "output_kind": "video",
+  "intent_categories": ["image_to_video"],
+  "input_modes": ["image", "video"],
+  "priority": 70,
+  "keywords_any": ["表情迁移", "expression", "liveportrait", "面部驱动", "face animation", "口型", "虚拟主播", "portrait animation"],
+  "selection_guidance": {
+    "best_for": [
+      "face/expression/motion transfer from a driving video onto a reference face photo",
+      "lip-sync / talking-head / vtuber-style animations"
+    ],
+    "avoid_for": [
+      "full-body motion transfer (use a motion-transfer workflow)",
+      "text-to-video without a reference face (use ltx_23_t2v_distill)"
+    ],
+    "agent_hint": "Prefer this when the user provides a face photo + a driving video and wants the photo to mimic the video's expression/pose. Requires --image (reference face) and --video (driving video)."
+  },
+  "node_mapping": {
+    "input_image": {
+      "node_title": "Load Image",
+      "param": "image",
+      "value_type": "image",
+      "input_strategy": "upload",
+      "required": true
+    },
+    "input_video": {
+      "node_title": "Load Video (Upload) 🎥🅥🅗🅢",
+      "param": "video",
+      "value_type": "video",
+      "input_strategy": "upload",
+      "required": true
+    }
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "24": {
+    "inputs": {
+      "audio": "元气少女.mp3",
+      "audioUI": "/api/view?filename=%E5%85%83%E6%B0%94%E5%B0%91%E5%A5%B3.mp3&type=input&subfolder=&rand=0.5360579009868266"
+    },
+    "class_type": "LoadAudio",
+    "_meta": {
+      "title": "加载音频"
+    }
+  },
+  "40": {
+    "inputs": {
+      "target_text": "早安呀！太阳都晒屁股啦～快起来快起来！今天可是要出门吃好吃的呢，再不起来我一个人先走啦！才、才不是特意来叫你的哦",
+      "model_choice": "1.7B",
+      "device": "auto",
+      "precision": "bf16",
+      "language": "Chinese",
+      "ref_text": "哼，才不是特意来叫你起床的呢！只是刚好路过顺便说一下……你已经睡过头了啦，笨蛋！快点起来！",
+      "seed": 627852582810675,
+      "max_new_tokens": 2048,
+      "top_p": 0.85,
+      "top_k": 30,
+      "temperature": 1.1,
+      "repetition_penalty": 1.05,
+      "x_vector_only": false,
+      "attention": "sage_attn",
+      "unload_model_after_generate": false,
+      "custom_model_path": "",
+      "ref_audio": [
+        "24",
+        0
+      ]
+    },
+    "class_type": "FB_Qwen3TTSVoiceClone",
+    "_meta": {
+      "title": "🎭 Qwen3-TTS VoiceClone"
+    }
+  },
+  "46": {
+    "inputs": {
+      "filename_prefix": "audio/Qwen3-TTS",
+      "quality": "V0",
+      "audioUI": "",
+      "audio": [
+        "40",
+        0
+      ]
+    },
+    "class_type": "SaveAudioMP3",
+    "_meta": {
+      "title": "保存音频 (MP3)"
+    }
+  }
+}

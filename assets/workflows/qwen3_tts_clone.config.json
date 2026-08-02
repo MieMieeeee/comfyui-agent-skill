@@ -1,0 +1,50 @@
+{
+  "workflow_id": "qwen3_tts_clone",
+  "workflow_file": "qwen3_tts_clone.json",
+  "output_node_title": "保存音频 (MP3)",
+  "capability": "text_to_speech",
+  "description": "Qwen3-TTS voice cloning: upload a 3-10s reference audio + the text actually spoken in it + the new text to read; outputs the cloned voice reading the new text.",
+  "output_kind": "audio",
+  "intent_categories": ["text_to_speech"],
+  "input_modes": ["audio", "text"],
+  "priority": 75,
+  "keywords_any": ["语音克隆", "voice clone", "voice cloning", "克隆声音", "音色克隆", "tts clone", "声音复刻"],
+  "selection_guidance": {
+    "best_for": [
+      "cloning a specific voice from a short reference audio sample",
+      "generating speech in someone's voice from new text"
+    ],
+    "avoid_for": [
+      "generic TTS without a reference voice (use qwen3_tts)",
+      "music generation (use ace_step_15_music)"
+    ],
+    "agent_hint": "Prefer this when the user provides a reference voice sample and wants new text spoken in that voice. Requires --audio (reference voice), -p (new text to speak), and --param 'ref_text'. Similarity drops if ref_text mismatches the reference audio."
+  },
+  "node_mapping": {
+    "prompt": {
+      "node_title": "🎭 Qwen3-TTS VoiceClone",
+      "param": "target_text",
+      "value_type": "string",
+      "required": true
+    },
+    "ref_text": {
+      "node_title": "🎭 Qwen3-TTS VoiceClone",
+      "param": "ref_text",
+      "value_type": "string",
+      "required": true
+    },
+    "input_audio": {
+      "node_title": "加载音频",
+      "param": "audio",
+      "value_type": "audio",
+      "input_strategy": "upload",
+      "required": true
+    },
+    "seed": {
+      "node_title": "🎭 Qwen3-TTS VoiceClone",
+      "param": "seed",
+      "value_type": "integer",
+      "auto_random": true
+    }
+  }
+}
