@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.10 - 2026-08-02
+
+### Features
+- Video/audio upload support. New `--video` / `--audio` CLI flags (symmetric to `--image`) and a `--text-input "role=value"` flag for extra string roles. The analyzer now detects `VHS_LoadVideo` / `LoadAudio` nodes. image path unchanged; image error codes preserved.
+- Three new workflows, each end-to-end verified against a live ComfyUI with real assets: `liveportrait` (face/expression transfer, video upload), `sam3_mat_image` (text-driven matting), `qwen3_tts_clone` (voice cloning, audio upload).
+
+### Fixes
+- Allow pure-upload workflows (no text prompt, e.g. liveportrait) to run: relaxed the executor string-input gate, the CLI EMPTY_PROMPT gate, and the empty-prompts loop. `is_tts_workflow` now requires a `speech_text` role so voice-clone workflows take the standard prompt path.
+
 ## 0.1.9 - 2026-08-02
 
 ### Fixes
