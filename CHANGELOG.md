@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.9 - 2026-08-02
+
+### Fixes
+- Preflight no longer crashes on non-ASCII model folder names (e.g. `models/新建文件夹`). `http_get_json` now percent-encodes path segments and catches `UnicodeEncodeError`, which previously escaped as a misleading `WORKFLOW_LOAD_FAILED`.
+- Raise `/object_info` timeout to 30s in `validate_workflow_resources`; on node-heavy installs the response can be several MB and exceed the 8s default.
+
 ## 0.1.8 - 2026-08-02
 
 ### Features
