@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 import urllib.error
+import urllib.parse
 import urllib.request
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -56,7 +57,11 @@ def http_get_json(server_url: str, path: str, *, timeout: float = 8.0) -> tuple[
     base = server_url.rstrip("/")
     if not path.startswith("/"):
         path = "/" + path
-    url = base + path
+    # Percent-encode each path segment so non-ASCII folder names (e.g. a
+    # "models/新建文件夹" directory) don't crash urllib when it encodes the
+    # HTTP request line as ASCII. Slashes are preserved as path separators.
+    encoded = "/".join(urllib.parse.quote(seg, safe="") for seg in path.split("/"))
+    url = base + encoded
     try:
         req = urllib.request.Request(url)
         with urllib.request.urlopen(req, timeout=timeout) as resp:
@@ -70,7 +75,7 @@ def http_get_json(server_url: str, path: str, *, timeout: float = 8.0) -> tuple[
         except OSError:
             body = ""
         return None, f"HTTP {e.code}: {body[:200]}"
-    except (urllib.error.URLError, TimeoutError, OSError, json.JSONDecodeError) as e:
+    except (urllib.error.URLError, TimeoutError, OSError, UnicodeEncodeError, json.JSONDecodeError) as e:
         return None, str(e)
 
 
@@ -212,7 +217,10 @@ def _model_ref_is_available(ref: ModelRef, flat: set[str]) -> bool:
 
 def validate_workflow_resources(server_url: str, workflow: dict[str, Any]) -> PreflightResult:
     """Check node registration, plugin dependencies, and model files."""
-    obj, err = http_get_json(server_url, "/object_info")
+    # /object_info returns every registered node's full INPUT_TYPES — it scales
+    # with node count and can be several MB / >8s on heavy installs, so allow a
+    # generous timeout here (other endpoints stay at the default).
+    obj, err = http_get_json(server_url, "/object_info", timeout=30.0)
     if err or not isinstance(obj, dict):
         return PreflightResult(
             ok=False,
