@@ -24,6 +24,11 @@ Stable (reviewed configs in `assets/workflows/*.config.json`):
 - `ltx_23_i2v_distilled` (image-to-video)
 - `ace_step_15_music` (music/audio)
 - `qwen_image_2512_4step` (text-to-image)
+- `anima_turbo` (anime/illustration text-to-image)
+- `krea2_turbo` (artistic/painterly text-to-image)
+- `sam3_mat_image` (text-driven matting)
+- `liveportrait` (face/expression transfer)
+- `qwen3_tts_clone` (voice cloning)
 
 Source of truth: the runtime registry is derived from `assets/workflows/*.config.json` (and the corresponding `assets/workflows/*.json` workflow files). If this list drifts, trust the configs and `python -m comfyui generate --help` output.
 

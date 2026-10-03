@@ -1,9 +1,12 @@
 ---
 name: comfyui-agent-skill-mie
 description: >
-  Agent skill for running registered ComfyUI workflows through a stable CLI.
-  Supports image, video, music, and speech generation on a local or trusted self-hosted
-  ComfyUI server (default http://127.0.0.1:8188). Registered workflows only.
+  Agent skill for running registered ComfyUI workflows through a stable CLI,
+  and for importing a user's own ComfyUI workflow into their private registry
+  after review. Supports image, video, music, and speech on a local or trusted
+  self-hosted ComfyUI server (default http://127.0.0.1:8188). Can check server
+  health, preflight workflow dependencies, and save the server URL. Does not
+  execute arbitrary unreviewed workflow JSON.
 ---
 
 # comfyui-agent-skill-mie
@@ -22,6 +25,9 @@ Use this skill when the user asks to:
 - Generate music / instrumental / song-style MP3 output.
 - Synthesize spoken voice audio with Qwen3-TTS.
 - Check whether a ComfyUI server is available.
+- Import a workflow the user already validated in ComfyUI into their private registry, and activate it only after the generated config is reviewed.
+- Preflight a registered workflow's nodes and models before a long run.
+- Save a persistent ComfyUI server URL when the user asks.
 
 Do not use this skill when the user only wants prompt writing, brainstorming, or discussion without actual generation. Do not use it when the ComfyUI server is unavailable.
 

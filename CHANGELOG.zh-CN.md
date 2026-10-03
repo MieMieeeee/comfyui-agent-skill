@@ -1,5 +1,46 @@
 # 更新日志
 
+## 0.1.10 - 2026-08-02
+
+### 新功能
+- 支持视频/音频上传。新增 `--video` / `--audio` CLI 参数（与 `--image` 对称），以及 `--text-input "role=value"`，用于额外的字符串角色。分析器现在会检测 `VHS_LoadVideo` / `LoadAudio` 节点。图片路径行为不变；图片相关错误码保持不变。
+- 新增三个工作流，均已用真实素材在运行中的 ComfyUI 上端到端验证：`liveportrait`（面部/表情迁移，视频上传）、`sam3_mat_image`（文字驱动抠图）、`qwen3_tts_clone`（声音克隆，音频上传）。
+
+### 修复
+- 允许纯上传工作流（没有文本提示词，例如 liveportrait）运行：放宽执行器的字符串输入门禁、CLI 的 `EMPTY_PROMPT` 门禁，以及空提示词循环。`is_tts_workflow` 现在要求存在 `speech_text` 角色，因此声音克隆工作流走标准提示词路径。
+
+## 0.1.9 - 2026-08-02
+
+### 修复
+- Preflight 不再因非 ASCII 模型目录名崩溃（例如 `models/新建文件夹`）。`http_get_json` 现在会对路径段做百分号编码，并捕获 `UnicodeEncodeError`；此前该错误会逃逸成误导性的 `WORKFLOW_LOAD_FAILED`。
+- 将 `validate_workflow_resources` 里的 `/object_info` 超时提高到 30 秒。节点较多的安装中，响应可达数 MB，会超过默认的 8 秒。
+
+## 0.1.8 - 2026-08-02
+
+### 新功能
+- 新增 `anima_turbo`（动漫/漫画文生图）和 `krea2_turbo`（艺术/绘画风文生图）工作流，与 `z_image_turbo`（写实）和 `qwen_image_2512_4step`（海报/文字）一起扩展文生图的风格范围。选择逻辑会自动路由动漫/艺术类意图。
+- 导入时暴露缺失的提示词节点。当分析器检测不到提示词（例如它位于非 CLIP 的字符串节点中）时，`import-workflow` 现在会通过 `--prompt-node`、交互式选择（列出候选及其当前值），或非交互式的候选提示来确定它，而不是静默交出一份会在运行时丢掉用户提示词的配置。
+- 导入时检测有歧义的节点标题（`AMBIGUOUS_NODE_TITLE`）：两个 node_mapping 角色指向同一个重复标题时，会经由 `set_node_param` 交叉写入；现在会拦住并给出重命名提示。
+
+## 0.1.7 - 2026-08-02
+
+### 新功能
+- 新增 `convert-ui` 子命令：通过 Playwright 驱动正在运行的 ComfyUI 前端，把 ComfyUI UI/Save 格式工作流（`{nodes, links}`）批量转换成 API 格式（延迟导入，按需启用）。对齐权威的 `loadGraphData` + `graphToPrompt` 路径；不会触发推理。
+- 防止 `import-workflow` 接受非 API 输入。UI/Save 与未知格式现在会预先拒绝，并给出可操作的指引（`WORKFLOW_NOT_API_FORMAT`），而不是在分析器内部崩溃。
+- 在生成的配置模板中暴露带 `SKILL` 前缀的节点标量输入（分析器启发式）。
+
+## 0.1.6 - 2026-05-04
+
+### 新功能
+- 增加面向 agent 驱动的工作流路由选择 MVP。
+- 增加 ClawHub bundle 构建器。
+
+### 文档
+- 增加 agent-first 的工作流选择指引。
+- 增加端到端的工作流选择示例。
+- 增加工作流扩展示例。
+- 增加项目架构决策树流程图（SVG/PNG/HTML）。
+
 ## 0.1.5 - 2026-05-03
 
 ### 文档
