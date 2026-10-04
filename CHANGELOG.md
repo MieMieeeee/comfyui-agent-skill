@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.1.11 - 2026-10-04
+
+### Fixes
+- Reject saved ComfyUI filenames that would escape the results directory.
+- `--submit` now follows the same input rules as the synchronous path. `liveportrait` takes `--image` plus `--video` and may submit with an empty prompt. `qwen3_tts_clone` takes `-p`, `--text-input "ref_text=..."`, and `--audio`.
+- `--width` and `--height` return `INVALID_PARAM` when the workflow has no width/height mapping, including on `--submit`, instead of being ignored.
+
+### Documentation
+- Document media error codes (`NO_INPUT_MEDIA`, `INPUT_MEDIA_NOT_FOUND`, `MEDIA_UPLOAD_FAILED`, `MISSING_INPUT`, `PREFLIGHT_MISSING_PLUGINS`) separately from image-only codes.
+- Document the per-user results directory (`%APPDATA%\comfyui-skill\results` on Windows) instead of a `results/` folder under the skill root.
+- Skill description now covers matting, face-expression transfer, and voice cloning.
+- `krea2_turbo` quick-choice table includes product shots, matching its selection guidance.
+
 ## 0.1.10 - 2026-08-02
 
 ### Features

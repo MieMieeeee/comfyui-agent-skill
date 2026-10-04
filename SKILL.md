@@ -130,7 +130,7 @@ Minimal decision tree:
 | Text to image (general fallback) | `z_image_turbo` | `generate -p "prompt"` |
 | Poster / embedded text (preferred) | `qwen_image_2512_4step` | `generate --workflow qwen_image_2512_4step -p "prompt"` |
 | Anime / manga / illustration | `anima_turbo` | `generate --workflow anima_turbo -p "prompt"` |
-| Artistic / painterly / concept art | `krea2_turbo` | `generate --workflow krea2_turbo -p "prompt"` |
+| Artistic / painterly realism / concept art / product | `krea2_turbo` | `generate --workflow krea2_turbo -p "prompt"` |
 | Similar image from reference | Agent vision + T2I | Read reference image, create English prompt, then T2I |
 | Edit image | `klein_edit` | `generate --workflow klein_edit --image input_image=photo.png -p "edit prompt"` |
 | Mask / cut out an object (text-driven) | `sam3_mat_image` | `generate --workflow sam3_mat_image --image photo.png -p "the cat"` |

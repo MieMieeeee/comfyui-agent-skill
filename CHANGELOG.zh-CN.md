@@ -1,5 +1,18 @@
 # 更新日志
 
+## 0.1.11 - 2026-10-04
+
+### 修复
+- 拒绝会逃出结果目录的 ComfyUI 保存文件名（路径穿越）。
+- `--submit` 与同步路径使用同一套输入规则。`liveportrait` 使用 `--image` 加 `--video`，可以空提示词提交。`qwen3_tts_clone` 使用 `-p`、`--text-input "ref_text=..."` 和 `--audio`。
+- 工作流没有宽高映射时，`--width` 和 `--height` 返回 `INVALID_PARAM`（包括 `--submit`），不再被静默忽略。
+
+### 文档
+- 按媒体类型补充错误码：`NO_INPUT_MEDIA`、`INPUT_MEDIA_NOT_FOUND`、`MEDIA_UPLOAD_FAILED`、`MISSING_INPUT`、`PREFLIGHT_MISSING_PLUGINS`。缺视频或音频不再写成 `NO_INPUT_IMAGE`。
+- 结果目录改为用户数据根下的 `results`（Windows 上是 `%APPDATA%\comfyui-skill\results`），不再写成 skill 根下的 `results/`。
+- 技能描述补上抠图、表情迁移和声音克隆。
+- `krea2_turbo` 速查表补上产品图，与 selection guidance 一致。
+
 ## 0.1.10 - 2026-08-02
 
 ### 新功能
