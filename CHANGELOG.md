@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.12 - 2026-10-04
+
+### Fixes
+- Output path checks now reject Windows-style escapes on Linux too: backslash separators, drive-letter paths, and `..` segments. Relative subfolders such as `batch/ok.png` are still allowed.
+
 ## 0.1.11 - 2026-10-04
 
 ### Fixes

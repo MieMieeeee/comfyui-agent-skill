@@ -677,6 +677,31 @@ class TestOutputPathWithin:
         with pytest.raises(UnsafeOutputName):
             output_path_within(tmp_path / "results", name)
 
+    @pytest.mark.parametrize(
+        "name",
+        [
+            "..\\evil.png",
+            "C:/Windows/evil.png",
+            "C:evil.png",
+        ],
+    )
+    def test_rejects_windows_style_escapes_on_any_host(self, tmp_path, name):
+        """Reject Windows escapes even where POSIX Path would keep them.
+
+        On Linux, Path treats a backslash as a filename character and does not
+        parse ``C:`` as a drive. These three names must still raise.
+        """
+        from comfyui.services.executor import UnsafeOutputName, output_path_within
+
+        with pytest.raises(UnsafeOutputName):
+            output_path_within(tmp_path / "results", name)
+
+    def test_allows_backslash_relative_subfolder(self, tmp_path):
+        from comfyui.services.executor import output_path_within
+
+        out = output_path_within(tmp_path / "results", "batch\\ok.png")
+        assert out == (tmp_path / "results" / "batch" / "ok.png").resolve()
+
     @patch("comfyui.services.executor.ComfyApiWrapper")
     @patch("comfyui.services.executor.ComfyWorkflowWrapper")
     def test_execute_does_not_write_outside_results_dir(self, MockWF, MockAPI, skill_root, tmp_path):

@@ -12,7 +12,7 @@ import sys
 import uuid
 from collections.abc import Callable
 from datetime import datetime
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 from typing import Any
 
 import websockets
@@ -40,19 +40,22 @@ class UnsafeOutputName(ValueError):
 def output_path_within(results_dir: Path, filename: str) -> Path:
     """Join a ComfyUI filename under results_dir, or raise UnsafeOutputName.
 
-    The filename may include a relative subfolder. Absolute paths, drive-relative
-    paths, and any '..' segment are rejected. The resolved path must stay inside
-    results_dir.
+    The filename may include a relative subfolder. Classification uses Windows
+    path rules on every operating system, so backslash separators, drive-letter
+    paths (including ``C:name``), and any ``..`` segment are rejected on Linux
+    as well as Windows. The resolved path must stay inside results_dir.
     """
     if not isinstance(filename, str) or filename.strip() == "" or "\x00" in filename:
         raise UnsafeOutputName("empty or invalid output filename")
-    raw = Path(filename)
+    # PureWindowsPath, not Path: on POSIX a backslash is a filename character
+    # and "C:" is not a drive, so those escapes would otherwise be kept.
+    raw = PureWindowsPath(filename)
     if raw.is_absolute() or raw.drive or raw.root:
         raise UnsafeOutputName(f"output filename escapes results dir: {filename}")
     if any(part in {".", ".."} for part in raw.parts):
         raise UnsafeOutputName(f"output filename escapes results dir: {filename}")
     root = Path(results_dir).resolve()
-    candidate = (root / raw).resolve()
+    candidate = root.joinpath(*raw.parts).resolve()
     try:
         candidate.relative_to(root)
     except ValueError as exc:
