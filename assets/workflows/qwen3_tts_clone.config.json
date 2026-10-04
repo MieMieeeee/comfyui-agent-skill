@@ -18,7 +18,7 @@
       "generic TTS without a reference voice (use qwen3_tts)",
       "music generation (use ace_step_15_music)"
     ],
-    "agent_hint": "Prefer this when the user provides a reference voice sample and wants new text spoken in that voice. Requires --audio (reference voice), -p (new text to speak), and --param 'ref_text'. Similarity drops if ref_text mismatches the reference audio."
+    "agent_hint": "Prefer this when the user provides a reference voice sample and wants new text spoken in that voice. Requires --audio (reference voice), -p (new text to speak), and --text-input \"ref_text=...\". Similarity drops if ref_text mismatches the reference audio."
   },
   "node_mapping": {
     "prompt": {

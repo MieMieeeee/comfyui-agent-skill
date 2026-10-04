@@ -661,3 +661,46 @@ class TestExecuteWorkflowDimensions:
         )
         assert result.success is True
         assert result.outputs[0]["filename"] == "out.mp4"
+
+
+class TestOutputPathWithin:
+    def test_keeps_relative_subfolder(self, tmp_path):
+        from comfyui.services.executor import output_path_within
+
+        out = output_path_within(tmp_path / "results", "batch/ok.png")
+        assert out == (tmp_path / "results" / "batch" / "ok.png").resolve()
+
+    @pytest.mark.parametrize("name", ["../evil.png", "..\\evil.png", "/tmp/evil.png", "C:/Windows/evil.png", "C:evil.png", "foo/../../evil.png", "", "   ", "a\x00b.png"])
+    def test_rejects_escape(self, tmp_path, name):
+        from comfyui.services.executor import UnsafeOutputName, output_path_within
+
+        with pytest.raises(UnsafeOutputName):
+            output_path_within(tmp_path / "results", name)
+
+    @patch("comfyui.services.executor.ComfyApiWrapper")
+    @patch("comfyui.services.executor.ComfyWorkflowWrapper")
+    def test_execute_does_not_write_outside_results_dir(self, MockWF, MockAPI, skill_root, tmp_path):
+        mock_wf = MagicMock()
+        mock_wf.get_node_id.return_value = "9"
+        MockWF.return_value = mock_wf
+        MockAPI.return_value = _make_mock_api(
+            prompt_id="p1",
+            history={
+                "p1": {
+                    "outputs": {
+                        "9": {
+                            "images": [{"filename": "../evil.png", "subfolder": "", "type": "output"}]
+                        }
+                    }
+                }
+            },
+        )
+        result = execute_workflow(
+            config=Z_IMAGE_TURBO,
+            prompt="test prompt",
+            skill_root=skill_root,
+            results_dir=tmp_path / "out",
+        )
+        assert result.success is False
+        assert result.error["code"] == "SAVE_FAILED"
+        assert not (tmp_path / "evil.png").exists()

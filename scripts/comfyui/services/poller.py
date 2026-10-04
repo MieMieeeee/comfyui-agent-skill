@@ -17,6 +17,7 @@ from comfyui.config import SKILL_ROOT, get_user_data_root, get_workflows_dir
 from comfyui.services.executor import (
     job_hierarchy_output_dir,
     node_output_media_list,
+    output_path_within,
     parse_job_anchor_from_iso,
 )
 from comfyui.services.job_store import JobStore
@@ -81,7 +82,7 @@ def _materialize_outputs(
         folder_type = item.get("type", "output")
         try:
             data = api.get_image(filename, subfolder, folder_type)
-            out_path = results_dir / filename
+            out_path = output_path_within(results_dir, filename)
             out_path.parent.mkdir(parents=True, exist_ok=True)
             out_path.write_bytes(data)
             artifacts.append({

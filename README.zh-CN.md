@@ -113,7 +113,7 @@ comfyui-agent-skill-mie save-server http://localhost:8188
 - `ace_step_15_music`（音乐/音频）
 - `qwen_image_2512_4step`（文生图，适合海报、含文字的图片）
 - `anima_turbo`（动漫/插画文生图，暂无示例）
-- `krea2_turbo`（艺术/绘画风文生图，写实/概念设计/产品图，暂无示例）
+- `krea2_turbo`（写实但偏艺术/绘画风、概念设计、产品图，暂无示例）
 - `sam3_mat_image`（文字驱动抠图，暂无示例）
 - `liveportrait`（面部/表情迁移，暂无示例）
 - `qwen3_tts_clone`（声音克隆，暂无示例）

@@ -25,7 +25,7 @@ Stable (reviewed configs in `assets/workflows/*.config.json`):
 - `ace_step_15_music` (music/audio)
 - `qwen_image_2512_4step` (text-to-image)
 - `anima_turbo` (anime/illustration text-to-image)
-- `krea2_turbo` (artistic/painterly text-to-image)
+- `krea2_turbo` (artistic/painterly realism, concept art, product visualization)
 - `sam3_mat_image` (text-driven matting)
 - `liveportrait` (face/expression transfer)
 - `qwen3_tts_clone` (voice cloning)

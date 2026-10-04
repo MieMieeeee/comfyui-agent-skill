@@ -33,6 +33,35 @@ from comfyui.models.result import GenerationResult
 from comfyui.services.workflow_config import WorkflowConfig
 
 
+class UnsafeOutputName(ValueError):
+    """Server-supplied output name would write outside the results directory."""
+
+
+def output_path_within(results_dir: Path, filename: str) -> Path:
+    """Join a ComfyUI filename under results_dir, or raise UnsafeOutputName.
+
+    The filename may include a relative subfolder. Absolute paths, drive-relative
+    paths, and any '..' segment are rejected. The resolved path must stay inside
+    results_dir.
+    """
+    if not isinstance(filename, str) or filename.strip() == "" or "\x00" in filename:
+        raise UnsafeOutputName("empty or invalid output filename")
+    raw = Path(filename)
+    if raw.is_absolute() or raw.drive or raw.root:
+        raise UnsafeOutputName(f"output filename escapes results dir: {filename}")
+    if any(part in {".", ".."} for part in raw.parts):
+        raise UnsafeOutputName(f"output filename escapes results dir: {filename}")
+    root = Path(results_dir).resolve()
+    candidate = (root / raw).resolve()
+    try:
+        candidate.relative_to(root)
+    except ValueError as exc:
+        raise UnsafeOutputName(f"output filename escapes results dir: {filename}") from exc
+    if candidate == root:
+        raise UnsafeOutputName(f"output filename escapes results dir: {filename}")
+    return candidate
+
+
 def _connection_hint(url: str) -> str:
     return (
         f"Hint / 提示: Make sure ComfyUI is running and the IP/port is correct (current: {url}). "
@@ -495,7 +524,7 @@ def execute_workflow(
         folder_type = item.get("type", "output")
         try:
             data = api.get_image(filename, subfolder, folder_type)
-            out_path = out_dir / filename
+            out_path = output_path_within(out_dir, filename)
             out_path.parent.mkdir(parents=True, exist_ok=True)
             out_path.write_bytes(data)
             outputs.append({

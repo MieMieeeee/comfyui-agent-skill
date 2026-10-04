@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from comfyui.cli_generate import resolve_generate_output, resolve_output_directory
+from comfyui.cli_generate import resolve_generate_output, resolve_output_directory, validate_dimensions
 
 SKILL_ROOT = Path(__file__).resolve().parent.parent.parent
 SCRIPTS_DIR = (SKILL_ROOT / "scripts").resolve()
@@ -97,7 +97,10 @@ class TestComfyuiModule:
         assert r.returncode == 0
         assert r.stdout.strip() == ""
         assert "usage:" in r.stderr.lower()
-        assert "results/%Y%m%d/%H%M%S_{job_id}" in r.stderr
+        assert "%Y%m%d/%H%M%S_{job_id}" in r.stderr
+        # Outputs go under the per-user data root, never inside the skill folder.
+        assert "per-user data root" in r.stderr
+        assert "under the skill root" not in r.stderr
 
 
 class TestCLICheckMode:
@@ -460,6 +463,47 @@ class TestCLISubmit:
         data = json.loads(result.stdout)
         assert "submitted" in data or "error" in data
 
+    def test_submit_liveportrait_does_not_require_prompt(self, tmp_path):
+        """Pure-upload liveportrait submit matches sync: no prompt, image + video."""
+        image = tmp_path / "face.png"
+        video = tmp_path / "drive.mp4"
+        image.write_bytes(b"png")
+        video.write_bytes(b"mp4")
+        result = _run_module(
+            "--server", "http://127.0.0.1:59999",
+            "--submit",
+            "--workflow", "liveportrait",
+            "--image", str(image),
+            "--video", str(video),
+        )
+        data = json.loads(result.stdout)
+        assert data["error"]["code"] == "SERVER_UNAVAILABLE"
+
+    def test_submit_voice_clone_accepts_prompt_ref_text_and_audio(self, tmp_path):
+        """Clone submit uses -p, --text-input ref_text, and --audio, not VoiceDesign flags."""
+        audio = tmp_path / "sample.mp3"
+        audio.write_bytes(b"mp3")
+        result = _run_module(
+            "--server", "http://127.0.0.1:59999",
+            "--submit",
+            "--workflow", "qwen3_tts_clone",
+            "-p", "new text",
+            "--text-input", "ref_text=spoken in the sample",
+            "--audio", str(audio),
+        )
+        data = json.loads(result.stdout)
+        assert data["error"]["code"] == "SERVER_UNAVAILABLE"
+
+    def test_submit_voicedesign_still_rejects_positional_prompt(self):
+        result = _run_module(
+            "--server", "http://127.0.0.1:59999",
+            "--submit",
+            "--workflow", "qwen3_tts",
+            "-p", "hello",
+        )
+        data = json.loads(result.stdout)
+        assert data["error"]["code"] == "INVALID_ARGS"
+
 
 class TestCLIPoll:
     def test_poll_requires_job_id(self):
@@ -581,3 +625,144 @@ class TestCLIAsyncMutualExclusion:
         assert data["error"]["code"] == "MUTUAL_EXCLUSION"
         assert result.returncode != 0
 
+
+
+class TestCLISubmitDimensions:
+    """--submit must reject --width/--height exactly like the sync path.
+
+    A workflow without width/height mappings must not silently swallow the
+    flags; it returns INVALID_PARAM before any media parsing or preflight.
+    """
+
+    def test_submit_sam3_mat_image_rejects_dimensions(self, tmp_path):
+        image = tmp_path / "photo.png"
+        image.write_bytes(b"png")
+        result = _run_module(
+            "--server", "http://127.0.0.1:59999",
+            "--submit",
+            "--workflow", "sam3_mat_image",
+            "--image", str(image),
+            "-p", "the cat",
+            "--width", "512",
+            "--height", "512",
+        )
+        data = json.loads(result.stdout)
+        assert data["error"]["code"] == "INVALID_PARAM"
+        assert "sam3_mat_image" in data["error"]["message"]
+        assert result.returncode != 0
+
+    def test_submit_liveportrait_rejects_dimensions(self, tmp_path):
+        image = tmp_path / "face.png"
+        video = tmp_path / "drive.mp4"
+        image.write_bytes(b"png")
+        video.write_bytes(b"mp4")
+        result = _run_module(
+            "--server", "http://127.0.0.1:59999",
+            "--submit",
+            "--workflow", "liveportrait",
+            "--image", str(image),
+            "--video", str(video),
+            "--width", "512",
+            "--height", "512",
+        )
+        data = json.loads(result.stdout)
+        assert data["error"]["code"] == "INVALID_PARAM"
+        assert "liveportrait" in data["error"]["message"]
+
+    def test_submit_voice_clone_rejects_dimensions(self, tmp_path):
+        audio = tmp_path / "sample.mp3"
+        audio.write_bytes(b"mp3")
+        result = _run_module(
+            "--server", "http://127.0.0.1:59999",
+            "--submit",
+            "--workflow", "qwen3_tts_clone",
+            "-p", "new text",
+            "--text-input", "ref_text=reference words",
+            "--audio", str(audio),
+            "--width", "512",
+            "--height", "512",
+        )
+        data = json.loads(result.stdout)
+        assert data["error"]["code"] == "INVALID_PARAM"
+
+    def test_submit_workflow_managed_rejects_dimensions(self, tmp_path):
+        image = tmp_path / "photo.png"
+        image.write_bytes(b"png")
+        result = _run_module(
+            "--server", "http://127.0.0.1:59999",
+            "--submit",
+            "--workflow", "klein_edit",
+            "--image", f"input_image={image}",
+            "-p", "change the jacket",
+            "--width", "1024",
+            "--height", "1024",
+        )
+        data = json.loads(result.stdout)
+        assert data["error"]["code"] == "INVALID_PARAM"
+        assert "klein_edit" in data["error"]["message"] or "manages" in data["error"]["message"].lower()
+
+    def test_submit_width_without_height_rejects(self):
+        result = _run_module(
+            "--server", "http://127.0.0.1:59999",
+            "--submit",
+            "--workflow", "z_image_turbo",
+            "-p", "a cat",
+            "--width", "1024",
+        )
+        data = json.loads(result.stdout)
+        assert data["error"]["code"] == "INVALID_PARAM"
+        assert "height" in data["error"]["message"].lower()
+
+    def test_submit_accepts_dimensions_when_mapped(self):
+        """Mapped dimensions must survive submit and reach the server check."""
+        result = _run_module(
+            "--server", "http://127.0.0.1:59999",
+            "--submit",
+            "--workflow", "ltx_23_t2v_distill",
+            "-p", "camera pan",
+            "--width", "1280",
+            "--height", "704",
+        )
+        data = json.loads(result.stdout)
+        assert data["error"]["code"] != "INVALID_PARAM"
+        assert data["error"]["code"] == "SERVER_UNAVAILABLE"
+
+
+class TestValidateDimensionsHelper:
+    """Unit coverage for the shared sync/--submit dimension validator."""
+
+    def test_both_absent_is_valid(self):
+        from comfyui.services.workflow_config import WORKFLOW_REGISTRY
+        assert validate_dimensions(WORKFLOW_REGISTRY["z_image_turbo"], None, None) is None
+
+    def test_one_sided_pair_is_rejected(self):
+        from comfyui.services.workflow_config import WORKFLOW_REGISTRY
+        err = validate_dimensions(WORKFLOW_REGISTRY["z_image_turbo"], 1024, None)
+        assert err is not None and err["code"] == "INVALID_PARAM"
+
+    def test_audio_workflow_rejects_dimensions(self):
+        from comfyui.services.workflow_config import WORKFLOW_REGISTRY
+        err = validate_dimensions(WORKFLOW_REGISTRY["ace_step_15_music"], 512, 512)
+        assert err is not None and err["code"] == "INVALID_PARAM"
+
+    def test_workflow_managed_is_rejected(self):
+        from comfyui.services.workflow_config import WORKFLOW_REGISTRY
+        err = validate_dimensions(WORKFLOW_REGISTRY["klein_edit"], 1024, 1024)
+        assert err is not None and err["code"] == "INVALID_PARAM"
+
+    def test_unmapped_dimensions_are_rejected(self):
+        from comfyui.services.workflow_config import WORKFLOW_REGISTRY
+        for wid in ("sam3_mat_image", "liveportrait", "ltx_23_i2v_distilled"):
+            err = validate_dimensions(WORKFLOW_REGISTRY[wid], 512, 512)
+            assert err is not None, f"{wid} should reject dimensions"
+            assert err["code"] == "INVALID_PARAM"
+            assert wid in err["message"]
+
+    def test_audio_clone_rejects_dimensions(self):
+        from comfyui.services.workflow_config import WORKFLOW_REGISTRY
+        err = validate_dimensions(WORKFLOW_REGISTRY["qwen3_tts_clone"], 512, 512)
+        assert err is not None and err["code"] == "INVALID_PARAM"
+
+    def test_mapped_pair_is_valid(self):
+        from comfyui.services.workflow_config import WORKFLOW_REGISTRY
+        assert validate_dimensions(WORKFLOW_REGISTRY["ltx_23_t2v_distill"], 1280, 704) is None

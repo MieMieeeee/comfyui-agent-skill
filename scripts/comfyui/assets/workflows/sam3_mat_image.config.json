@@ -16,7 +16,7 @@
     ],
     "avoid_for": [
       "editing an image's content (use klein_edit)",
-      "video matting (use sam3_mat_video)"
+      "video matting (this workflow is image-only; no video matting workflow is registered)"
     ],
     "agent_hint": "Prefer this when the user wants to isolate/mask/cut out an object in an image by describing it in words. The prompt names the object to segment (e.g. 'the cat', 'a person'). Requires --image and -p \"object description\"."
   },

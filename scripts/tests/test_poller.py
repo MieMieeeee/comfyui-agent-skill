@@ -560,3 +560,23 @@ class TestPollJobWsFinishedPhase:
 
         assert result["status"] == "executing"
         assert result.get("phase") == "waiting_outputs"
+
+
+class TestMaterializeOutputPath:
+    def test_skips_filename_that_escapes_results_dir(self, tmp_path):
+        from unittest.mock import MagicMock
+
+        from comfyui.services.poller import _materialize_outputs
+        from comfyui.services.workflow_config import Z_IMAGE_TURBO
+
+        api = MagicMock()
+        api.get_image.return_value = b"xx"
+        artifacts, _outputs = _materialize_outputs(
+            api,
+            Z_IMAGE_TURBO,
+            tmp_path / "no-workflows",
+            {"outputs": {"9": {"images": [{"filename": "../evil.png", "subfolder": "", "type": "output"}]}}},
+            tmp_path / "results",
+        )
+        assert artifacts == []
+        assert not (tmp_path / "evil.png").exists()

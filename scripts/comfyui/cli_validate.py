@@ -48,14 +48,14 @@ def _cases() -> dict[str, ValidateCase]:
             text_inputs={},
             input_images={"input_image": "assets/input/person.png"},
         ),
-        "ltx-23-t2v": ValidateCase(
-            workflow_id="ltx-23-t2v",
+        "ltx_23_t2v_distill": ValidateCase(
+            workflow_id="ltx_23_t2v_distill",
             prompt="一只猫懒洋洋地打哈欠，轻微镜头推近，柔和光线，真实自然运动，稳定画面",
             text_inputs={},
             input_images={},
         ),
-        "ltx-23-i2v": ValidateCase(
-            workflow_id="ltx-23-i2v",
+        "ltx_23_i2v_distilled": ValidateCase(
+            workflow_id="ltx_23_i2v_distilled",
             prompt="A cinematic close-up portrait of a young woman with a tousled chin-length bob, wearing a chunky-knit taupe scarf and an oversized striped cardigan in navy, teal, and mustard. She gazes upward with a melancholic, contemplative expression, soft diffused twilight light illuminating her face from the upper left. Gentle breeze moves her hair. The camera slowly drifts laterally with subtle breathing motion. Background is a soft bokeh of deep blue evening sky and distant hazy hills. Shallow depth of field, atmospheric film grain, quiet and emotional mood.",
             text_inputs={},
             input_images={"input_image": "assets/input/person.png"},

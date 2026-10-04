@@ -177,6 +177,33 @@ def _cli_preflight_gate_or_exit(server_url: str, config) -> None:
     )
 
 
+def validate_dimensions(config, width: int | None, height: int | None) -> dict[str, str] | None:
+    """Return an ``INVALID_PARAM`` payload when --width/--height cannot apply.
+
+    Shared by the sync path and ``--submit`` so neither can silently drop the
+    flags. Returns None when the pair is absent or both dimensions are mapped.
+    """
+    if (width is None) != (height is None):
+        return {"code": "INVALID_PARAM", "message": "--width and --height must be used together, or both omitted."}
+    if width is None:
+        return None
+    is_audio_workflow = getattr(config, "output_kind", "image") == "audio"
+    if is_audio_workflow:
+        return {"code": "INVALID_PARAM", "message": "--width and --height apply to image/video workflows only, not audio outputs."}
+    if config.size_strategy == "workflow_managed":
+        return {
+            "code": "INVALID_PARAM",
+            "message": f"Workflow '{config.workflow_id}' manages output size internally; --width/--height are not supported.",
+        }
+    has_dim_mapping = config.node_mapping.get("width") is not None and config.node_mapping.get("height") is not None
+    if not has_dim_mapping:
+        return {
+            "code": "INVALID_PARAM",
+            "message": f"Workflow '{config.workflow_id}' derives output resolution from the workflow graph; --width/--height are not applicable.",
+        }
+    return None
+
+
 def _add_generate_arguments(p: argparse.ArgumentParser, *, default_workflow: str) -> None:
     p.add_argument(
         "prompt",
@@ -200,7 +227,8 @@ def _add_generate_arguments(p: argparse.ArgumentParser, *, default_workflow: str
         metavar="DIR",
         help=(
             "Output directory for generated media (images, audio, etc.; filenames from ComfyUI). "
-            "Default: per-run results/%%Y%%m%%d/%%H%%M%%S_{job_id}/ under the skill root. "
+            "Default: per-run %%Y%%m%%d/%%H%%M%%S_{job_id}/ under the per-user data root's "
+            "results/ directory (%%APPDATA%%\\comfyui-skill\\results on Windows). "
             "Relative path adds a segment under that job folder; absolute path overrides. "
             "If the path ends with a known media extension, its parent directory is used."
         ),
@@ -285,7 +313,6 @@ def run_generate_from_args(args: argparse.Namespace) -> int:
         return _cli_run_preflight_only(config, server_url)
 
     prompts = list(args.prompt) + list(args.prompt_flags)
-    is_audio_workflow = getattr(config, "output_kind", "image") == "audio"
     # A workflow is "TTS-style" only when it exposes the speech_text role (the
     # qwen3_tts speech-design path). Voice-clone workflows (qwen3_tts_clone)
     # are also capability=text_to_speech but use prompt + extra text inputs, so
@@ -294,24 +321,9 @@ def run_generate_from_args(args: argparse.Namespace) -> int:
 
     aw = getattr(args, "width", None)
     ah = getattr(args, "height", None)
-    if (aw is None) != (ah is None):
-        _print_error_and_exit(code="INVALID_PARAM", message="--width and --height must be used together, or both omitted.", workflow_id=config.workflow_id)
-    if is_audio_workflow and (aw is not None or ah is not None):
-        _print_error_and_exit(code="INVALID_PARAM", message="--width and --height apply to image/video workflows only, not audio outputs.", workflow_id=config.workflow_id)
-    if (not is_audio_workflow and config.size_strategy == "workflow_managed" and (aw is not None or ah is not None)):
-        _print_error_and_exit(
-            code="INVALID_PARAM",
-            message=f"Workflow '{config.workflow_id}' manages output size internally; --width/--height are not supported.",
-            workflow_id=config.workflow_id,
-        )
-
-    has_dim_mapping = config.node_mapping.get("width") is not None and config.node_mapping.get("height") is not None
-    if (not is_audio_workflow and config.size_strategy != "workflow_managed" and not has_dim_mapping and (aw is not None or ah is not None)):
-        _print_error_and_exit(
-            code="INVALID_PARAM",
-            message=f"Workflow '{config.workflow_id}' derives output resolution from the workflow graph; --width/--height are not applicable.",
-            workflow_id=config.workflow_id,
-        )
+    dim_error = validate_dimensions(config, aw, ah)
+    if dim_error is not None:
+        _print_error_and_exit(code=dim_error["code"], message=dim_error["message"], workflow_id=config.workflow_id)
 
     if is_tts_workflow:
         speech = (getattr(args, "speech_text", None) or "").strip()
@@ -503,10 +515,25 @@ def cmd_generate() -> int:
                 metadata={"available_workflows": sorted(WORKFLOW_REGISTRY.keys())},
             )
         config = WORKFLOW_REGISTRY[args.workflow]
+        # Same dimension rules as the sync path: reject rather than drop silently.
+        dim_error = validate_dimensions(config, args.width, args.height)
+        if dim_error is not None:
+            print(json.dumps({"success": False, "workflow_id": args.workflow, "status": "failed", "outputs": [], "job_id": None, "error": dim_error, "metadata": {}}, ensure_ascii=True, indent=2))
+            return 1
         submit_prompt = ""
         submit_text_inputs: dict[str, str] | None = None
 
-        is_tts_submit = getattr(config, "capability", "") == "text_to_speech"
+        extra_text_inputs: dict[str, str] = {}
+        for ti_arg in getattr(args, "text_input", []) or []:
+            if "=" not in ti_arg:
+                print(json.dumps({"success": False, "workflow_id": args.workflow, "status": "failed", "error": {"code": "INVALID_PARAM_TYPE", "message": f"--text-input must be 'role=value' (missing '=' in {ti_arg!r})"}}, ensure_ascii=True, indent=2))
+                return 1
+            role, value = ti_arg.split("=", 1)
+            extra_text_inputs[role.strip()] = value
+
+        # Match sync generation: VoiceDesign is the speech_text role, not every
+        # text_to_speech capability. Voice clone uses prompt + --text-input.
+        is_tts_submit = getattr(config, "capability", "") == "text_to_speech" and "speech_text" in config.node_mapping
         speech = (getattr(args, "speech_text", None) or "").strip()
         instruct = (getattr(args, "instruct", None) or "").strip()
         if is_tts_submit:
@@ -517,14 +544,20 @@ def cmd_generate() -> int:
                 print(json.dumps({"success": False, "workflow_id": args.workflow, "status": "failed", "error": {"code": "EMPTY_SPEECH_TEXT" if not speech else "EMPTY_INSTRUCT", "message": "--speech-text and --instruct are required for this workflow."}}, ensure_ascii=True, indent=2))
                 return 1
             submit_text_inputs = {"speech_text": speech, "instruct": instruct}
-        elif not prompts:
-            print(json.dumps({"success": False, "workflow_id": args.workflow, "status": "failed", "error": {"code": "EMPTY_PROMPT", "message": "Prompt is required for --submit."}}, ensure_ascii=True, indent=2))
-            return 1
-        else:
+            submit_text_inputs.update(extra_text_inputs)
+        elif "prompt" in config.node_mapping:
+            if not prompts:
+                print(json.dumps({"success": False, "workflow_id": args.workflow, "status": "failed", "error": {"code": "EMPTY_PROMPT", "message": "Prompt is required for --submit."}}, ensure_ascii=True, indent=2))
+                return 1
             if len(prompts) > 1:
                 print(json.dumps({"success": False, "workflow_id": args.workflow, "status": "failed", "error": {"code": "MULTIPLE_PROMPTS_NOT_SUPPORTED", "message": "--submit accepts a single prompt only. Submit each prompt individually."}}, ensure_ascii=True, indent=2))
                 return 1
             submit_prompt = prompts[0]
+            submit_text_inputs = extra_text_inputs or None
+        else:
+            # Pure-upload workflows (liveportrait: image + video, no text).
+            submit_prompt = ""
+            submit_text_inputs = extra_text_inputs or None
 
         try:
             input_images = parse_media_inputs(

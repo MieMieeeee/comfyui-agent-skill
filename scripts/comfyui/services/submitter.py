@@ -60,8 +60,16 @@ def submit_workflow(
     has_string_mapping = any(
         _entry_is_string_input(entry) for entry in config.node_mapping.values()
     )
-    if not has_string_mapping:
-        return {"submitted": False, "error": _err("MAPPING_NOT_FOUND", "Workflow config has no string inputs.")}
+    has_media_mapping = any(
+        entry.get("value_type") in ("image", "video", "audio")
+        for entry in config.node_mapping.values()
+    )
+    # Pure-upload workflows (liveportrait: image + video, no text) are valid.
+    if not has_string_mapping and not has_media_mapping:
+        return {"submitted": False, "error": _err(
+            "MAPPING_NOT_FOUND",
+            "Workflow config has no bindable inputs (prompt/speech_text or image/video/audio).",
+        )}
 
     texts = merge_text_inputs(config, prompt, text_inputs)
     for key, entry in config.node_mapping.items():

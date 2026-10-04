@@ -3,10 +3,12 @@ name: comfyui-agent-skill-mie
 description: >
   Agent skill for running registered ComfyUI workflows through a stable CLI,
   and for importing a user's own ComfyUI workflow into their private registry
-  after review. Supports image, video, music, and speech on a local or trusted
-  self-hosted ComfyUI server (default http://127.0.0.1:8188). Can check server
-  health, preflight workflow dependencies, and save the server URL. Does not
-  execute arbitrary unreviewed workflow JSON.
+  after review. Supports image, video, music, and speech generation, plus
+  text-driven matting, face/expression transfer, and voice cloning, on a local
+  or trusted self-hosted ComfyUI server (default http://127.0.0.1:8188). Can
+  check server health, preflight workflow dependencies, and save the server
+  URL. Runs only registered workflows and reviewed private-registry imports;
+  does not execute arbitrary unreviewed workflow JSON.
 ---
 
 # comfyui-agent-skill-mie
@@ -24,12 +26,17 @@ Use this skill when the user asks to:
 - Generate text-to-video or image-to-video MP4 output.
 - Generate music / instrumental / song-style MP3 output.
 - Synthesize spoken voice audio with Qwen3-TTS.
+- Cut out or mask an object in a picture by describing it in words.
+- Transfer a face, expression, or pose from a driving video onto a reference face photo.
+- Clone a specific voice from a reference audio sample and speak new text in that voice.
 - Check whether a ComfyUI server is available.
 - Import a workflow the user already validated in ComfyUI into their private registry, and activate it only after the generated config is reviewed.
 - Preflight a registered workflow's nodes and models before a long run.
 - Save a persistent ComfyUI server URL when the user asks.
 
-Do not use this skill when the user only wants prompt writing, brainstorming, or discussion without actual generation. Do not use it when the ComfyUI server is unavailable.
+Do not use this skill when the user only wants prompt writing, brainstorming, or discussion without actual generation.
+
+A ComfyUI server being unavailable is not a reason to skip this skill. Return `SERVER_UNAVAILABLE`, ask whether ComfyUI is running on the local machine or on another machine, and point the user at `check` (single health check) and `doctor` (server health plus per-workflow preflight) to diagnose it.
 
 ## Hard Rules
 
@@ -41,7 +48,8 @@ Do not use this skill when the user only wants prompt writing, brainstorming, or
 - If server health fails, stop generation and return/handle `SERVER_UNAVAILABLE`; do not search disk for ComfyUI installs or guess ports.
 - Do not create or edit `config.local.json` unless the user explicitly wants a persistent server URL. For one-off runs, use `--server` or `COMFYUI_URL`.
 - For `reference_to_image`, inspect the reference image with Agent vision and create a prompt. Do not upload that reference image to ComfyUI.
-- For `image_to_image` and `image_to_video`, upload the provided local image with `--image`.
+- Upload local media with the role's flag from the quick command table. `--image` is the image role. `liveportrait` also needs `--video`. `qwen3_tts_clone` needs `-p`, `--text-input "ref_text=..."`, and `--audio`. Do not choose those flags from the capability name.
+- Pass `--width`/`--height` only when the workflow config maps both dimensions and does not use `size_strategy: "workflow_managed"`; always pass both together. Otherwise the CLI returns `INVALID_PARAM` on both the sync and `--submit` paths instead of ignoring them.
 - Analyzer-generated workflow configs require human review before activation.
 
 ## Workflow Selection Policy
@@ -261,7 +269,8 @@ Required fail-fast behavior:
 - Server unavailable: return/handle `SERVER_UNAVAILABLE` and ask whether ComfyUI is running locally or on another machine.
 - Missing reference image before `reference_to_image`: return Agent error `NO_REFERENCE_IMAGE`; do not call CLI.
 - No vision for `reference_to_image`: return Agent error `VISION_UNAVAILABLE`; do not call CLI.
-- Missing image for image workflows: return/handle `NO_INPUT_IMAGE` or `INPUT_IMAGE_NOT_FOUND`.
+- Missing required input media: return/handle `NO_INPUT_IMAGE` when an image role is absent and `NO_INPUT_MEDIA` when a video or audio role is absent. If the local path does not exist, handle `INPUT_IMAGE_NOT_FOUND` or `INPUT_MEDIA_NOT_FOUND` respectively. Do not report a missing video or audio input as `NO_INPUT_IMAGE`.
+- A required mapped role that is present but empty: return/handle `MISSING_INPUT`.
 - Missing custom nodes/models during preflight: return/handle `PREFLIGHT_MISSING_NODES` or `PREFLIGHT_MISSING_MODELS`.
 
 When the user provides a remote ComfyUI address, save it only if they want persistence:
@@ -278,7 +287,7 @@ After successful generation, present the result to the user. Do not silently par
 
 - For images, display the file when the runtime supports local image display; otherwise provide the absolute/local path from `outputs[].path`.
 - For MP3/MP4, provide the path or use the runtime's media display/playback capability when available.
-- Prefer omitting `--output`; the CLI writes to a per-job directory under `results/` and returns exact paths in JSON.
+- Prefer omitting `--output`; the CLI writes to a per-job directory under `results/` inside the per-user data root and returns exact paths in JSON. The per-user data root is `%APPDATA%\comfyui-skill` on Windows, `~/Library/Application Support/comfyui-skill` on macOS, and `$XDG_DATA_HOME/comfyui-skill` (or `~/.local/share/comfyui-skill`) on Linux. `save-server` writes `config.local.json` under that same root. Always use the returned `outputs[].path`.
 - For `--count > 1`, parse the wrapper object and present each result.
 
 See [references/cli.md](references/cli.md) for JSON schemas and output directory rules.

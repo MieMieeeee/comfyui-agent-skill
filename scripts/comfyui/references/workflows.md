@@ -18,7 +18,7 @@ This file is the workflow-selection reference for Agents using the ComfyUI skill
 | Generate an image from text | `z_image_turbo` | `text_to_image` | Default T2I workflow (photoreal/general); supports `--width` and `--height` together. |
 | Generate a poster or image with embedded text | `qwen_image_2512_4step` | `text_to_image` | Excels at text-in-image (Chinese/English characters, posters). Supports `--width` and `--height`; default `512x768`; good HD preset is `704x1280`. |
 | Anime / manga / illustration image | `anima_turbo` | `text_to_image` | Clean lines, saturated color, stylized cartoon/anime look. Supports `--width`/`--height`; default `1024x1024`. |
-| Artistic / painterly / concept-art image | `krea2_turbo` | `text_to_image` | Fast, stable; leans artistic/painterly realism over plain photoreal. Supports `--width`/`--height`; default `1024x1024`. |
+| Artistic / painterly / concept-art / product-visualization image | `krea2_turbo` | `text_to_image` | Photorealistic but artistic rather than plain photoreal; concept art and product visualization. Supports `--width`/`--height`; default `1024x1024`. |
 | Create a similar image from a reference picture | `z_image_turbo` after Agent vision | `reference_to_image` | Reference image is not uploaded to ComfyUI; Agent turns image + user intent into one English prompt. |
 | Edit a provided image | `klein_edit` | `image_to_image` | Upload image with `--image input_image=path`; do not pass `--width`/`--height`. |
 | Mask / cut out an object by describing it | `sam3_mat_image` | `image_to_image` | Text-driven segmentation: `--image` + `-p "object to mask"` (e.g. "the cat"). No manual box-clicking. |
@@ -52,10 +52,10 @@ The Agent should be the primary decision-maker for workflow choice. Built-in def
 - **Agent note**: maps prompt/negative_prompt to CLIP Text Encode; default square `1024x1024`. Anime quality boosters (masterpiece, best quality, score_7_up) work well.
 
 ### `krea2_turbo`
-- **Best for**: artistic / painterly realism, concept art, product visualization
-- **Prefer when**: the user asks for 写实 / 艺术 / 概念设计 / 产品图 that leans artistic rather than plain photoreal or anime
-- **Avoid when**: the user wants pure anime (use `anima_turbo`) or photoreal portraits (use `z_image_turbo`)
-- **Agent note**: the prompt maps to a dedicated user-prompt node (not CLIP Encode); the workflow's own optional enhance chain is left untouched. No negative prompt role.
+- **Best for**: photorealistic but artistic / painterly images, concept art and product visualization, stylized realism that is neither pure anime nor plain photoreal
+- **Prefer when**: the user asks for 写实/艺术/概念设计/产品图 style images that lean artistic rather than plain photoreal or anime
+- **Avoid when**: the user wants anime / manga styles (use `anima_turbo`), photoreal portraits (use `z_image_turbo`), or images with embedded text (use `qwen_image_2512_4step`)
+- **Agent note**: the prompt maps to a dedicated user-prompt node, not CLIP Text Encode; the workflow's own optional enhance chain is left untouched. No negative prompt role.
 
 ### `klein_edit`
 - **Best for**: editing a provided input image while preserving pose/structure
@@ -115,11 +115,11 @@ The Agent should be the primary decision-maker for workflow choice. Built-in def
 
 `text_to_video` uses `ltx_23_t2v_distill`. Width and height, when provided, are mapped to the workflow's `EmptyImage` node and drive the LTX latent size through `GetImageSize`.
 
-`image_to_video` uses `ltx_23_i2v_distilled`. The workflow reads uploaded image size with `GetImageSize`; export resolution follows that uploaded image. If the user wants a different output size, change the input image or workflow, not CLI width/height.
+`image_to_video` is not one command shape. `ltx_23_i2v_distilled` uploads one image with `--image` plus a motion prompt; the workflow reads that image's size with `GetImageSize`, and export resolution follows it. `liveportrait` uploads a face photo with `--image` and a driving video with `--video`, and takes no text prompt. Do not choose these flags from the capability name.
 
 `text_to_music` uses Ace Step and outputs MP3. The prompt acts like music tags: genre, mood, instrumentation, tempo, vocal/instrumental hints, and structure. It is not text-to-speech.
 
-`text_to_speech` uses Qwen3-TTS VoiceDesign and outputs MP3. It needs spoken content plus voice/style instruction. It is not music generation.
+`text_to_speech` is not one command shape. `qwen3_tts` is Qwen3-TTS VoiceDesign: `--speech-text` plus `--instruct`, and no positional prompt. `qwen3_tts_clone` speaks new text in a sample voice: `-p` for the new text, `--text-input "ref_text=..."` for the words spoken in the sample, and `--audio` for the sample. It is not music generation.
 
 ## Input and Size Mapping
 
@@ -129,9 +129,9 @@ The Agent should be the primary decision-maker for workflow choice. Built-in def
 | `reference_to_image` | Reference image + short user intent | Agent vision produces prompt; reference image is not sent to ComfyUI |
 | `image_to_image` | Local image path + edit instruction | Upload and bind `input_image`; positive prompt; random seed |
 | `text_to_video` | Shot, camera, subject, motion, style | Positive/negative prompt; `EmptyImage` width/height; MP4 output |
-| `image_to_video` | Valid image path + motion/camera prompt | Upload `input_image`; positive/negative prompt; output size follows input image |
+| `image_to_video` | LTX: image + motion prompt. LivePortrait: face photo + driving video, no prompt | LTX uploads `input_image` and writes the prompt; size follows the image. `liveportrait` uploads `input_image` and `input_video` |
 | `text_to_music` | Music tags / arrangement description | Writes prompt into Ace Step tags; MP3 output |
-| `text_to_speech` | Spoken script + voice instruction | Writes `speech_text` and `instruct`; MP3 output |
+| `text_to_speech` | VoiceDesign: spoken script + voice instruction. Clone: new text + reference transcript + reference audio | `qwen3_tts` writes `speech_text` and `instruct`. `qwen3_tts_clone` writes `prompt` and `ref_text` and uploads `input_audio` |
 
 Width/height are valid only when all of these are true:
 
@@ -139,7 +139,9 @@ Width/height are valid only when all of these are true:
 - The workflow does not use `size_strategy: "workflow_managed"`.
 - Both values are provided together.
 
-Do not pass `--width`/`--height` to `klein_edit`, `ltx_23_i2v_distilled`, `ace_step_15_music`, or `qwen3_tts`.
+When any of these is not satisfied, the CLI returns `INVALID_PARAM` instead of ignoring the flag. This is the same on the synchronous path and on `--submit`; a workflow with no `width`/`height` mapping never silently accepts `--width`/`--height`.
+
+Do not pass `--width`/`--height` to `klein_edit`, `ltx_23_i2v_distilled`, `sam3_mat_image`, `liveportrait`, `ace_step_15_music`, `qwen3_tts`, or `qwen3_tts_clone`.
 
 Registered defaults:
 
@@ -152,6 +154,8 @@ Registered defaults:
 | `ltx_23_t2v_distill` | `768x512` unless overridden with paired width/height |
 | `klein_edit` | `workflow_managed`; no CLI dimensions |
 | `ltx_23_i2v_distilled` | Upload image size; no CLI dimensions |
+| `sam3_mat_image` | Mask follows the input image; no CLI dimensions |
+| `liveportrait` | Output size follows the face photo and driving video; no CLI dimensions |
 | Audio workflows | No image dimensions |
 
 `resolution_presets` and `default_resolution` in config are Agent-facing metadata. Runtime still follows `node_mapping` defaults plus CLI overrides.

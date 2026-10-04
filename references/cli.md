@@ -30,7 +30,7 @@ Do not pass `--check` or `--save-server` to `generate`; they are top-level compa
 |---------|---------|
 | `uv run --no-sync python -m comfyui check` | Health check via `GET /system_stats` |
 | `uv run --no-sync python -m comfyui doctor` | Environment check: server + preflight (nodes/models) for registered workflows |
-| `uv run --no-sync python -m comfyui save-server URL` | Persist a ComfyUI server URL to `config.local.json` |
+| `uv run --no-sync python -m comfyui save-server URL` | Persist a ComfyUI server URL to `config.local.json` under the per-user data root |
 | `uv run --no-sync python -m comfyui generate [options]` | Execute or submit a registered workflow |
 | `uv run --no-sync python -m comfyui import-workflow PATH` | Import a workflow JSON into the per-user workflow registry and generate a `workflow.config.template.json` for review (`--into-project` for maintainers) |
 | `uv run --no-sync python -m comfyui convert-ui PATH [options]` | Convert ComfyUI UI/Save format workflows (`{nodes, links}`) to API format by driving a running ComfyUI front-end. Opt-in; needs Playwright + Chromium. Does not trigger inference. |
@@ -62,7 +62,7 @@ Priority:
 3. `config.local.json`
 4. Default `http://127.0.0.1:8188`
 
-Do not create or edit `config.local.json` unless the user explicitly wants a persistent server URL. For one-off calls, use `--server` or `COMFYUI_URL`.
+Do not create or edit `config.local.json` unless the user explicitly wants a persistent server URL. For one-off calls, use `--server` or `COMFYUI_URL`. The file lives in the same per-user data root as generated media (see [Output Paths](#output-paths)), not inside the skill folder.
 
 If the agent/skill runs inside WSL/container/sandbox while ComfyUI runs on the host OS, `127.0.0.1` may refer to the runtime itself instead of the host. Try `--server http://localhost:8188` or the host machine IP.
 
@@ -78,9 +78,9 @@ Tests may override the config path with `COMFYUI_CONFIG_FILE`.
 | `--instruct` | none | Voice/style instruction for `qwen3_tts` only. |
 | `--image` | none | `key=path` or bare path when the workflow has exactly one image role. Repeat for multiple roles. |
 | `--count` | `1` | Repeat count per prompt for synchronous generation. |
-| `--width`, `--height` | workflow default | Must be provided together. Only valid for workflows with both mapped dimensions and no `workflow_managed` size strategy. |
+| `--width`, `--height` | workflow default | Must be provided together. Only valid for workflows with both mapped dimensions and no `workflow_managed` size strategy; otherwise both the sync and `--submit` paths return `INVALID_PARAM` rather than ignoring the flag. |
 | `--server` | resolved URL | Server URL for this invocation only. |
-| `--output` | task directory under `results/` | Optional output directory override. Prefer omitting it and reading `outputs[].path` from JSON. |
+| `--output` | task directory under the user data root's `results/` | Optional output directory override. Prefer omitting it and reading `outputs[].path` from JSON. |
 | `--progress` | off | Print progress JSON lines to stderr. |
 | `--preflight` | off | Run node/model preflight for the selected workflow and exit; no prompt required. |
 | `--skip-preflight` | off | Skip automatic preflight before generation or submit. Use only for debugging. |
@@ -94,16 +94,22 @@ Automatic preflight runs after server health check and before enqueue/execution.
 
 Recommended Agent behavior: do not pass `--output` unless the user requested a fixed directory. Parse stdout JSON and use `outputs[].path`.
 
+Outputs are written under the per-user data root, never inside the skill folder or the installed package:
+
+- Windows: `%APPDATA%\comfyui-skill`
+- macOS: `~/Library/Application Support/comfyui-skill`
+- Linux: `$XDG_DATA_HOME/comfyui-skill` or `~/.local/share/comfyui-skill`
+
 Default output root:
 
 ```text
-results/%Y%m%d/%H%M%S_{job_id}/
+<user_data_root>/results/%Y%m%d/%H%M%S_{job_id}/
 ```
 
 Rules:
 
 - No `--output`: create the default task directory.
-- Relative `--output my_folder`: append under the task directory, e.g. `results/20260501/121314_job/my_folder/`.
+- Relative `--output my_folder`: append under the task directory, e.g. `<user_data_root>/results/20260501/121314_job/my_folder/`.
 - Absolute `--output E:\path\to\dir`: write the batch to that fixed directory.
 - Path ending with a common media extension such as `.png`, `.mp4`, or `.mp3`: use its parent directory as the save directory.
 
@@ -130,7 +136,7 @@ Submit rules:
 - `--submit` requires an explicit `--workflow`.
 - `--submit`, `--poll`, and `--poll-all` are mutually exclusive.
 - `--submit` accepts a single prompt only. Submit multiple prompts as multiple commands.
-- TTS submit must use `--speech-text` and `--instruct`.
+- VoiceDesign (`qwen3_tts`) submit uses `--speech-text` and `--instruct`, not a positional prompt. Voice clone (`qwen3_tts_clone`) submit uses `-p`, `--text-input "ref_text=..."`, and `--audio`. `liveportrait` submit uses `--image` and `--video` and no prompt.
 - Server-down failures normalize to `SERVER_UNAVAILABLE`.
 
 Submit TTS:
@@ -170,7 +176,7 @@ Success:
   "success": true,
   "workflow_id": "z_image_turbo",
   "status": "completed",
-  "outputs": [{"path": "results/20260501/121314_job/file.png", "filename": "file.png", "size_bytes": 123456}],
+  "outputs": [{"path": "<user_data_root>/results/20260501/121314_job/file.png", "filename": "file.png", "size_bytes": 123456}],
   "job_id": "a806c637-xxxx",
   "error": null,
   "metadata": {"prompt": "...", "prompt_id": "a806c637-xxxx", "width": 832, "height": 1280, "seed": 12345}
@@ -224,8 +230,12 @@ Agent-only codes are `NO_REFERENCE_IMAGE` and `VISION_UNAVAILABLE`. Do not use `
 | `EMPTY_SPEECH_TEXT` | `--speech-text` required but missing | Ask for the spoken content |
 | `EMPTY_INSTRUCT` | `--instruct` required but missing | Ask for the voice/style instruction |
 | `NO_INPUT_IMAGE` | Workflow requires an image role that was not provided | Ask for the missing input image |
-| `INPUT_IMAGE_NOT_FOUND` | Provided local path does not exist | Ask for a valid local path |
-| `IMAGE_UPLOAD_FAILED` | Upload to ComfyUI failed | Report upload failure and keep original path visible |
+| `NO_INPUT_MEDIA` | Workflow requires a video or audio role that was not provided | Ask for the missing video or audio input; do not report it as `NO_INPUT_IMAGE` |
+| `INPUT_IMAGE_NOT_FOUND` | Provided local image path does not exist | Ask for a valid local path |
+| `INPUT_MEDIA_NOT_FOUND` | Provided local video or audio path does not exist | Ask for a valid local path |
+| `IMAGE_UPLOAD_FAILED` | Image upload to ComfyUI failed | Report upload failure and keep original path visible |
+| `MEDIA_UPLOAD_FAILED` | Video or audio upload to ComfyUI failed | Report upload failure and keep original path visible |
+| `MISSING_INPUT` | A required mapped role was provided but left empty | Ask for a value for that role |
 | `INVALID_PARAM` | Unsupported flag/value for selected workflow | Adjust CLI flags according to workflow rules |
 | `INVALID_PARAM_TYPE` | Parameter type is wrong | Correct the value type |
 | `MULTIPLE_PROMPTS_NOT_SUPPORTED` | `--submit` received multiple prompts | Submit each prompt separately |
@@ -233,6 +243,7 @@ Agent-only codes are `NO_REFERENCE_IMAGE` and `VISION_UNAVAILABLE`. Do not use `
 | `MUTUAL_EXCLUSION` | `--submit`, `--poll`, and `--poll-all` were used together | Use only one async mode at a time |
 | `PREFLIGHT_SERVER_UNREACHABLE` | Preflight could not reach ComfyUI metadata endpoints | Treat like server/setup issue |
 | `PREFLIGHT_MISSING_NODES` | Required custom nodes are not registered | Ask user to install/enable missing nodes |
+| `PREFLIGHT_MISSING_PLUGINS` | Required third-party plugins are not installed | Ask user to install the missing plugins (ComfyUI Manager) |
 | `PREFLIGHT_MISSING_MODELS` | Required models are not listed by ComfyUI | Ask user to install/download missing models |
 | `PREFLIGHT_FAILED` | Other preflight failure | Report structured details |
 | `DEPENDENCY_UNAVAILABLE` | Transitive Python dependency missing after package import succeeds | Run `uv sync` |

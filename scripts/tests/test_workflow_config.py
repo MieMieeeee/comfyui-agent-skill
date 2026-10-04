@@ -200,6 +200,9 @@ class TestJsonConfig:
         assert "ref_text" in cfg.node_mapping
         # It must NOT expose speech_text (that routes it into the TTS path).
         assert "speech_text" not in cfg.node_mapping
+        hint = cfg.selection_guidance["agent_hint"]
+        assert '--text-input "ref_text=..."' in hint
+        assert "--param" not in hint
         wf_path = cfg.resolve_workflow_path(skill_root / "assets" / "workflows")
         assert wf_path.exists()
 
@@ -318,3 +321,74 @@ class TestBadConfig:
         bad.write_text("{broken", encoding="utf-8")
         with pytest.raises(ConfigError):
             load_configs_from_dir(tmp_path)
+
+
+def _workflow_id_candidates(entry: str) -> list[str]:
+    """Workflow-id-shaped tokens following "use " in a selection_guidance entry.
+
+    Guidance also contains prose like "use a motion-transfer workflow", so a bare
+    word after "use " is not a reference. Registered ids are either snake_case
+    or a single long lowercase word (e.g. `liveportrait`).
+    """
+    import re
+
+    return [
+        tok
+        for tok in re.findall(r"use ([a-z][a-z0-9_]*)", entry)
+        if "_" in tok or len(tok) >= 8
+    ]
+
+
+class TestGuidanceReferencesRegisteredWorkflows:
+    """selection_guidance must never point Agents at an unregistered id."""
+
+    def _registered_ids(self) -> set[str]:
+        from comfyui.config import get_workflows_dir
+        return {p.name[: -len(".config.json")] for p in get_workflows_dir().glob("*.config.json")}
+
+    def test_avoid_for_targets_are_registered(self):
+        import re
+        registered = self._registered_ids()
+        assert registered
+        for wid, cfg in WORKFLOW_REGISTRY.items():
+            guidance = cfg.selection_guidance or {}
+            for key in ("best_for", "avoid_for"):
+                for entry in guidance.get(key, []):
+                    for ref in _workflow_id_candidates(str(entry)):
+                        assert ref in registered, (
+                            f"{wid}.selection_guidance.{key} references unregistered workflow: {ref}"
+                        )
+
+    def test_sam3_mat_image_states_it_is_image_only(self, skill_root):
+        cfg = WORKFLOW_REGISTRY["sam3_mat_image"]
+        avoid_for = cfg.selection_guidance["avoid_for"]
+        assert any("video matting" in a for a in avoid_for)
+        assert not any("sam3_mat_video" in a for a in avoid_for)
+        assert "image-only" in " ".join(avoid_for)
+
+    def test_media_workflows_have_no_dimension_mapping(self):
+        """These three must fall through to INVALID_PARAM for --width/--height."""
+        for wid in ("sam3_mat_image", "liveportrait", "qwen3_tts_clone"):
+            cfg = WORKFLOW_REGISTRY[wid]
+            assert "width" not in cfg.node_mapping, wid
+            assert "height" not in cfg.node_mapping, wid
+            assert cfg.size_strategy != "workflow_managed", wid
+
+
+class TestValidateCases:
+    def test_validate_cases_reference_registered_ids(self):
+        from comfyui.cli_validate import _cases
+        cases = _cases()
+        registered = set(WORKFLOW_REGISTRY.keys())
+        # Case keys may be suffixed variants (e.g. z_image_turbo_reference) since
+        # cases are looked up by workflow id, so only workflow_id must resolve.
+        for key, case in cases.items():
+            assert case.workflow_id in registered, f"case '{key}' uses unregistered id {case.workflow_id}"
+
+    def test_ltx_cases_renamed(self):
+        from comfyui.cli_validate import _cases
+        cases = _cases()
+        assert "ltx_23_t2v_distill" in cases
+        assert "ltx_23_i2v_distilled" in cases
+        assert "ltx-23-t2v" not in cases
+        assert "ltx-23-i2v" not in cases
