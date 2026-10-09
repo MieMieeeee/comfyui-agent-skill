@@ -6,7 +6,7 @@ import random
 from pathlib import Path
 from typing import Any
 
-from comfyui.config import check_server, job_store_path as default_job_store_path, get_workflows_dir
+from comfyui.config import check_server, get_http_timeout, job_store_path as default_job_store_path, get_workflows_dir
 from comfyui.preflight import build_preflight_cli_payload, preflight_registered_workflow
 from comfyui.services.executor import _entry_is_string_input, merge_text_inputs, _missing_string_error
 from comfyui.services.job_store import JobStore
@@ -115,7 +115,8 @@ def submit_workflow(
             }
 
     try:
-        api = ComfyApiWrapper(server_url)
+        connect_t, read_t = get_http_timeout()
+        api = ComfyApiWrapper(server_url, connect_timeout=connect_t, read_timeout=read_t)
     except Exception as e:
         return {"submitted": False, "error": _err("SERVER_UNAVAILABLE", f"Cannot connect to ComfyUI: {e}")}
 

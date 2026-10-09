@@ -13,7 +13,7 @@ except ImportError:
     ComfyApiWrapper = None  # type: ignore
     ComfyWorkflowWrapper = None  # type: ignore
 
-from comfyui.config import SKILL_ROOT, get_user_data_root, get_workflows_dir
+from comfyui.config import SKILL_ROOT, get_http_timeout, get_user_data_root, get_workflows_dir
 from comfyui.services.executor import (
     job_hierarchy_output_dir,
     node_output_media_list,
@@ -242,7 +242,8 @@ def poll_job(
         wf_dir = legacy if legacy.is_dir() else get_workflows_dir()
 
     try:
-        api = ComfyApiWrapper(url)
+        connect_t, read_t = get_http_timeout()
+        api = ComfyApiWrapper(url, connect_timeout=connect_t, read_timeout=read_t)
     except Exception as e:
         err_obj = _err("SERVER_UNAVAILABLE", str(e))
         store.update_job(

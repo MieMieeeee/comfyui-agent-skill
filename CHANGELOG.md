@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.13 - 2026-10-09
+
+### Fixes
+- The ComfyUI HTTP client now bounds every request with an explicit timeout instead of waiting forever. All seven `requests` calls in the vendored client (prompt submission, queue/history/image/video reads, and both uploads) pass a `(connect, read)` timeout, defaulting to 10s / 60s. Previously a server that accepted the connection but stopped responding could hang prompt submission, polling and downloads indefinitely.
+- Polling now fails as a transient error rather than blocking, because the history read inherits the new timeout.
+
+### Documentation
+- Two new configuration keys, `http_connect_timeout` and `http_read_timeout` in `config.local.json`, overridable via the `COMFYUI_HTTP_CONNECT_TIMEOUT` and `COMFYUI_HTTP_READ_TIMEOUT` environment variables. These bound a single HTTP call and are independent of the overall `--timeout-s` generation deadline.
+
 ## 0.1.12 - 2026-10-04
 
 ### Fixes

@@ -28,7 +28,7 @@ except ImportError:
     )
     sys.exit(1)
 
-from comfyui.config import get_comfyui_url
+from comfyui.config import get_comfyui_url, get_http_timeout
 from comfyui.models.result import GenerationResult
 from comfyui.services.workflow_config import WorkflowConfig
 
@@ -380,7 +380,8 @@ def execute_workflow(
 
     # Create API instance early (needed for upload)
     try:
-        api = ComfyApiWrapper(url)
+        connect_t, read_t = get_http_timeout()
+        api = ComfyApiWrapper(url, connect_timeout=connect_t, read_timeout=read_t)
     except Exception as e:
         msg = _enrich_error(str(e), url)
         return GenerationResult(

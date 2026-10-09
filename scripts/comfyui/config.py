@@ -8,6 +8,13 @@ from pathlib import Path
 
 DEFAULT_URL = "http://127.0.0.1:8188"
 
+# Per-HTTP-call socket timeouts for the ComfyUI client. These bound a single
+# request; they are deliberately independent of the overall generation deadline
+# (--timeout-s). 60s read is generous enough to survive a node loading a model
+# on first run, while still failing fast on a wedged server.
+DEFAULT_HTTP_CONNECT_TIMEOUT = 10.0
+DEFAULT_HTTP_READ_TIMEOUT = 60.0
+
 PACKAGE_ROOT = Path(__file__).resolve().parent
 _REPO_ROOT_CANDIDATE = PACKAGE_ROOT.parent.parent
 if (_REPO_ROOT_CANDIDATE / "SKILL.md").exists():
@@ -105,6 +112,56 @@ def get_comfyui_url() -> str:
     if "comfyui_url" in local:
         return local["comfyui_url"]
     return DEFAULT_URL
+
+
+def _resolve_timeout(env_var: str, config_key: str, default: float) -> float:
+    """Resolve a socket timeout from env var > config.local.json > default.
+
+    Non-numeric, zero and negative values fall back to ``default`` rather than
+    raising, matching how a corrupt config.local.json degrades to an empty dict.
+    """
+    raw = os.environ.get(env_var)
+    if raw is None:
+        raw = _load_local_config().get(config_key)
+    if raw is None or raw == "":
+        return default
+    try:
+        value = float(raw)
+    except (TypeError, ValueError):
+        return default
+    if value <= 0:
+        return default
+    return value
+
+
+def get_http_connect_timeout() -> float:
+    """Seconds to wait for a TCP connection to ComfyUI.
+
+    Priority: env var COMFYUI_HTTP_CONNECT_TIMEOUT > config.local.json
+    http_connect_timeout > default 10.0
+    """
+    return _resolve_timeout(
+        "COMFYUI_HTTP_CONNECT_TIMEOUT", "http_connect_timeout", DEFAULT_HTTP_CONNECT_TIMEOUT
+    )
+
+
+def get_http_read_timeout() -> float:
+    """Seconds to wait between bytes received from ComfyUI.
+
+    This is a socket idle timeout, not a total-transfer cap, so a slow but
+    steady upload or download is not interrupted.
+
+    Priority: env var COMFYUI_HTTP_READ_TIMEOUT > config.local.json
+    http_read_timeout > default 60.0
+    """
+    return _resolve_timeout(
+        "COMFYUI_HTTP_READ_TIMEOUT", "http_read_timeout", DEFAULT_HTTP_READ_TIMEOUT
+    )
+
+
+def get_http_timeout() -> tuple[float, float]:
+    """(connect, read) tuple, ready to pass as ``timeout=`` to requests."""
+    return (get_http_connect_timeout(), get_http_read_timeout())
 
 
 def save_comfyui_url(url: str) -> None:

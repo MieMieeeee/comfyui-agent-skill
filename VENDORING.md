@@ -20,12 +20,19 @@ so that `pip install -e .` does not need a `git+` dependency or network access t
 
 `441d3ef48165d42c9165d5d3b399e7294fdddccc`
 
+**Local modifications to `api.py`** (not present upstream — re-apply after any refresh):
+
+- `ComfyApi.__init__` accepts `connect_timeout` (default `10.0`) and `read_timeout` (default `60.0`), stored as
+  `self.timeout`. All seven `requests.get` / `requests.post` call sites pass `timeout=self.timeout`. Upstream ships
+  these calls with no timeout, so a copy taken straight from upstream would hang indefinitely on a wedged server.
+  Keep this when re-syncing; the values are supplied by `comfyui.config.get_http_timeout()` at each call site.
+
 **License**: MIT. Full text in upstream repository; Copyright (c) 2024 deimos-deimos (as in upstream `LICENSE`).
 
 **How to refresh from upstream**
 
 1. Clone or update `https://github.com/MieMieeeee/run_comfyui_workflow`.
-2. Copy the listed files over, adjust `__init__.py` if exports change.
+2. Copy the listed files over, adjust `__init__.py` if exports change, and re-apply the local modifications above.
 3. Run `python -m pytest scripts/tests/ -q --ignore=scripts/tests/test_integration.py` and, if possible, a live ComfyUI smoke test.
 
 **Environment override for config during tests**
