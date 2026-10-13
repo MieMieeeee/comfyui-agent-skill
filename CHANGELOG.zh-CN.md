@@ -1,5 +1,13 @@
 # 更新日志
 
+## 0.1.14 - 2026-10-13
+
+### 新增
+- 支持 `output_kind: "3d"`。ComfyUI 内核的 `SaveGLB`、`Save3DAdvanced` 和 `Preview3DAdvanced` 会把文件挂在历史记录的 `"3d"` 键下（由 `UI.Saved3DModels` 产生），因此 TRELLIS.2、Pixal3D 等 image-to-3D 工作流此前虽然能跑完，却只返回 `NO_OUTPUT` 而没有任何产物。现在同步执行与 `--submit` 两条路径都会解析该键，并像其他类型一样通过 `/view` 下载。
+
+### 文档
+- `references/extension.md` 说明了 `"3d"` 键、三个 3D 输出节点的 display name，以及 `Save3DAdvanced` 在 `viewport_state` 为空时会静默不产出任何文件（且不报错）的坑。
+
 ## 0.1.13 - 2026-10-09
 
 ### 修复

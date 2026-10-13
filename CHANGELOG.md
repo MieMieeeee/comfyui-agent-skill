@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.14 - 2026-10-13
+
+### Features
+- Support `output_kind: "3d"`. Core ComfyUI's `SaveGLB`, `Save3DAdvanced` and `Preview3DAdvanced` report their files under a `"3d"` key in history (via `UI.Saved3DModels`), so image-to-3D workflows such as TRELLIS.2 and Pixal3D previously finished with `NO_OUTPUT` and no artifacts. The executor now resolves that key on both the synchronous and `--submit` paths and downloads the entries through `/view` like every other kind.
+
+### Documentation
+- `references/extension.md` documents the `"3d"` key, the display names for the three 3D output nodes, and the `Save3DAdvanced` trap where an empty `viewport_state` makes the node emit nothing without failing.
+
 ## 0.1.13 - 2026-10-09
 
 ### Fixes

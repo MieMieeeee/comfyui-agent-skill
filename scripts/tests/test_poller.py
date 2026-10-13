@@ -580,3 +580,70 @@ class TestMaterializeOutputPath:
         )
         assert artifacts == []
         assert not (tmp_path / "evil.png").exists()
+
+
+class TestPollJob3DOutput:
+    """--submit path: history "3d" key must resolve and download like image/audio/video."""
+
+    def test_completed_3d_writes_glb(self, tmp_path):
+        from comfyui.services.poller import poll_job
+        from comfyui.services.workflow_config import WorkflowConfig
+
+        store = JobStore(tmp_path / "jobs.db")
+        store.save_job(
+            job_id="job-3d-1",
+            workflow_id="glb_probe",
+            prompt="a 3d model",
+            server_url="http://127.0.0.1:8188",
+            status="submitted",
+            seed=7,
+        )
+
+        cfg = WorkflowConfig(
+            workflow_id="glb_probe",
+            workflow_file="glb_probe.json",
+            output_node_title="Save 3D (Advanced)",
+            output_kind="3d",
+            node_mapping={
+                "prompt": {
+                    "node_title": "P",
+                    "param": "text",
+                    "value_type": "string",
+                    "required": True,
+                },
+            },
+        )
+
+        with patch("comfyui.services.poller.ComfyApiWrapper") as mock_cls, \
+             patch("comfyui.services.poller.WORKFLOW_REGISTRY", {"glb_probe": cfg}):
+            mock_inst = MagicMock()
+            mock_inst.get_history.return_value = {
+                "job-3d-1": {
+                    "outputs": {
+                        "322": {
+                            "3d": [
+                                {
+                                    "filename": "ComfyUI_00001.glb",
+                                    "subfolder": "3d",
+                                    "type": "output",
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+            mock_inst.get_image.return_value = b"glTF bytes"
+            mock_cls.return_value = mock_inst
+
+            result = poll_job(
+                "job-3d-1",
+                store,
+                "http://127.0.0.1:8188",
+                skill_root=SKILL_ROOT,
+                results_dir=tmp_path / "glb_out",
+            )
+
+        assert result["success"] is True
+        assert result["status"] == "completed"
+        assert result["outputs"][0]["filename"] == "ComfyUI_00001.glb"
+        assert (tmp_path / "glb_out" / "ComfyUI_00001.glb").exists()

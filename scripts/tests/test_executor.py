@@ -662,6 +662,96 @@ class TestExecuteWorkflowDimensions:
         assert result.success is True
         assert result.outputs[0]["filename"] == "out.mp4"
 
+    @patch("comfyui.services.executor.ComfyApiWrapper")
+    @patch("comfyui.services.executor.ComfyWorkflowWrapper")
+    def test_3d_output_reads_3d_key(self, MockWF, MockAPI, tmp_path):
+        """SaveGLB / Save3DAdvanced report under the "3d" history key (UI.Saved3DModels)."""
+        mock_wf = MagicMock()
+        mock_wf.get_node_id.return_value = "322"
+        MockWF.return_value = mock_wf
+        mock_api = _make_mock_api(
+            prompt_id="d1",
+            history={
+                "d1": {
+                    "outputs": {
+                        "322": {
+                            "3d": [
+                                {
+                                    "filename": "ComfyUI_00001.glb",
+                                    "subfolder": "3d",
+                                    "type": "output",
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            image_data=b"glTF binary",
+        )
+        MockAPI.return_value = mock_api
+
+        self._write_minimal_workflow(tmp_path, "glb_out.json")
+        cfg = WorkflowConfig(
+            workflow_id="glb_out",
+            workflow_file="glb_out.json",
+            output_node_title="Save 3D (Advanced)",
+            output_kind="3d",
+            node_mapping={
+                "prompt": {
+                    "node_title": "P",
+                    "param": "text",
+                    "value_type": "string",
+                    "required": True,
+                },
+            },
+        )
+        result = execute_workflow(
+            config=cfg,
+            prompt="a 3d model",
+            skill_root=tmp_path,
+            results_dir=tmp_path / "out",
+        )
+        assert result.success is True
+        assert result.outputs[0]["filename"] == "ComfyUI_00001.glb"
+        assert result.outputs[0]["size_bytes"] == len(b"glTF binary")
+
+    @patch("comfyui.services.executor.ComfyApiWrapper")
+    @patch("comfyui.services.executor.ComfyWorkflowWrapper")
+    def test_3d_output_missing_reports_no_3d_output(self, MockWF, MockAPI, tmp_path):
+        """An empty "3d" list must fail with the 3D wording, not the image wording."""
+        mock_wf = MagicMock()
+        mock_wf.get_node_id.return_value = "322"
+        MockWF.return_value = mock_wf
+        MockAPI.return_value = _make_mock_api(
+            prompt_id="d2",
+            history={"d2": {"outputs": {"322": {"3d": []}}}},
+        )
+
+        self._write_minimal_workflow(tmp_path, "glb_empty.json")
+        cfg = WorkflowConfig(
+            workflow_id="glb_empty",
+            workflow_file="glb_empty.json",
+            output_node_title="Save 3D (Advanced)",
+            output_kind="3d",
+            node_mapping={
+                "prompt": {
+                    "node_title": "P",
+                    "param": "text",
+                    "value_type": "string",
+                    "required": True,
+                },
+            },
+        )
+        result = execute_workflow(
+            config=cfg,
+            prompt="a 3d model",
+            skill_root=tmp_path,
+            results_dir=tmp_path / "out",
+        )
+        assert result.success is False
+        assert result.error["code"] == "NO_OUTPUT"
+        assert "3D" in result.error["message"]
+
 
 class TestOutputPathWithin:
     def test_keeps_relative_subfolder(self, tmp_path):

@@ -80,11 +80,15 @@ Common top-level fields:
 | `description` | Short human/Agent summary |
 | `node_mapping` | Role-to-node mapping used by executor |
 | `size_strategy` | Optional. `workflow_managed` means executor/CLI should not apply mapped width/height |
-| `output_kind` | `image`, `audio`, or `video` |
+| `output_kind` | `image`, `audio`, `video`, or `3d` |
 | `resolution_presets` | Optional Agent-facing named `{width,height,label}` choices |
 | `default_resolution` | Optional key into `resolution_presets` |
 
 `output_kind: "video"` should be used for video workflows even when Comfy history exposes files under `gifs`; the executor checks `images`, `gifs`, and `videos`.
+
+`output_kind: "3d"` should be used for 3D workflows. Core ComfyUI's `SaveGLB`, `Save3DAdvanced`, and `Preview3DAdvanced` all report their files under a `"3d"` key in history (via `UI.Saved3DModels`), with entries shaped like image outputs (`filename` / `subfolder` / `type`). The executor fetches those entries through `/view` exactly like the other kinds. Set `output_node_title` to the node's display name — `"Save 3D Model"` for `SaveGLB`, `"Save 3D (Advanced)"` for `Save3DAdvanced`, `"Preview 3D (Advanced)"` for `Preview3DAdvanced`.
+
+`Save3DAdvanced` emits nothing when its `viewport_state` input is empty: the job succeeds but history carries no `"3d"` entry, so the executor reports `NO_OUTPUT`. Export the graph from the ComfyUI UI (Save → Export (API Format)) so `viewport_state` keeps its camera block, rather than hand-writing the API JSON. `SaveGLB` has no such dependency.
 
 ## node_mapping Schema
 

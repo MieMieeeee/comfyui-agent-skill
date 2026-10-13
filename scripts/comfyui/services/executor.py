@@ -166,10 +166,13 @@ def _err(code: str, message: str) -> dict[str, str]:
 
 
 def node_output_media_list(node_output: dict[str, Any], output_kind: str) -> list[Any]:
-    """Resolve ComfyUI history ``outputs[node_id]`` media entries for image / audio / video."""
+    """Resolve ComfyUI history ``outputs[node_id]`` media entries for image / audio / video / 3D."""
     kind = (output_kind or "image").strip()
     if kind == "audio":
         return list(node_output.get("audio") or [])
+    if kind == "3d":
+        # SaveGLB, Save3DAdvanced and Preview3DAdvanced all report under "3d" (UI.Saved3DModels).
+        return list(node_output.get("3d") or [])
     if kind == "video":
         for key in ("images", "gifs", "videos"):
             lst = node_output.get(key)
@@ -497,6 +500,8 @@ def execute_workflow(
     if not media_info:
         if output_kind == "audio":
             msg = "Workflow completed but produced no audio."
+        elif output_kind == "3d":
+            msg = "Workflow completed but produced no 3D output."
         elif output_kind == "video":
             msg = "Workflow completed but produced no video output."
         else:
@@ -539,6 +544,8 @@ def execute_workflow(
         except Exception as e:
             if output_kind == "audio":
                 label = "audio"
+            elif output_kind == "3d":
+                label = "3D model"
             elif output_kind == "video":
                 label = "video"
             else:

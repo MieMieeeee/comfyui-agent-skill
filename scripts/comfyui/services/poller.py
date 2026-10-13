@@ -59,6 +59,9 @@ def _materialize_outputs(
             if output_kind == "audio" and node_data.get("audio"):
                 output_node_id = nid
                 break
+            if output_kind == "3d" and node_data.get("3d"):
+                output_node_id = nid
+                break
             if output_kind == "video" and any(
                 node_data.get(k) for k in ("images", "gifs", "videos")
             ):
@@ -353,6 +356,8 @@ def poll_job(
             okind = getattr(config, "output_kind", "image") or "image"
             if okind == "audio":
                 kind = "audio"
+            elif okind == "3d":
+                kind = "3D model"
             elif okind == "video":
                 kind = "video"
             else:

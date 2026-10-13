@@ -19,7 +19,7 @@ class WorkflowConfig:
     capability: str = "text_to_image"
     description: str = ""
     size_strategy: str = ""  # "workflow_managed" = dims from workflow, not skill
-    output_kind: str = "image"  # "image" | "audio" | "video" — selects history output keys (see executor.node_output_media_list)
+    output_kind: str = "image"  # "image" | "audio" | "video" | "3d" — selects history output keys (see executor.node_output_media_list)
     intent_categories: list[str] = field(default_factory=list)
     input_modes: list[str] = field(default_factory=list)
     priority: int = 0
